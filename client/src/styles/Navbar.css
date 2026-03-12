@@ -1,0 +1,180 @@
+:root {
+  --nav-bg: #ffffff;
+  --nav-navy: #0d2d8c;
+  --nav-blue: #1e40af;
+  --nav-text: #1e293b;
+  --nav-border: #e2e8f0;
+}
+
+.navbar {
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  min-height: 70px; /* Use min-height to prevent clipping */
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.navbar-container {
+  width: 100%;
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Vertically centers logo and links */
+}
+
+/* Fix: Ensure links stay in a single horizontal row */
+.navbar-links {
+  display: flex;
+  flex-direction: row; /* Forces horizontal alignment */
+  align-items: center;
+  gap: 10px; /* Space between links */
+}
+
+/* Grouping auth/user links */
+.auth-nav-group, .user-nav-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 15px;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  background: var(--nav-navy);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.logo-text {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--nav-navy);
+}
+
+.nav-link, .dropbtn {
+  color: var(--nav-text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  white-space: nowrap; /* Prevents text from wrapping to new lines */
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--nav-blue);
+}
+
+/* Logout Button Polish */
+.btn-logout {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* Responsive: Hide links on mobile unless menu is open */
+@media (max-width: 768px) {
+  .navbar-links {
+    display: none; /* Hide by default on mobile */
+    position: absolute;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    background: white;
+    flex-direction: column; /* Stack only on mobile */
+    padding: 20px 0;
+    border-bottom: 2px solid var(--nav-border);
+  }
+
+  .navbar-links.active {
+    display: flex;
+  }
+}
+
+/* Fix for the dropdown alignment issue */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  position: absolute;
+  top: 100%; /* Places it directly under the button */
+  right: 0;   /* Aligns the right edge of menu with right edge of button */
+  background-color: #ffffff;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+  z-index: 1001;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  display: none; /* Hidden by default */
+  flex-direction: column; /* Forces links to stack vertically */
+  padding: 8px 0;
+}
+
+/* This class is toggled via your JSX state */
+.dropdown-content.show {
+  display: flex; 
+}
+
+.dropdown-content a {
+  color: #1e293b;
+  padding: 10px 20px;
+  text-decoration: none;
+  display: block; /* Ensures each link takes up its own row */
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.dropdown-content a:hover {
+  background-color: #f1f5f9;
+  color: #1e40af; /* Action Blue */
+}
+
+/* Optional: Small gap between the Login and Register text in your original code */
+.dropdown-content a + a {
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Adjust the buttons to look more consistent */
+.dropbtn {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}

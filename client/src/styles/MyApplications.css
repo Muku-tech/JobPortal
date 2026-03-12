@@ -1,0 +1,128 @@
+/* Jobejee Branding Variables */
+:root {
+  --j-navy: #0d2d8c;
+  --j-blue: #1e40af;
+  --j-bg-light: #f4f7fa;
+  --j-border: #e2e8f0;
+  --j-text-main: #1e293b;
+  --j-text-muted: #64748b;
+  --j-white: #ffffff;
+  --j-status-blue: #2563eb;
+}
+
+.applications-page {
+  max-width: 1000px;
+  margin: auto;
+  padding: 40px 20px;
+  background-color: var(--j-bg-light);
+}
+
+.page-header h1 {
+  font-size: 28px;
+  color: var(--j-navy);
+  font-weight: 800;
+}
+
+.page-header p {
+  color: var(--j-text-muted);
+  font-size: 0.95rem;
+}
+
+/* Stats Box - Switched from Red to Navy */
+.stats-box {
+  margin-top: 15px;
+  background: white;
+  border: 1px solid var(--j-border);
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 4px; /* Sharper corners */
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--j-blue); /* Professional Blue instead of Red */
+  margin-right: 8px;
+}
+
+/* Filter Pills - Clean and Professional */
+.filters {
+  margin-top: 25px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filters button {
+  border: 1px solid var(--j-border);
+  padding: 8px 18px;
+  border-radius: 4px; /* Reduced rounding */
+  background: white;
+  color: var(--j-text-main);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filters button:hover {
+  background: #f8fafc;
+  border-color: var(--j-blue);
+}
+
+.filters button.active {
+  background: var(--j-blue);
+  color: white;
+  border-color: var(--j-blue);
+}
+
+/* Job Application Cards */
+.applications-list {
+  margin-top: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.application-card {
+  background: var(--j-white);
+  border-radius: 4px;
+  padding: 20px;
+  border: 1px solid var(--j-border);
+  transition: border-color 0.2s;
+}
+
+.application-card:hover {
+  border-color: var(--j-blue);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.card-header h3 {
+  color: var(--j-blue); /* Company/Job titles as blue links */
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.card-info {
+  margin-top: 12px;
+  display: flex;
+  gap: 24px;
+  font-size: 0.85rem;
+  color: var(--j-text-muted);
+  font-weight: 500;
+}
+
+/* Loading Spinner - Professional Blue */
+.loading-spinner {
+  width: 35px;
+  height: 35px;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid var(--j-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

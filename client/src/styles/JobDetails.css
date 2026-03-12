@@ -1,0 +1,143 @@
+/* Jobejee Branding Variables */
+:root {
+  --j-primary-navy: #0d2d8c;
+  --j-action-blue: #1e40af;
+  --j-bg-body: #f4f7fa;
+  --j-border: #e2e8f0;
+  --j-text-dark: #1e293b;
+  --j-text-muted: #64748b;
+  --j-white: #ffffff;
+}
+
+.job-details-page {
+  padding: 2.5rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: var(--j-bg-body);
+}
+
+/* Header - Removed purple gradient for Jobejee Navy */
+.job-details-header {
+  background: var(--j-primary-navy);
+  color: white;
+  padding: 3rem 2rem;
+  border-radius: 4px; /* Sharper corporate corners */
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.job-details-header h1 {
+  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.job-meta span {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+/* Main Content Layout */
+.job-details-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.job-section {
+  background: var(--j-white);
+  padding: 2rem;
+  border: 1px solid var(--j-border);
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.job-section h3 {
+  color: var(--j-primary-navy);
+  margin-bottom: 1.25rem;
+  font-size: 1.25rem;
+  border-bottom: 2px solid var(--j-bg-body);
+  padding-bottom: 0.5rem;
+}
+
+.job-section p {
+  color: var(--j-text-dark);
+  line-height: 1.8; /* Increased line height for better readability */
+}
+
+/* Sidebar & Apply Card */
+.apply-card,
+.sidebar-card {
+  background: var(--j-white);
+  padding: 2rem;
+  border: 1px solid var(--j-border);
+  border-radius: 4px;
+}
+
+.apply-card h3 {
+  color: var(--j-text-dark);
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.apply-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--j-action-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.2s;
+}
+
+.apply-btn:hover {
+  background: var(--j-primary-navy);
+}
+
+.apply-btn:disabled {
+  background: var(--j-text-muted);
+  cursor: not-allowed;
+}
+
+/* Overview Info - Jobejee Key Info Style */
+.overview-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--j-border);
+  font-size: 0.9rem;
+}
+
+.overview-item span:first-child {
+  color: var(--j-text-muted);
+  font-weight: 500;
+}
+
+.overview-item span:last-child {
+  color: var(--j-primary-navy);
+  font-weight: 700;
+}
+
+.already-applied p {
+  color: #059669; /* Success Green */
+  background: #ecfdf5;
+  padding: 10px;
+  border-radius: 4px;
+  text-align: center;
+}

@@ -1,0 +1,195 @@
+:root {
+  --ats-navy: #0d2d8c;
+  --ats-blue: #1e40af;
+  --ats-bg: #f8fafc;
+  --ats-border: #e2e8f0;
+  --ats-text: #1e293b;
+  --ats-muted: #64748b;
+  --ats-white: #ffffff;
+}
+
+.employer-ats-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  background-color: var(--ats-bg);
+  min-height: 100vh;
+}
+
+.ats-header {
+  margin-bottom: 2rem;
+  border-left: 5px solid var(--ats-blue);
+  padding-left: 1.5rem;
+}
+
+.ats-header h1 {
+  color: var(--ats-navy);
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.ats-header p {
+  color: var(--ats-muted);
+  margin-top: 5px;
+}
+
+/* Pipeline Filter Tabs */
+.ats-filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+}
+
+.filter-tab {
+  background: white;
+  border: 1px solid var(--ats-border);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ats-text);
+  text-transform: capitalize;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  border-color: var(--ats-blue);
+  color: var(--ats-blue);
+}
+
+.filter-tab.active {
+  background: var(--ats-blue);
+  color: white;
+  border-color: var(--ats-blue);
+}
+
+/* Candidate Card */
+.candidate-card {
+  background: var(--ats-white);
+  border: 1px solid var(--ats-border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.candidate-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.job-title-tag {
+  font-size: 0.75rem;
+  color: var(--ats-blue);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.applicant-name {
+  font-size: 1.25rem;
+  color: var(--ats-navy);
+  margin: 0 0 4px 0;
+}
+
+.applicant-email {
+  font-size: 0.85rem;
+  color: var(--ats-muted);
+}
+
+/* Status Pills */
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.pill-pending { background: #f1f5f9; color: #475569; }
+.pill-shortlisted { background: #ecfdf5; color: #065f46; }
+.pill-interviewed { background: #eff6ff; color: #1e40af; }
+.pill-hired { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.pill-rejected { background: #fef2f2; color: #b91c1c; }
+
+/* Content Sections */
+.cover-letter-preview {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid var(--ats-border);
+}
+
+.cover-letter-preview label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--ats-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.cover-letter-preview p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ats-text);
+}
+
+/* Action Inputs */
+.ats-actions-row {
+  display: flex;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--ats-border);
+}
+
+.action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flex-grow { flex: 1; }
+
+.action-group label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ats-navy);
+}
+
+.ats-select, .ats-input {
+  padding: 10px;
+  border: 1px solid var(--ats-border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.ats-select:focus, .ats-input:focus {
+  border-color: var(--ats-blue);
+}
+
+.ats-input {
+  background: #fff;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .ats-actions-row {
+    flex-direction: column;
+  }
+}
