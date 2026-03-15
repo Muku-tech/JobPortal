@@ -15,7 +15,7 @@ function MyApplications() {
   const fetchApplications = async () => {
     try {
       const response = await api.get("/applications/user");
-      // Logging data helps confirm if 'job' or 'Job' is being returned
+      // Logging helps identify if data uses 'job' (lowercase) or 'Job' (PascalCase)
       console.log("Applications data:", response.data);
       setApplications(response.data);
     } catch (error) {
@@ -25,29 +25,19 @@ function MyApplications() {
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      hired: "#10b981",
-      shortlisted: "#8b5cf6",
-      interviewed: "#3b82f6",
-      reviewed: "#f59e0b",
-      rejected: "#ef4444",
-      pending: "#6b7280"
+  const getStatusClass = (status) => {
+    const statusMap = {
+      hired: "status-hired",
+      shortlisted: "status-shortlisted",
+      interviewed: "status-interviewed",
+      reviewed: "status-reviewed",
+      rejected: "status-rejected",
+      pending: "status-pending"
     };
-    return colors[status] || "#6b7280";
+    return statusMap[status] || "status-pending";
   };
 
-  const getStatusIcon = (status) => {
-    const icons = {
-      hired: "🎉",
-      shortlisted: "⭐",
-      interviewed: "📞",
-      reviewed: "👀",
-      rejected: "❌",
-      pending: "⏳"
-    };
-    return icons[status] || "⏳";
-  };
+  const getStatusIcon = (status) => status.charAt(0).toUpperCase() + status.slice(1);
 
   const filteredApplications = filter === "all" 
     ? applications 
@@ -64,70 +54,78 @@ function MyApplications() {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading applications...</p>
+      <div className="apps-loader-container">
+        <div className="spinner"></div>
+        <p>Updating your application status...</p>
       </div>
     );
   }
 
   return (
-    <div className="applications-page">
-      <div className="page-header">
-        <h1>📋 My Applications</h1>
-        <div className="stats-box">
-          <span className="stat-number">{applications.length}</span>
-          <span className="stat-label">Total Applications</span>
+    <div className="applications-container">
+      <div className="applications-header">
+        <div className="header-text">
+          <h1>My Applications</h1>
+          <p>Track your progress with Nepalese top employers</p>
+        </div>
+        <div className="overall-stats">
+          <div className="stat-pill">
+            <span className="count">{applications.length}</span>
+            <span className="label">Applied</span>
+          </div>
         </div>
       </div>
 
-      <div className="filters">
+      <div className="status-tabs">
         {Object.keys(statusCounts).map((key) => (
           <button 
             key={key}
-            className={filter === key ? "active" : ""} 
+            className={`tab-btn ${filter === key ? "active" : ""}`} 
             onClick={() => setFilter(key)}
           >
-            {key.charAt(0).toUpperCase() + key.slice(1)} ({statusCounts[key]})
+            {key.charAt(0).toUpperCase() + key.slice(1)} 
+            <span className="tab-count">{statusCounts[key]}</span>
           </button>
         ))}
       </div>
 
       {filteredApplications.length === 0 ? (
-        <div className="empty-state">
-          <h3>No applications found</h3>
-          <Link to="/jobs" className="browse-btn">Browse Jobs</Link>
+        <div className="empty-applications">
+          <div className="empty-icon">📋</div>
+          <h3>No {filter !== 'all' ? filter : ''} applications yet</h3>
+          <p>Start your journey by applying to active vacancies.</p>
+          <Link to="/jobs" className="find-jobs-btn">Find Jobs</Link>
         </div>
       ) : (
-        <div className="applications-list">
+        <div className="applications-grid">
           {filteredApplications.map((app) => {
-            // FIX: Sequelize handles aliases differently depending on config. 
-            // This ensures we get the job data regardless of casing.
+            // Handle both 'job' and 'Job' aliases from backend
             const job = app.job || app.Job;
-            const employer = job?.employer || job?.Employer;
+            const companyName = job?.company_name || job?.employer?.name || "Company Name";
 
             return (
-              <div key={app.id} className="application-card">
-                <div className="card-header">
-                  <div>
-                    <h3>
-                      <Link to={`/jobs/${app.job_id}`}>
-                        {job?.title || "Position Title Not Found"}
-                      </Link>
-                    </h3>
-                    <p className="company">
-                      🏢 {employer?.name || "Company Name"}
-                    </p>
+              <div key={app.id} className="app-card">
+                <div className="app-card-top">
+                  <div className="app-title-group">
+                    <Link to={`/jobs/${app.job_id}`} className="app-job-title">
+                      {job?.title || "Position Title"}
+                    </Link>
+                    <p className="app-company-name">{companyName}</p>
                   </div>
-                  <div className="status" style={{ color: getStatusColor(app.status) }}>
-                    {getStatusIcon(app.status)} {app.status}
+                  <div className={`status-badge ${getStatusClass(app.status)}`}>
+                    {getStatusIcon(app.status)}
                   </div>
                 </div>
 
-                <div className="card-info">
-                  <span>📍 {job?.location || "N/A"}</span>
-                  <span>💼 {job?.job_type || "N/A"}</span>
-                  <span>📅 {new Date(app.createdAt).toLocaleDateString()}</span>
+                <div className="app-card-meta">
+                  <span>Location: {job?.location || "Nepal"}</span>
+                  <span>Type: {job?.job_type || "Full Time"}</span>
+                  <span>Date: {new Date(app.createdAt).toLocaleDateString()}</span>
+                </div>
+                
+                <div className="app-card-actions">
+                  <Link to={`/jobs/${app.job_id}`} className="btn-view-job">View Vacancy</Link>
+                  {app.status === 'pending' && <span className="wait-msg">Awaiting Review</span>}
                 </div>
               </div>
             );

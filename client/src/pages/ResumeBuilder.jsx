@@ -58,9 +58,9 @@ function ResumeBuilder() {
                 <div style={{ borderBottom: '2px solid #e63946', paddingBottom: '20px', marginBottom: '20px', textAlign: 'center' }}>
                     <h1 style={{ color: '#e63946', margin: '0 0 10px 0', fontSize: '2.5rem' }}>{user?.name || 'Your Name'}</h1>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', color: '#666' }}>
-                        {user?.email && <span>📧 {user.email}</span>}
-                        {user?.phone && <span>📱 {user.phone}</span>}
-                        {user?.address && <span>📍 {user.address}</span>}
+                        {user?.email && <span>{user.email}</span>}
+                        {user?.phone && <span>{user.phone}</span>}
+                        {user?.address && <span>{user.address}</span>}
                     </div>
                 </div>
 

@@ -5,19 +5,21 @@ import Navbar from "./components/Navbar"
 import Home from "./pages/Home"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
-import EmployerHome from "./pages/EmployerHome"
+import EmployerDashboard from "./pages/EmployerDashboard"
 import Jobs from "./pages/Jobs"
 import JobDetails from "./pages/JobDetails"
 import PostJob from "./pages/PostJob"
 import Dashboard from "./pages/Dashboard"
 import EmployerApplications from "./pages/EmployerApplications"
-import Profile from "./pages/Profile"
+import JobSeekerProfile from "./pages/JobSeekerProfile"
+import EmployerProfile from "./pages/EmployerProfile"
 
+// 1. Protected Route Component
 function ProtectedRoute({ children, allowedRole }) {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return <div className="loading">Loading...</div>
+    return <div className="loading-spinner">Loading JobSathi...</div>
   }
 
   if (!user) {
@@ -31,28 +33,35 @@ function ProtectedRoute({ children, allowedRole }) {
   return children
 }
 
+// 2. Profile Helper Component (To fix the Hook error)
+function ProfileRedirect() {
+  const { user } = useAuth();
+  
+  if (user?.role === 'jobseeker') {
+    return <JobSeekerProfile />;
+  }
+  return <EmployerProfile />;
+}
+
 function App() {
   const { loading } = useAuth()
 
   if (loading) {
-    return <div className="loading">Loading...</div>
+    return <div className="loading-spinner">Loading...</div>
   }
 
   return (
-    <div className="app">
-
+    <div className="app-container">
       <Navbar />
-
+      
       <main className="main-content">
-
         <Routes>
-
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-
           <Route path="/register" element={<Register />} />
 
-          <Route path="/" element={<Home />} />
-
+          {/* JobSeeker Specific Routes */}
           <Route
             path="/jobs"
             element={
@@ -61,7 +70,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/jobs/:id"
             element={
@@ -70,7 +78,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/dashboard"
             element={
@@ -80,15 +87,15 @@ function App() {
             }
           />
 
+          {/* Employer Specific Routes */}
           <Route
             path="/employer"
             element={
               <ProtectedRoute allowedRole="employer">
-                <EmployerHome />
+                <EmployerDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/post-job"
             element={
@@ -97,7 +104,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/employer/applications"
             element={
@@ -107,21 +113,20 @@ function App() {
             }
           />
 
+          {/* Dynamic Profile Route */}
           <Route
             path="/profile"
             element={
               <ProtectedRoute>
-                <Profile />
+                <ProfileRedirect />
               </ProtectedRoute>
             }
           />
 
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
-
       </main>
-
     </div>
   )
 }

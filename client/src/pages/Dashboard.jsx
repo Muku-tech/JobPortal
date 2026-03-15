@@ -84,8 +84,8 @@ function Dashboard() {
               <h3>{user?.name}</h3>
               <span className="badge-role">Job Seeker</span>
               <div className="user-quick-contact">
-                <p>📧 {user?.email}</p>
-                <p>📍 {user?.address || 'Location not set'}</p>
+                <p>{user?.email}</p>
+                <p>{user?.address || 'Location not set'}</p>
               </div>
             </div>
 

@@ -48,8 +48,8 @@ function PostJob() {
         required_skills: formData.required_skills.split(',').map(s => s.trim()).filter(s => s)
       }
       await api.post('/jobs', jobData)
-      alert('Job posted successfully!')
-      navigate('/employer', { state: { refresh: Date.now() } })
+      alert('Job vacancy posted successfully!')
+      navigate('/employer')
 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to post job')
@@ -59,92 +59,122 @@ function PostJob() {
   }
 
   return (
-    <div className="post-job-page">
-      <h1>Post a New Job</h1>
-      {error && <div className="alert alert-error">{error}</div>}
-      <form onSubmit={handleSubmit} className="job-form">
-        <div className="form-group">
-          <label>Job Title</label>
-          <input type="text" name="title" value={formData.title} onChange={handleChange} required />
-        </div>
-        <div className="form-group">
-          <label>Company Name</label>
-          <input type="text" name="company_name" value={formData.company_name} onChange={handleChange} required />
-        </div>
-        <div className="form-group">
-          <label>Location</label>
-          <select name="location" value={formData.location} onChange={handleChange} required>
-            <option value="">Select Location</option>
-            {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Job Type</label>
-          <select name="job_type" value={formData.job_type} onChange={handleChange}>
-            {jobTypes.map(type => <option key={type} value={type}>{type}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label>Category</label>
-          <select name="category" value={formData.category} onChange={handleChange} required>
-            <option value="">Select Category</option>
-            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-          </select>
-        </div>
-        <div className="form-row">
-          <div className="form-group">
-            <label>Experience Level</label>
-            <select name="experience_level" value={formData.experience_level} onChange={handleChange}>
-              {experienceLevels.map(level => <option key={level} value={level}>{level}</option>)}
-            </select>
+    <div className="post-job-container">
+      <div className="post-job-card">
+        <header className="form-header">
+          <h1>Post a New Vacancy</h1>
+          <p>Fill in the details to find the best talent in Nepal.</p>
+        </header>
+
+        {error && <div className="error-alert">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="job-post-form">
+          <section className="form-section">
+            <div className="form-group">
+              <label>Job Title*</label>
+              <input type="text" name="title" placeholder="e.g. Senior React Developer" value={formData.title} onChange={handleChange} required />
+            </div>
+
+            <div className="form-group">
+              <label>Company Name*</label>
+              <input type="text" name="company_name" placeholder="Your Company Name" value={formData.company_name} onChange={handleChange} required />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Location*</label>
+                <select name="location" value={formData.location} onChange={handleChange} required>
+                  <option value="">Select City</option>
+                  {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Job Type</label>
+                <select name="job_type" value={formData.job_type} onChange={handleChange}>
+                  {jobTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Category*</label>
+              <select name="category" value={formData.category} onChange={handleChange} required>
+                <option value="">Select Industry Category</option>
+                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            </div>
+          </section>
+
+          <section className="form-section">
+            <h3>Requirements & Compensation</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Experience Level</label>
+                <select name="experience_level" value={formData.experience_level} onChange={handleChange}>
+                  {experienceLevels.map(level => <option key={level} value={level}>{level}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Min Education</label>
+                <select name="education_level" value={formData.education_level} onChange={handleChange}>
+                  <option value="">Any Education</option>
+                  {educationLevels.map(level => <option key={level} value={level}>{level}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Min Salary (NPR)</label>
+                <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label>Max Salary (NPR)</label>
+                <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Required Skills (Comma separated)</label>
+              <input type="text" name="required_skills" value={formData.required_skills} onChange={handleChange} placeholder="JavaScript, React, Node.js" />
+              <small>Press comma to separate skills</small>
+            </div>
+          </section>
+
+          <section className="form-section">
+            <h3>Job Details</h3>
+            <div className="form-group">
+              <label>Job Description*</label>
+              <textarea name="description" value={formData.description} onChange={handleChange} rows="6" placeholder="Describe the responsibilities and expectations..." required />
+            </div>
+
+            <div className="form-group">
+              <label>Benefits</label>
+              <textarea name="benefits" value={formData.benefits} onChange={handleChange} rows="3" placeholder="Lunch, Insurance, Remote options..." />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Number of Vacancies</label>
+                <input type="number" name="vacancy" value={formData.vacancy} onChange={handleChange} min="1" />
+              </div>
+              <div className="form-group">
+                <label>Application Deadline</label>
+                <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} />
+              </div>
+            </div>
+          </section>
+
+          <div className="form-actions">
+            <button type="button" onClick={() => navigate('/employer')} className="btn-cancel">Cancel</button>
+            <button type="submit" className="btn-submit" disabled={loading}>
+              {loading ? 'Processing...' : 'Publish Job Vacancy'}
+            </button>
           </div>
-          <div className="form-group">
-            <label>Education Level</label>
-            <select name="education_level" value={formData.education_level} onChange={handleChange}>
-              <option value="">Any Education</option>
-              {educationLevels.map(level => <option key={level} value={level}>{level}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="form-row">
-          <div className="form-group">
-            <label>Minimum Salary (NPR)</label>
-            <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label>Maximum Salary (NPR)</label>
-            <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} />
-          </div>
-        </div>
-        <div className="form-group">
-          <label>Required Skills (comma separated)</label>
-          <input type="text" name="required_skills" value={formData.required_skills} onChange={handleChange} placeholder="JavaScript, React, Node.js" />
-        </div>
-        <div className="form-group">
-          <label>Job Description</label>
-          <textarea name="description" value={formData.description} onChange={handleChange} rows="6" required />
-        </div>
-        <div className="form-group">
-          <label>Benefits</label>
-          <textarea name="benefits" value={formData.benefits} onChange={handleChange} rows="4" />
-        </div>
-        <div className="form-row">
-          <div className="form-group">
-            <label>Vacancy</label>
-            <input type="number" name="vacancy" value={formData.vacancy} onChange={handleChange} min="1" />
-          </div>
-          <div className="form-group">
-            <label>Deadline</label>
-            <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} />
-          </div>
-        </div>
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? 'Posting...' : 'Post Job'}
-        </button>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }
 
 export default PostJob
-

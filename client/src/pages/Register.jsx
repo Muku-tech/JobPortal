@@ -17,7 +17,6 @@ function Register() {
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
   const { register } = useAuth()
   const navigate = useNavigate()
 
@@ -50,13 +49,11 @@ function Register() {
       }
 
       await register(userData)
-
-      // Redirect based on role
+      // Redirect based on role choice
       navigate(formData.role === 'employer' ? '/employer' : '/jobs', { replace: true })
 
-
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed')
+      setError(err.response?.data?.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -64,50 +61,76 @@ function Register() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <h1>Create Account</h1>
+      <div className="auth-card register-card">
+        <div className="auth-header">
+          <div className="auth-logo">JS</div>
+          <h1>Create Account</h1>
+          <p className="auth-subtitle">Join the JobSathi community today</p>
+        </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-banner">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="role-selector">
+            <button 
+              type="button" 
+              className={formData.role === 'jobseeker' ? 'active' : ''} 
+              onClick={() => setFormData({...formData, role: 'jobseeker'})}
+            >
+              Job Seeker
+            </button>
+            <button 
+              type="button" 
+              className={formData.role === 'employer' ? 'active' : ''} 
+              onClick={() => setFormData({...formData, role: 'employer'})}
+            >
+              Employer
+            </button>
+          </div>
 
-          <input type="text" name="name" placeholder="Full Name"
-            value={formData.name} onChange={handleChange} required />
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Full Name</label>
+              <input type="text" name="name" placeholder="John Doe" value={formData.name} onChange={handleChange} required />
+            </div>
 
-          <input type="email" name="email" placeholder="Email"
-            value={formData.email} onChange={handleChange} required />
+            <div className="form-group">
+              <label>Email Address</label>
+              <input type="email" name="email" placeholder="email@example.com" value={formData.email} onChange={handleChange} required />
+            </div>
 
-          <input type="password" name="password" placeholder="Password"
-            value={formData.password} onChange={handleChange} required />
+            <div className="form-group">
+              <label>Password</label>
+              <input type="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleChange} required />
+            </div>
 
-          <input type="password" name="confirmPassword" placeholder="Confirm Password"
-            value={formData.confirmPassword} onChange={handleChange} required />
-
-          <select name="role" value={formData.role} onChange={handleChange}>
-            <option value="jobseeker">Job Seeker</option>
-            <option value="employer">Employer</option>
-          </select>
+            <div className="form-group">
+              <label>Confirm Password</label>
+              <input type="password" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} required />
+            </div>
+          </div>
 
           {formData.role === "jobseeker" && (
-            <input
-              type="text"
-              name="skills"
-              placeholder="Skills (React, Node)"
-              value={formData.skills}
-              onChange={handleChange}
-            />
+            <div className="form-group skill-input-group">
+              <label>Professional Skills (comma separated)</label>
+              <input 
+                type="text" 
+                name="skills" 
+                placeholder="React, Node.js, Graphic Design" 
+                value={formData.skills} 
+                onChange={handleChange} 
+              />
+            </div>
           )}
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Creating..." : "Register"}
+          <button type="submit" className="register-btn" disabled={loading}>
+            {loading ? "Creating your account..." : "Get Started"}
           </button>
-
         </form>
 
-        <p>
-          Already have an account? <Link to="/login">Login</Link>
+        <p className="auth-footer">
+          Already have an account? <Link to="/login">Sign In</Link>
         </p>
-
       </div>
     </div>
   )

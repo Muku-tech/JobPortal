@@ -1,128 +1,181 @@
-/* Jobejee Branding Variables */
-:root {
-  --j-navy: #0d2d8c;
-  --j-blue: #1e40af;
-  --j-bg-light: #f4f7fa;
-  --j-border: #e2e8f0;
-  --j-text-main: #1e293b;
-  --j-text-muted: #64748b;
-  --j-white: #ffffff;
-  --j-status-blue: #2563eb;
-}
-
-.applications-page {
+.applications-container {
   max-width: 1000px;
-  margin: auto;
-  padding: 40px 20px;
-  background-color: var(--j-bg-light);
+  margin: 40px auto;
+  padding: 0 20px;
+  font-family: 'Inter', sans-serif;
 }
 
-.page-header h1 {
-  font-size: 28px;
-  color: var(--j-navy);
-  font-weight: 800;
-}
-
-.page-header p {
-  color: var(--j-text-muted);
-  font-size: 0.95rem;
-}
-
-/* Stats Box - Switched from Red to Navy */
-.stats-box {
-  margin-top: 15px;
-  background: white;
-  border: 1px solid var(--j-border);
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 4px; /* Sharper corners */
-}
-
-.stat-number {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--j-blue); /* Professional Blue instead of Red */
-  margin-right: 8px;
-}
-
-/* Filter Pills - Clean and Professional */
-.filters {
-  margin-top: 25px;
+.applications-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
-.filters button {
-  border: 1px solid var(--j-border);
-  padding: 8px 18px;
-  border-radius: 4px; /* Reduced rounding */
-  background: white;
-  color: var(--j-text-main);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+.header-text h1 { color: #0f172a; margin: 0 0 5px 0; }
+.header-text p { color: #64748b; margin: 0; }
 
-.filters button:hover {
-  background: #f8fafc;
-  border-color: var(--j-blue);
-}
-
-.filters button.active {
-  background: var(--j-blue);
+.stat-pill {
+  background: #2563eb;
   color: white;
-  border-color: var(--j-blue);
+  padding: 10px 20px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* Job Application Cards */
-.applications-list {
-  margin-top: 25px;
+.stat-pill .count { font-weight: 800; font-size: 1.2rem; }
+.stat-pill .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+
+/* Status Tabs */
+.status-tabs {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tab-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.tab-count {
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.tab-btn.active .tab-count {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Application Cards */
+.applications-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 16px;
 }
 
-.application-card {
-  background: var(--j-white);
-  border-radius: 4px;
-  padding: 20px;
-  border: 1px solid var(--j-border);
-  transition: border-color 0.2s;
+.app-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  transition: transform 0.2s;
 }
 
-.application-card:hover {
-  border-color: var(--j-blue);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+.app-card:hover { border-color: #2563eb; transform: translateY(-2px); }
+
+.app-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
 }
 
-.card-header h3 {
-  color: var(--j-blue); /* Company/Job titles as blue links */
-  font-size: 1.15rem;
+.app-job-title {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1e40af;
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+
+.app-company-name { color: #64748b; margin: 0; font-weight: 500; }
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-hired { background: #dcfce7; color: #166534; }
+.status-shortlisted { background: #f3e8ff; color: #6b21a8; }
+.status-interviewed { background: #dbeafe; color: #1e40af; }
+.status-reviewed { background: #fef3c7; color: #92400e; }
+.status-rejected { background: #fee2e2; color: #991b1b; }
+.status-pending { background: #f1f5f9; color: #475569; }
+
+.app-card-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.app-card-actions {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-view-job {
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.wait-msg { font-size: 0.8rem; color: #94a3b8; font-style: italic; }
+
+/* Empty State */
+.empty-applications {
+  text-align: center;
+  padding: 60px 0;
+  background: white;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+}
+
+.empty-icon { font-size: 3rem; margin-bottom: 20px; color: #94a3b8; }
+.find-jobs-btn {
+  display: inline-block;
+  margin-top: 20px;
+  background: #2563eb;
+  color: white;
+  padding: 10px 24px;
+  border-radius: 8px;
+  text-decoration: none;
   font-weight: 700;
 }
 
-.card-info {
-  margin-top: 12px;
-  display: flex;
-  gap: 24px;
-  font-size: 0.85rem;
-  color: var(--j-text-muted);
-  font-weight: 500;
-}
-
-/* Loading Spinner - Professional Blue */
-.loading-spinner {
-  width: 35px;
-  height: 35px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid var(--j-blue);
+.spinner {
+  width: 40px; height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2563eb;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: auto;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

@@ -1,3 +1,4 @@
+/* Renamed from EmployerHome.css */
 :root {
   --e-navy: #0d2d8c;
   --e-blue: #1e40af;
@@ -67,7 +68,8 @@
 }
 
 .stat-icon {
-  font-size: 2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
   background: #f8fafc;
   width: 60px;
   height: 60px;
@@ -75,6 +77,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  color: #475569;
 }
 
 .stat-info h3 {
@@ -188,7 +191,7 @@
   text-align: center;
 }
 
-.empty-illustration { font-size: 3rem; margin-bottom: 1rem; }
+.empty-illustration { font-size: 3rem; margin-bottom: 1rem; color: #94a3b8; opacity: 0.5; }
 
 @media (max-width: 768px) {
   .stats-overview-grid { grid-template-columns: 1fr; }

@@ -86,7 +86,7 @@ function EmployerApplications() {
                 <div className="candidate-info">
                   <h3 className="job-title-tag">{app.job?.title}</h3>
                   <h2 className="applicant-name">{app.applicant?.name}</h2>
-                  <p className="applicant-email">📧 {app.applicant?.email}</p>
+                  <p className="applicant-email">{app.applicant?.email}</p>
                 </div>
                 <div className={`status-pill pill-${app.status}`}>
                   {app.status}

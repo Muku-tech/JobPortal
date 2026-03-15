@@ -31,21 +31,21 @@ const categories = [
 ];
 
 const companies = [
-  { name: "Nabil Bank", logo: "🏦" },
-  { name: "Nepal Telecom", logo: "📱" },
-  { name: "NIC Asia", logo: "🏛️" },
-  { name: "Himalayan Bank", logo: "🏦" },
-  { name: "CG Corp Global", logo: "🏢" },
-  { name: "Yeti Airlines", logo: "✈️" },
-  { name: "Saurya Airlines", logo: "🛫" },
-  { name: "BPC Limited", logo: "⚡" },
-  { name: "NMB Bank", logo: "💳" },
-  { name: "Prime Bank", logo: "🏦" },
-  { name: "Sanima Bank", logo: "🏛️" },
-  { name: "Mega Bank", logo: "💰" },
-  { name: "Buddha Air", logo: "🎈" },
-  { name: "Nepal Investment Bank", logo: "📈" },
-  { name: "Standard Chartered Bank", logo: "🌐" },
+  { name: "Nabil Bank", logo: "" },
+  { name: "Nepal Telecom", logo: "" },
+  { name: "NIC Asia", logo: "" },
+  { name: "Himalayan Bank", logo: "" },
+  { name: "CG Corp Global", logo: "" },
+  { name: "Yeti Airlines", logo: "" },
+  { name: "Saurya Airlines", logo: "" },
+  { name: "BPC Limited", logo: "" },
+  { name: "NMB Bank", logo: "" },
+  { name: "Prime Bank", logo: "" },
+  { name: "Sanima Bank", logo: "" },
+  { name: "Mega Bank", logo: "" },
+  { name: "Buddha Air", logo: "" },
+  { name: "Nepal Investment Bank", logo: "" },
+  { name: "Standard Chartered Bank", logo: "" },
 ];
 
 const sampleJobs = [
@@ -427,7 +427,7 @@ router.post("/seed", async (req, res) => {
       action_type: "apply",
     });
 
-    console.log("✅ Database seeded successfully!");
+    console.log("Database seeded successfully!");
 
     res.json({
       success: true,

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../services/api";
-import "../styles/EmployerHome.css";
+import "../styles/EmployerDashboard.css";
 
-function EmployerHome() {
+function EmployerDashboard() {
   const [jobs, setJobs] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, applications: 0 });
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ function EmployerHome() {
       {/* STATS OVERVIEW */}
       <section className="stats-overview-grid">
         <div className="stat-summary-card">
-          <span className="stat-icon">📋</span>
+          <span className="stat-icon">TP</span>
           <div className="stat-info">
             <h3>{stats.total}</h3>
             <p>Total Postings</p>
@@ -61,7 +61,7 @@ function EmployerHome() {
         </div>
 
         <div className="stat-summary-card active">
-          <span className="stat-icon">📡</span>
+          <span className="stat-icon">LL</span>
           <div className="stat-info">
             <h3>{stats.active}</h3>
             <p>Live Listings</p>
@@ -69,7 +69,7 @@ function EmployerHome() {
         </div>
 
         <div className="stat-summary-card apps">
-          <span className="stat-icon">👥</span>
+          <span className="stat-icon">TA</span>
           <div className="stat-info">
             <h3>{stats.applications}</h3>
             <p>Total Applicants</p>
@@ -84,12 +84,12 @@ function EmployerHome() {
         </div>
 
         {jobs.length === 0 ? (
-          <div className="empty-jobs-state">
-            <div className="empty-illustration">📭</div>
-            <h3>No jobs posted yet</h3>
-            <p>Start your recruitment journey by posting your first vacancy.</p>
-            <Link to="/post-job" className="btn-primary-link">Post a Job Now</Link>
-          </div>
+            <div className="empty-jobs-state">
+              <div className="empty-illustration">--</div>
+              <h3>No jobs posted yet</h3>
+              <p>Start your recruitment journey by posting your first vacancy.</p>
+              <Link to="/post-job" className="btn-primary-link">Post a Job Now</Link>
+            </div>
         ) : (
           <div className="employer-jobs-table">
             <div className="table-header">
@@ -104,7 +104,7 @@ function EmployerHome() {
                   <h3 className="job-row-title">{job.title}</h3>
                   <div className="job-row-meta">
                     <span className="meta-tag">{job.job_type}</span>
-                    <span className="meta-loc">📍 {job.location}</span>
+                    <span className="meta-loc">{job.location}</span>
                   </div>
                 </div>
 
@@ -132,4 +132,4 @@ function EmployerHome() {
   );
 }
 
-export default EmployerHome;
+export default EmployerDashboard;

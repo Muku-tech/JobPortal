@@ -11,44 +11,86 @@ function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  setError('')
-  setLoading(true)
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
 
-  try {
-    const user = await login(email, password)
+    try {
+      const user = await login(email, password)
 
-    // Redirect based on role
-    navigate(user.role === 'employer' ? '/employer' : '/')
-
-  } catch (err) {
-    setError(err.response?.data?.message || 'Login failed')
-  } finally {
-    setLoading(false)
+      // Strategic redirection based on role
+      if (user.role === 'employer') {
+        navigate('/employer')
+      } else {
+        navigate('/')
+      }
+    } catch (err) {
+      console.error('Login Error:', err)
+      setError(err.response?.data?.message || 'Invalid email or password. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to continue</p>
-        {error && <div className="error-message">{error}</div>}
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <div className="auth-header">
+          <div className="auth-logo">JS</div>
+          <h1>Welcome Back</h1>
+          <p className="auth-subtitle">Log in to your JobSathi account</p>
+        </div>
+
+        {error && (
+          <div className="error-banner">
+            <span className="error-icon"></span>
+            {error}
           </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <label htmlFor="email">Email Address</label>
+            <input 
+              id="email"
+              type="email" 
+              placeholder="name@company.com"
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+              autoComplete="email"
+            />
           </div>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign In'}
+
+          <div className="form-group">
+            <div className="label-row">
+              <label htmlFor="password">Password</label>
+              <Link to="/forgot-password" id="forgot-link">Forgot password?</Link>
+            </div>
+            <input 
+              id="password"
+              type="password" 
+              placeholder="••••••••"
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? (
+              <span className="loader-dots">Authenticating...</span>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
-        <p>Dont have an account? <Link to="/register">Sign Up</Link></p>
+
+        <div className="auth-footer">
+          <p>New to JobSathi? <Link to="/register" className="signup-link">Create an account</Link></p>
+        </div>
       </div>
     </div>
   )

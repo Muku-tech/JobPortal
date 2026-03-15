@@ -1,143 +1,177 @@
-/* Jobejee Branding Variables */
 :root {
-  --j-primary-navy: #0d2d8c;
-  --j-action-blue: #1e40af;
-  --j-bg-body: #f4f7fa;
-  --j-border: #e2e8f0;
-  --j-text-dark: #1e293b;
-  --j-text-muted: #64748b;
-  --j-white: #ffffff;
+  --js-navy: #0d2d8c;
+  --js-blue: #1e40af;
+  --js-light: #f8fafc;
+  --js-border: #e2e8f0;
+  --js-text: #1e293b;
+  --js-muted: #64748b;
 }
 
 .job-details-page {
-  padding: 2.5rem 1rem;
-  max-width: 1200px;
+  background-color: #f1f5f9;
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+.job-details-container {
+  max-width: 1100px;
   margin: 0 auto;
-  background-color: var(--j-bg-body);
 }
 
-/* Header - Removed purple gradient for Jobejee Navy */
+/* Header */
 .job-details-header {
-  background: var(--j-primary-navy);
-  color: white;
-  padding: 3rem 2rem;
-  border-radius: 4px; /* Sharper corporate corners */
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  border: 1px solid var(--js-border);
+  margin-bottom: 24px;
 }
 
-.job-details-header h1 {
-  margin-bottom: 0.75rem;
-  font-size: 2rem;
-  font-weight: 700;
+.back-link {
+  color: var(--js-blue);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 15px;
 }
 
-.job-meta {
+.header-text h1 {
+  font-size: 2.2rem;
+  color: var(--js-navy);
+  margin: 0 0 5px 0;
+}
+
+.company-name {
+  font-size: 1.2rem;
+  color: var(--js-blue);
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.job-meta-pills {
   display: flex;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 2rem;
-  margin-top: 1.5rem;
-  font-size: 0.9rem;
-  opacity: 0.9;
 }
 
-.job-meta span {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 4px 12px;
-  border-radius: 4px;
+.pill {
+  background: var(--js-light);
+  color: var(--js-text);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--js-border);
 }
 
-/* Main Content Layout */
-.job-details-content {
+/* Grid Layout */
+.job-details-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
 }
 
-.job-section {
-  background: var(--j-white);
-  padding: 2rem;
-  border: 1px solid var(--j-border);
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
+.job-main-content {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--js-border);
 }
 
-.job-section h3 {
-  color: var(--j-primary-navy);
-  margin-bottom: 1.25rem;
-  font-size: 1.25rem;
-  border-bottom: 2px solid var(--j-bg-body);
-  padding-bottom: 0.5rem;
+.detail-section {
+  margin-bottom: 40px;
 }
 
-.job-section p {
-  color: var(--j-text-dark);
-  line-height: 1.8; /* Increased line height for better readability */
+.detail-section h2 {
+  font-size: 1.3rem;
+  color: var(--js-navy);
+  border-left: 4px solid var(--js-blue);
+  padding-left: 15px;
+  margin-bottom: 20px;
 }
 
-/* Sidebar & Apply Card */
-.apply-card,
-.sidebar-card {
-  background: var(--j-white);
-  padding: 2rem;
-  border: 1px solid var(--j-border);
-  border-radius: 4px;
+.description-body {
+  line-height: 1.8;
+  color: var(--js-text);
+  white-space: pre-wrap;
 }
 
-.apply-card h3 {
-  color: var(--j-text-dark);
-  font-size: 1.1rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.apply-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--j-action-blue);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: background 0.2s;
-}
-
-.apply-btn:hover {
-  background: var(--j-primary-navy);
-}
-
-.apply-btn:disabled {
-  background: var(--j-text-muted);
-  cursor: not-allowed;
-}
-
-/* Overview Info - Jobejee Key Info Style */
-.overview-item {
+/* Skills Tags */
+.skills-list {
   display: flex;
-  justify-content: space-between;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--j-border);
-  font-size: 0.9rem;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.overview-item span:first-child {
-  color: var(--j-text-muted);
+.skill-tag {
+  background: #eff6ff;
+  color: var(--js-blue);
+  padding: 5px 15px;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
-.overview-item span:last-child {
-  color: var(--j-primary-navy);
+.salary-text {
+  font-size: 1.2rem;
   font-weight: 700;
+  color: #059669; /* Green */
 }
 
-.already-applied p {
-  color: #059669; /* Success Green */
-  background: #ecfdf5;
-  padding: 10px;
-  border-radius: 4px;
+/* Sidebar */
+.sidebar-card {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid var(--js-border);
+  position: sticky;
+  top: 20px;
+}
+
+.sidebar-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--js-border);
+  border-radius: 8px;
+  min-height: 180px;
+  margin-bottom: 20px;
+  font-family: inherit;
+}
+
+.btn-primary-full, .btn-secondary-full {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  display: block;
   text-align: center;
+  text-decoration: none;
+}
+
+.btn-primary-full { background: var(--js-blue); color: white; }
+.btn-primary-full:hover { background: #1e3a8a; }
+
+.btn-secondary-full { background: var(--js-light); color: var(--js-navy); border: 1px solid var(--js-border); }
+
+/* Status Boxes */
+.status-box { text-align: center; }
+.status-box.success p { color: #059669; font-weight: 700; margin-bottom: 15px; }
+
+@media (max-width: 900px) {
+  .job-details-grid { grid-template-columns: 1fr; }
 }
