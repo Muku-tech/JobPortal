@@ -1,4 +1,5 @@
-const { Job, User, Application } = require("../models");
+const { Job, User, Application, sequelize } = require("../models");
+
 const { Op } = require("sequelize");
 
 exports.getGroupedJobs = async (req, res) => {

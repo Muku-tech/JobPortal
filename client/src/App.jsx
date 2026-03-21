@@ -14,7 +14,8 @@ import Dashboard from "./pages/Dashboard"
 import EmployerApplications from "./pages/EmployerApplications"
 import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
-import JobSeekerHome from "./pages/JobSeekerHome"
+
+
 
 
 
@@ -64,14 +65,8 @@ function App() {
         <AnimatePresence mode="wait">
           <Routes key={window.location.pathname}>
             {/* Public/Private Routes */}
-            <Route 
-              path="/" 
-              element={
-                !user ? <Home /> :
-                user.role === 'jobseeker' ? <JobSeekerHome /> :
-                <EmployerDashboard />
-              } 
-            />
+            <Route path="/" element={<Home />} />
+
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
