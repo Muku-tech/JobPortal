@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom"
+import { AnimatePresence } from "framer-motion"
 import { useAuth } from "./context/AuthContext"
 
 import Navbar from "./components/Navbar"
@@ -13,6 +14,7 @@ import Dashboard from "./pages/Dashboard"
 import EmployerApplications from "./pages/EmployerApplications"
 import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
+
 
 // 1. Protected Route Component
 function ProtectedRoute({ children, allowedRole }) {
@@ -55,77 +57,81 @@ function App() {
       <Navbar />
       
       <main className="main-content">
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
 
-          {/* JobSeeker Specific Routes */}
-          <Route
-            path="/jobs"
-            element={
-              <ProtectedRoute allowedRole="jobseeker">
-                <Jobs />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/jobs/:id"
-            element={
-              <ProtectedRoute allowedRole="jobseeker">
-                <JobDetails />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute allowedRole="jobseeker">
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+        <AnimatePresence mode="wait">
+          <Routes key={window.location.pathname}>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Employer Specific Routes */}
-          <Route
-            path="/employer"
-            element={
-              <ProtectedRoute allowedRole="employer">
-                <EmployerDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/post-job"
-            element={
-              <ProtectedRoute allowedRole="employer">
-                <PostJob />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/employer/applications"
-            element={
-              <ProtectedRoute allowedRole="employer">
-                <EmployerApplications />
-              </ProtectedRoute>
-            }
-          />
+            {/* JobSeeker Specific Routes */}
+            <Route
+              path="/jobs"
+              element={
+                <ProtectedRoute allowedRole="jobseeker">
+                  <Jobs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobs/:id"
+              element={
+                <ProtectedRoute allowedRole="jobseeker">
+                  <JobDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute allowedRole="jobseeker">
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Dynamic Profile Route */}
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <ProfileRedirect />
-              </ProtectedRoute>
-            }
-          />
+            {/* Employer Specific Routes */}
+            <Route
+              path="/employer"
+              element={
+                <ProtectedRoute allowedRole="employer">
+                  <EmployerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/post-job"
+              element={
+                <ProtectedRoute allowedRole="employer">
+                  <PostJob />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/employer/applications"
+              element={
+                <ProtectedRoute allowedRole="employer">
+                  <EmployerApplications />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Dynamic Profile Route */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfileRedirect />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AnimatePresence>
+
       </main>
     </div>
   )

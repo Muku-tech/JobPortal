@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import api from '../services/api'
 import '../styles/Jobs.css'
 
@@ -138,15 +139,32 @@ function Jobs() {
                   <p>Try adjusting your filters or search keywords.</p>
                 </div>
               ) : (
-                jobs.map(job => (
-                  <div key={job.id} className="job-listing-card">
+
+                jobs.map((job, index) => (
+                  <motion.div 
+                    key={job.id} 
+                    className="job-listing-card"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.05 }}
+                    whileHover={{ y: -8, scale: 1.02, transition: { duration: 0.2 } }}
+                  >
                     <div className="job-card-top">
                       <div className="company-logo-sm">{job.company_name?.charAt(0)}</div>
                       <div className="job-title-info">
-                        <h3>{job.title}</h3>
+                        <motion.h3 
+                          whileHover={{ scale: 1.02 }}
+                        >
+                          {job.title}
+                        </motion.h3>
                         <span className="listing-company">{job.company_name}</span>
                       </div>
-                      <span className={`type-badge ${job.job_type?.toLowerCase()}`}>{job.job_type}</span>
+                      <motion.span 
+                        className={`type-badge ${job.job_type?.toLowerCase()}`}
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        {job.job_type}
+                      </motion.span>
                     </div>
 
                     <div className="job-card-mid">
@@ -158,17 +176,29 @@ function Jobs() {
                         )}
                       </div>
                       <div className="job-skills-preview">
-                        {parseSkills(job.required_skills).slice(0, 3).map((skill, index) => (
-                          <span key={index} className="skill-pill">{skill}</span>
+                        {parseSkills(job.required_skills).slice(0, 3).map((skill, sIndex) => (
+                          <motion.span 
+                            key={sIndex} 
+                            className="skill-pill"
+                            whileHover={{ scale: 1.1, backgroundColor: "#e0f2fe" }}
+                          >
+                            {skill}
+                          </motion.span>
                         ))}
                       </div>
                     </div>
 
-                    <div className="job-card-bottom">
-                      <Link to={`/jobs/${job.id}`} className="view-job-btn">View Details</Link>
-                    </div>
-                  </div>
+                    <motion.div 
+                      className="job-card-bottom"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <Link to={`/jobs/${job.id}`} className="view-job-btn">
+                        <motion.span whileHover={{ scale: 1.05 }}>View Details →</motion.span>
+                      </Link>
+                    </motion.div>
+                  </motion.div>
                 ))
+
               )}
             </div>
           )}

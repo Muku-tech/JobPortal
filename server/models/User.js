@@ -96,11 +96,17 @@ const User = sequelize.define(
       type: DataTypes.STRING(100),
       allowNull: true,
     },
+
     company_size: {
       type: DataTypes.STRING(50),
       allowNull: true,
     },
+    logo: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+    },
   },
+
   {
     tableName: "users",
     timestamps: true,

@@ -16,6 +16,10 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api", routes);
 
+// Serve static logos
+const path = require("path");
+app.use("/logos", express.static(path.join(__dirname, "public/logos")));
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "JobPortal API is running" });

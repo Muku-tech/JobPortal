@@ -13,10 +13,6 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      // For development/testing: always start fresh (no auto-login)
-      // Remove this line in production if you want session persistence
-      localStorage.removeItem('token')
-      
       const token = localStorage.getItem('token')
       if (token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`
