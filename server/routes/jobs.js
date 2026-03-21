@@ -5,6 +5,7 @@ const auth = require("../middleware/auth");
 
 // Public routes
 router.get("/", jobController.getAllJobs);
+router.get("/grouped", jobController.getGroupedJobs);
 
 // Employer routes (must come BEFORE :id)
 router.get("/employer", auth.verifyToken, jobController.getEmployerJobs);

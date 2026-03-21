@@ -14,6 +14,8 @@ import Dashboard from "./pages/Dashboard"
 import EmployerApplications from "./pages/EmployerApplications"
 import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
+import JobSeekerHome from "./pages/JobSeekerHome"
+
 
 
 // 1. Protected Route Component
@@ -46,7 +48,8 @@ function ProfileRedirect() {
 }
 
 function App() {
-  const { loading } = useAuth()
+  const { loading, user } = useAuth()
+
 
   if (loading) {
     return <div className="loading-spinner">Loading...</div>
@@ -60,10 +63,18 @@ function App() {
 
         <AnimatePresence mode="wait">
           <Routes key={window.location.pathname}>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
+            {/* Public/Private Routes */}
+            <Route 
+              path="/" 
+              element={
+                !user ? <Home /> :
+                user.role === 'jobseeker' ? <JobSeekerHome /> :
+                <EmployerDashboard />
+              } 
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
 
             {/* JobSeeker Specific Routes */}
             <Route

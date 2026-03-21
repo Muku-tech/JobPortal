@@ -1,6 +1,76 @@
 const { Job, User, Application } = require("../models");
 const { Op } = require("sequelize");
 
+exports.getGroupedJobs = async (req, res) => {
+  try {
+    const { type = "company", limit = 4 } = req.query;
+
+    const where = { status: "active" };
+
+    const groups = await Job.findAll({
+      where,
+      attributes: [
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+        type === "company"
+          ? "company_name"
+          : type === "industry"
+            ? "category"
+            : "location",
+      ],
+      group:
+        type === "company"
+          ? "company_name"
+          : type === "industry"
+            ? "category"
+            : "location",
+      having: sequelize.fn("COUNT", sequelize.col("id")) > 0,
+      order: [[sequelize.fn("COUNT", sequelize.col("id")), "DESC"]],
+      limit: 6,
+    });
+
+    const groupsWithJobs = [];
+
+    for (const group of groups) {
+      const groupValue =
+        group.dataValues[
+          type === "company"
+            ? "company_name"
+            : type === "industry"
+              ? "category"
+              : "location"
+        ];
+      const count = group.dataValues.count;
+
+      const sampleJobs = await Job.findAll({
+        where: {
+          ...where,
+          [type === "company"
+            ? "company_name"
+            : type === "industry"
+              ? "category"
+              : "location"]: groupValue,
+        },
+        order: [["createdAt", "DESC"]],
+        limit: parseInt(limit),
+      });
+
+      groupsWithJobs.push({
+        name: groupValue,
+        count,
+        jobs: sampleJobs,
+      });
+    }
+
+    res.json({
+      type,
+      groups: groupsWithJobs,
+    });
+  } catch (error) {
+    console.error("Error fetching grouped jobs:", error);
+    res.status(500).json({ message: "Error fetching grouped jobs" });
+  }
+};
+
 exports.getAllJobs = async (req, res) => {
   try {
     const {

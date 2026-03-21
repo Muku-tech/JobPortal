@@ -30,10 +30,27 @@ export default function Home() {
     hires: 0
   });
 
+  const [groupedJobs, setGroupedJobs] = useState({ groups: [] });
+  const [groupType, setGroupType] = useState('company');
+  const [groupLoading, setGroupLoading] = useState(false);
+
   useEffect(() => {
     fetchRecentJobs();
     startStatsCounter();
-  }, []);
+    fetchGroupedJobs();
+  }, [groupType]);
+
+  const fetchGroupedJobs = async () => {
+    setGroupLoading(true);
+    try {
+      const res = await api.get(`/jobs/grouped?type=${groupType}&limit=3`);
+      setGroupedJobs(res.data);
+    } catch (err) {
+      console.log('Using fallback groups');
+    }
+    setGroupLoading(false);
+  };
+
 
   const fetchRecentJobs = async () => {
 
@@ -248,6 +265,93 @@ export default function Home() {
           </div>
 
         </div>
+
+      </section>
+
+
+      {/* GROUPED JOBS SECTION */}
+
+      <section className="grouped-jobs-section content-container">
+
+        <div className="section-header">
+
+          <h2>Jobs by {groupType === 'company' ? 'Company' : groupType === 'industry' ? 'Industry' : 'Location'}</h2>
+
+          <div className="group-tabs">
+
+            <button className={groupType === 'company' ? 'active' : ''} onClick={() => setGroupType('company')}>
+              Company
+            </button>
+
+            <button className={groupType === 'industry' ? 'active' : ''} onClick={() => setGroupType('industry')}>
+              Industry
+            </button>
+
+            <button className={groupType === 'location' ? 'active' : ''} onClick={() => setGroupType('location')}>
+              Location
+            </button>
+
+          </div>
+
+        </div>
+
+        {groupLoading ? (
+
+          <div className="loading-container">
+            <div className="spinner"></div>
+          </div>
+
+        ) : (
+
+          <div className="groups-grid">
+
+            {groupedJobs.groups.map((group, index) => (
+
+              <motion.div 
+                key={group.name}
+                className="group-card"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+
+                <div className="group-header">
+
+                  <h3>{group.name}</h3>
+
+                  <span className="group-count">{group.count} jobs</span>
+
+                </div>
+
+                <div className="group-jobs">
+
+                  {group.jobs.slice(0, 3).map((job) => (
+
+                    <div key={job.id} className="group-job" onClick={() => navigate(`/jobs/${job.id}`)}>
+
+                      <h4>{job.title}</h4>
+
+                      <p>{job.job_type} • {job.location}</p>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+                <Link to={`/jobs?${groupType}=${encodeURIComponent(group.name)}`} className="view-more">
+
+                  View all {group.count} jobs →
+
+                </Link>
+
+              </motion.div>
+
+            ))}
+
+          </div>
+
+        )}
 
       </section>
 
