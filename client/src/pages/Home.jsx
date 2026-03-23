@@ -1,33 +1,38 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import "../styles/Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  const { user } = useAuth();
+  const [search, setSearch] = useState(""); 
   const [location, setLocation] = useState("");
   
   const [stats, setStats] = useState({ jobs: 0, companies: 0, seekers: 0, hires: 0 });
-  const [groupedJobs, setGroupedJobs] = useState({ groups: [] });
-  const [groupType, setGroupType] = useState('company'); // 'company', 'industry', 'location'
-  const [groupLoading, setGroupLoading] = useState(false);
+  const [featuredJobs, setFeaturedJobs] = useState([]);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
 
   useEffect(() => {
-    startStatsCounter();
-    fetchGroupedJobs();
-  }, [groupType]);
-
-  const fetchGroupedJobs = async () => {
-    setGroupLoading(true);
-    try {
-      const res = await api.get(`/jobs/grouped?type=${groupType}`);
-      setGroupedJobs(res.data);
-    } catch (err) {
-      console.error("API Error: Falling back to empty state");
-      setGroupedJobs({ groups: [] });
+    if (user?.role === 'employer') {
+      navigate('/employer', { replace: true });
+      return;
     }
-    setGroupLoading(false);
+    startStatsCounter();
+    fetchFeaturedJobs();
+  }, [user, navigate]); 
+
+  const fetchFeaturedJobs = async () => {
+    setFeaturedLoading(true);
+    try {
+      const res = await api.get('/jobs?limit=8');
+      setFeaturedJobs(res.data.jobs || []);
+    } catch (err) {
+      console.error("Featured jobs error:", err);
+      setFeaturedJobs([]);
+    }
+    setFeaturedLoading(false);
   };
 
   const startStatsCounter = () => {
@@ -45,9 +50,9 @@ export default function Home() {
 
       setStats({
         jobs: Math.min(Math.floor(current.jobs), targets.jobs),
-        companies: Math.min(Math.floor(current.companies), targets.companies),
-        seekers: Math.min(Math.floor(current.seekers), targets.seekers),
-        hires: Math.min(Math.floor(current.hires), targets.hires)
+        companies: Math.floor(current.companies),
+        seekers: Math.floor(current.seekers),
+        hires: Math.floor(current.hires)
       });
     }, interval);
     setTimeout(() => clearInterval(counter), duration);
@@ -87,64 +92,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TABBED CATEGORY SECTION */}
-      <section className="category-section">
-        <div className="content-container">
-          <div className="tab-navigation">
-            <button 
-              className={groupType === 'company' ? 'active' : ''} 
-              onClick={() => setGroupType('company')}
-            >
-              Jobs By Company
-            </button>
-            <button 
-              className={groupType === 'industry' ? 'active' : ''} 
-              onClick={() => setGroupType('industry')}
-            >
-              Jobs By Industry
-            </button>
-            <button 
-              className={groupType === 'location' ? 'active' : ''} 
-              onClick={() => setGroupType('location')}
-            >
-              Jobs By Location
-            </button>
-          </div>
-
-          {groupLoading ? (
-            <div className="loading-container"><div className="spinner"></div></div>
-          ) : (
-            <div className="category-grid">
-              {groupedJobs.groups?.map((group) => (
-                <div 
-                  key={group.name} 
-                  className="category-card" 
-                  onClick={() => navigate(`/jobs?${groupType}=${encodeURIComponent(group.name)}`)}
-                >
-                  <div className="category-logo">
-                    {group.logo ? (
-                      <img src={group.logo} alt={group.name} />
-                    ) : (
-                      <div className="building-icon">🏢</div>
-                    )}
-                  </div>
-                  <div className="category-info">
-                    <h3>{group.name}</h3>
-                    <ul className="mini-job-list">
-                      {group.jobs?.slice(0, 2).map((job) => (
-                        <li key={job.id}>• {job.title}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* STATS SECTION (Placed Below Categories) */}
-      <section className="stats-footer-section">
+      {/* STATS SECTION - MOVED UP */}
+      <section className="stats-section">
         <div className="content-container stats-grid">
           <div className="stat-item">
             <h2>{stats.jobs.toLocaleString()}+</h2>
@@ -165,9 +114,67 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FEATURED JOBS SECTION */}
+      <section className="featured-section">
+        <div className="content-container">
+          <h2 className="section-title">Featured Jobs</h2>
+          {featuredLoading ? (
+            <div className="loading-container">
+              <div className="spinner"></div>
+            </div>
+          ) : (
+            <div className="featured-grid">
+              {featuredJobs.map((job) => (
+                <Link to={`/jobs/${job.id}`} className="job-card featured-badge">
+                  <span className="featured-label">Featured</span>
+                  <h3>{job.title}</h3>
+                  <p className="job-company">{job.company_name}</p>
+                  <p className="job-location">{job.location}</p>
+                  <p className="job-type">{job.job_type}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+          <div className="section-cta">
+            <button className="view-all-btn" onClick={() => navigate('/jobs')}>
+              View All Jobs
+            </button>
+          </div>
+        </div>
+      </section>
+
+
+
+      {/* HOW IT WORKS */}
+      <section className="howitworks-section">
+        <div className="content-container">
+          <h2 className="section-title">How It Works</h2>
+          <div className="steps-grid">
+            <div className="step-item">
+              <div className="step-icon">🔍</div>
+              <h3>Search Jobs</h3>
+              <p>Find jobs that match your skills and experience.</p>
+            </div>
+            <div className="step-item">
+              <div className="step-icon">📄</div>
+              <h3>Build Resume</h3>
+              <p>Create professional resumes with our builder tool.</p>
+            </div>
+            <div className="step-item">
+              <div className="step-icon">✅</div>
+              <h3>Apply & Get Hired</h3>
+              <p>Apply easily and get hired by top companies.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+
       <footer className="footer">
-        <p>© 2026 <strong>JobSathi Nepal</strong>. Your career partner</p>
+        <p>© 2024 <strong>JobSathi Nepal</strong>. Your career partner</p>
       </footer>
     </div>
   );
 }
+

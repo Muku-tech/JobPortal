@@ -100,18 +100,18 @@ function EmployerApplications() {
 
               <div className="ats-actions-row">
                 <div className="action-group">
-                  <label>Change Stage</label>
-                  <select
-                    value={app.status}
-                    onChange={(e) => updateStatus(app.id, e.target.value, app.employer_notes)}
-                    className="ats-select"
-                  >
+                <label>Status</label>
+                  <div className="status-buttons">
                     {atsStages.map(stage => (
-                      <option key={stage} value={stage}>
+                      <button
+                        key={stage}
+                        className={`status-btn ${app.status === stage ? 'active' : ''}`}
+                        onClick={() => updateStatus(app.id, stage, app.employer_notes)}
+                      >
                         {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 <div className="action-group flex-grow">

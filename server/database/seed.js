@@ -368,7 +368,7 @@ async function seedDatabase() {
     console.log(`   - ${jobSeekers.length} Job Seeker accounts`);
     console.log(`   - ${createdJobs.length} Sample Jobs`);
     console.log(`   - ${3} Sample Applications`);
-    console.log(`   - ${4} Sample Job Views");
+console.log(`   - 4 Sample Job Views`);
     console.log("");
     console.log("🔐 Test Accounts:");
     console.log("   Employer: employer@example.com / employer123");
@@ -377,3 +377,11 @@ async function seedDatabase() {
     console.log("🎯 Recommendation Algorithms Ready:");
     console.log("   - Content-Based Filtering: Based on job seeker skills");
     console.log("   - Collaborative Filtering: Based on user job views");
+
+seedDatabase().catch(console.error);
+}
+}
+seedDatabase().catch(console.error);
+
+seedDatabase().catch(console.error);
+

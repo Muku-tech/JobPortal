@@ -45,9 +45,17 @@ function EmployerDashboard() {
           <h1>Employer Console</h1>
           <p>Manage your job listings and track recruitment performance.</p>
         </div>
-        <Link to="/post-job" className="btn-post-job">
-          + Post New Job
-        </Link>
+        <div className="quick-actions">
+          <Link to="/post-job" className="quick-btn">
+            + Post Job
+          </Link>
+          <Link to="/employer/manage-jobs" className="quick-btn">
+            Manage Jobs
+          </Link>
+          <Link to="/employer/applications" className="quick-btn">
+            Applications
+          </Link>
+        </div>
       </header>
 
       {/* STATS OVERVIEW */}

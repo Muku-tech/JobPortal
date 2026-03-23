@@ -23,6 +23,7 @@ function PostJob() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const locations = ['Kathmandu', 'Pokhara', 'Birgunj', 'Biratnagar', 'Lalitpur', 'Bhaktapur', 'Butwal', 'Dharan', 'Janakpur', 'Narayangadh']
   const jobTypes = ['full-time', 'part-time', 'contract', 'internship']
@@ -48,8 +49,10 @@ function PostJob() {
         required_skills: formData.required_skills.split(',').map(s => s.trim()).filter(s => s)
       }
       await api.post('/jobs', jobData)
-      alert('Job vacancy posted successfully!')
-      navigate('/employer')
+      setSuccess('Job vacancy posted successfully!')
+      setTimeout(() => {
+        navigate('/employer')
+      }, 2000)
 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to post job')
@@ -67,6 +70,7 @@ function PostJob() {
         </header>
 
         {error && <div className="error-alert">{error}</div>}
+        {success && <div className="success-alert">{success}</div>}
 
         <form onSubmit={handleSubmit} className="job-post-form">
           <section className="form-section">

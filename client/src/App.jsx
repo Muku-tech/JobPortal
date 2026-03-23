@@ -12,6 +12,7 @@ import JobDetails from "./pages/JobDetails"
 import PostJob from "./pages/PostJob"
 import Dashboard from "./pages/Dashboard"
 import EmployerApplications from "./pages/EmployerApplications"
+import ManageJobs from "./pages/ManageJobs"
 import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
 
@@ -107,10 +108,10 @@ function App() {
               }
             />
             <Route
-              path="/post-job"
+              path="/employer/manage-jobs"
               element={
                 <ProtectedRoute allowedRole="employer">
-                  <PostJob />
+                  <ManageJobs />
                 </ProtectedRoute>
               }
             />
@@ -119,6 +120,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRole="employer">
                   <EmployerApplications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/post-job"
+              element={
+                <ProtectedRoute allowedRole="employer">
+                  <PostJob />
                 </ProtectedRoute>
               }
             />

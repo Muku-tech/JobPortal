@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import '../styles/Login.css'
 
@@ -10,6 +10,8 @@ function Login() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams();
+  const role = searchParams.get('role') || 'jobseeker';
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -38,8 +40,8 @@ function Login() {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">JS</div>
-          <h1>Welcome Back</h1>
-          <p className="auth-subtitle">Log in to your JobSathi account</p>
+          <h1>{role === 'employer' ? 'Employer Login' : 'Job Seeker Login'}</h1>
+          <p className="auth-subtitle">Log in as {role === 'employer' ? 'an employer' : 'a job seeker'} to your JobSathi account</p>
         </div>
 
         {error && (
@@ -89,7 +91,7 @@ function Login() {
         </form>
 
         <div className="auth-footer">
-          <p>New to JobSathi? <Link to="/register" className="signup-link">Create an account</Link></p>
+          <p>New to JobSathi? <Link to={`/register?role=${role}`} className="signup-link">Create an account</Link></p>
         </div>
       </div>
     </div>

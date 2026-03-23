@@ -28,7 +28,7 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to="/" className="navbar-logo" onClick={closeMenu}>
+        <Link to={user?.role === 'employer' ? '/employer' : '/'} className="navbar-logo" onClick={closeMenu}>
           <span className="logo-icon">JS</span>
           <span className="logo-text">JobSathi</span>
         </Link>

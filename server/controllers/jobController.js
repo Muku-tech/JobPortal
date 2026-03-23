@@ -1,56 +1,41 @@
 const { Job, User, Application, sequelize } = require("../models");
-
 const { Op } = require("sequelize");
 
+// 1. GET GROUPED JOBS (For Homepage Tabs)
 exports.getGroupedJobs = async (req, res) => {
   try {
-    const { type = "company", limit = 4 } = req.query;
+    const { type = "company", limit = 2 } = req.query; // Default 2 jobs per card
 
     const where = { status: "active" };
+    const groupField = type === "industry" ? "category" : 
+                       type === "location" ? "location" : "company_name";
 
     const groups = await Job.findAll({
       where,
       attributes: [
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
-        type === "company"
-          ? "company_name"
-          : type === "industry"
-            ? "category"
-            : "location",
+        groupField,
+        "company_logo" // Include logo in the initial group fetch
       ],
-      group:
-        type === "company"
-          ? "company_name"
-          : type === "industry"
-            ? "category"
-            : "location",
+      group: [groupField, "company_logo"],
       having: sequelize.fn("COUNT", sequelize.col("id")) > 0,
       order: [[sequelize.fn("COUNT", sequelize.col("id")), "DESC"]],
-      limit: 6,
+      limit: 12,
     });
 
     const groupsWithJobs = [];
 
     for (const group of groups) {
-      const groupValue =
-        group.dataValues[
-          type === "company"
-            ? "company_name"
-            : type === "industry"
-              ? "category"
-              : "location"
-        ];
+      const groupValue = group.dataValues[groupField];
       const count = group.dataValues.count;
+      const logo = group.dataValues.company_logo;
 
       const sampleJobs = await Job.findAll({
         where: {
-          ...where,
-          [type === "company"
-            ? "company_name"
-            : type === "industry"
-              ? "category"
-              : "location"]: groupValue,
+          status: "active",
+          [groupField]: groupValue,
         },
+        attributes: ['id', 'title'],
         order: [["createdAt", "DESC"]],
         limit: parseInt(limit),
       });
@@ -58,6 +43,7 @@ exports.getGroupedJobs = async (req, res) => {
       groupsWithJobs.push({
         name: groupValue,
         count,
+        logo,
         jobs: sampleJobs,
       });
     }
@@ -72,11 +58,12 @@ exports.getGroupedJobs = async (req, res) => {
   }
 };
 
+// 2. GET ALL JOBS (For Browse/Search Page - Optimized)
 exports.getAllJobs = async (req, res) => {
   try {
     const {
       page = 1,
-      limit = 20,
+      limit = 10,
       location,
       jobType,
       category,
@@ -84,13 +71,13 @@ exports.getAllJobs = async (req, res) => {
       salaryMin,
       salaryMax,
       experienceLevel,
-      educationLevel,
     } = req.query;
 
     const where = { status: "active" };
 
+    // Use Op.iLike for case-insensitive searching in PostgreSQL/SQLite
     if (location) {
-      where.location = { [Op.like]: `%${location}%` };
+      where.location = { [Op.iLike]: `%${location}%` };
     }
     if (jobType) {
       where.job_type = jobType;
@@ -100,27 +87,23 @@ exports.getAllJobs = async (req, res) => {
     }
     if (search) {
       where[Op.or] = [
-        { title: { [Op.like]: `%${search}%` } },
-        { company_name: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } },
+        { title: { [Op.iLike]: `%${search}%` } },
+        { company_name: { [Op.iLike]: `%${search}%` } },
       ];
     }
     if (salaryMin) {
-      where.salary_max = { [Op.gte]: parseInt(salaryMin) };
+      where.salary_max = { [Op.gte]: parseFloat(salaryMin) };
     }
     if (salaryMax) {
-      where.salary_min = { [Op.lte]: parseInt(salaryMax) };
+      where.salary_min = { [Op.lte]: parseFloat(salaryMax) };
     }
     if (experienceLevel) {
       where.experience_level = experienceLevel;
     }
-    if (educationLevel) {
-      where.education_level = educationLevel;
-    }
 
     const offset = (page - 1) * limit;
 
-    const jobs = await Job.findAndCountAll({
+    const { count, rows } = await Job.findAndCountAll({
       where,
       include: [
         {
@@ -131,14 +114,14 @@ exports.getAllJobs = async (req, res) => {
       ],
       order: [["createdAt", "DESC"]],
       limit: parseInt(limit),
-      offset,
+      offset: parseInt(offset),
     });
 
     res.json({
-      jobs: jobs.rows,
-      total: jobs.count,
+      jobs: rows,
+      total: count,
       page: parseInt(page),
-      totalPages: Math.ceil(jobs.count / limit),
+      totalPages: Math.ceil(count / limit),
     });
   } catch (error) {
     console.error("Error fetching jobs:", error);
@@ -146,6 +129,7 @@ exports.getAllJobs = async (req, res) => {
   }
 };
 
+// 3. GET SINGLE JOB BY ID
 exports.getJobById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -158,113 +142,78 @@ exports.getJobById = async (req, res) => {
         },
       ],
     });
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
+    if (!job) return res.status(404).json({ message: "Job not found" });
     res.json(job);
   } catch (error) {
-    console.error("Error fetching job:", error);
     res.status(500).json({ message: "Error fetching job" });
   }
 };
 
+// 4. CREATE JOB
 exports.createJob = async (req, res) => {
   try {
     if (req.user.role !== "employer" && req.user.role !== "admin") {
       return res.status(403).json({ message: "Only employers can post jobs" });
     }
-    const jobData = { ...req.body, employer_id: req.user.id };
-    const job = await Job.create(jobData);
+    const job = await Job.create({ ...req.body, employer_id: req.user.id });
     res.status(201).json(job);
   } catch (error) {
-    console.error("Error creating job:", error);
     res.status(500).json({ message: "Error creating job" });
   }
 };
 
+// 5. UPDATE JOB
 exports.updateJob = async (req, res) => {
   try {
-    const { id } = req.params;
-    const job = await Job.findByPk(id);
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
     if (job.employer_id !== req.user.id && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this job" });
+      return res.status(403).json({ message: "Unauthorized" });
     }
     await job.update(req.body);
     res.json(job);
   } catch (error) {
-    console.error("Error updating job:", error);
     res.status(500).json({ message: "Error updating job" });
   }
 };
 
+// 6. DELETE JOB
 exports.deleteJob = async (req, res) => {
   try {
-    const { id } = req.params;
-    const job = await Job.findByPk(id);
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
+    const job = await Job.findByPk(req.params.id);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
     if (job.employer_id !== req.user.id && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this job" });
+      return res.status(403).json({ message: "Unauthorized" });
     }
     await job.destroy();
-    res.json({ message: "Job deleted successfully" });
+    res.json({ message: "Job deleted" });
   } catch (error) {
-    console.error("Error deleting job:", error);
     res.status(500).json({ message: "Error deleting job" });
   }
 };
 
+// 7. GET EMPLOYER-SPECIFIC JOBS (Dashboard)
 exports.getEmployerJobs = async (req, res) => {
   try {
     if (req.user.role !== "employer" && req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Only employers can view their jobs" });
+      return res.status(403).json({ message: "Forbidden" });
     }
     const jobs = await Job.findAll({
       where: { employer_id: req.user.id },
-      include: [
-        {
-          model: Application,
-          as: "applications",
-          attributes: ["id"],
-        },
-      ],
+      include: [{ model: Application, as: "applications", attributes: ["id"] }],
       order: [["createdAt", "DESC"]],
     });
 
-    // Calculate stats
-    const totalJobs = jobs.length;
-    const activeJobs = jobs.filter((j) => j.status === "active").length;
-    const totalApplications = jobs.reduce(
-      (sum, job) => sum + (job.applications?.length || 0),
-      0,
-    );
+    const stats = {
+      total: jobs.length,
+      active: jobs.filter((j) => j.status === "active").length,
+      applications: jobs.reduce((sum, j) => sum + (j.applications?.length || 0), 0),
+    };
 
-    // Add application count to each job
-    const jobsWithCount = jobs.map((job) => ({
-      ...job.toJSON(),
-      ApplicationCount: job.applications?.length || 0,
-    }));
-
-    res.json({
-      jobs: jobsWithCount,
-      stats: {
-        total: totalJobs,
-        active: activeJobs,
-        applications: totalApplications,
-      },
-    });
+    res.json({ jobs, stats });
   } catch (error) {
-    console.error("Error fetching employer jobs:", error);
-    res.status(500).json({ message: "Error fetching jobs" });
+    res.status(500).json({ message: "Error fetching employer jobs" });
   }
 };

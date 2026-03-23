@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import '../styles/Register.css'
 
@@ -19,6 +19,14 @@ function Register() {
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const role = searchParams.get('role')
+    if (role === 'employer' || role === 'jobseeker') {
+      setFormData(prev => ({ ...prev, role }))
+    }
+  }, [searchParams])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
