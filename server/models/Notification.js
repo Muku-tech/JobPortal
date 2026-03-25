@@ -12,25 +12,26 @@ const Notification = sequelize.define(
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: "users",
-        key: "id",
-      },
+    },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     message: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
     },
     type: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      defaultValue: 'general'
+      type: DataTypes.ENUM(
+        "application",
+        "interview",
+        "status_update",
+        "job_posted",
+        "system",
+      ),
+      defaultValue: "system",
     },
-    link: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    is_read: {
+    read: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
@@ -40,5 +41,9 @@ const Notification = sequelize.define(
     timestamps: true,
   },
 );
+
+Notification.associate = (models) => {
+  Notification.belongsTo(models.User, { foreignKey: "user_id", as: "user" });
+};
 
 module.exports = Notification;

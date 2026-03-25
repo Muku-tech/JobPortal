@@ -30,7 +30,14 @@ const Application = sequelize.define(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM("pending", "reviewed", "shortlisted", "interviewed", "hired", "rejected"),
+      type: DataTypes.ENUM(
+        "pending",
+        "reviewed",
+        "shortlisted",
+        "interviewed",
+        "hired",
+        "rejected",
+      ),
       defaultValue: "pending",
     },
     employer_notes: {
@@ -49,5 +56,13 @@ const Application = sequelize.define(
     ],
   },
 );
+
+Application.associate = (models) => {
+  Application.belongsTo(models.User, {
+    foreignKey: "user_id",
+    as: "applicant",
+  });
+  Application.belongsTo(models.Job, { foreignKey: "job_id", as: "job" });
+};
 
 module.exports = Application;

@@ -12,26 +12,17 @@ const JobView = sequelize.define(
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: "users",
-        key: "id",
-      },
     },
     job_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: "jobs",
-        key: "id",
-      },
     },
     view_duration: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
-      comment: "Duration in seconds",
     },
     action_type: {
-      type: DataTypes.ENUM("view", "save", "share", "apply"),
+      type: DataTypes.STRING,
       defaultValue: "view",
     },
   },
@@ -40,11 +31,16 @@ const JobView = sequelize.define(
     timestamps: true,
     indexes: [
       {
-        unique: false,
+        unique: true,
         fields: ["user_id", "job_id"],
       },
     ],
   },
 );
+
+JobView.associate = (models) => {
+  JobView.belongsTo(models.User, { foreignKey: "user_id", as: "user" });
+  JobView.belongsTo(models.Job, { foreignKey: "job_id", as: "job" });
+};
 
 module.exports = JobView;

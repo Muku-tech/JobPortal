@@ -4,70 +4,63 @@ const Job = require("./Job");
 const Application = require("./Application");
 const JobView = require("./JobView");
 const Notification = require("./Notification");
+const UserSavedJob = require("./UserSavedJob");
 
-// User - Job associations (Employer posts jobs)
-User.hasMany(Job, {
-  foreignKey: "employer_id",
-  as: "postedJobs",
-  sourceKey: "id",
+// Associations
+require("./User").associate({
+  sequelize,
+  User,
+  Job,
+  Application,
+  JobView,
+  Notification,
+  UserSavedJob,
 });
-Job.belongsTo(User, {
-  foreignKey: "employer_id",
-  as: "employer",
-  targetKey: "id",
+require("./Job").associate({
+  sequelize,
+  User,
+  Job,
+  Application,
+  JobView,
+  Notification,
+  UserSavedJob,
 });
-
-// User - Application associations
-User.hasMany(Application, {
-  foreignKey: "user_id",
-  as: "applications",
-  sourceKey: "id",
+require("./Application").associate({
+  sequelize,
+  User,
+  Job,
+  Application,
+  JobView,
+  Notification,
+  UserSavedJob,
 });
-Application.belongsTo(User, {
-  foreignKey: "user_id",
-  as: "applicant",
-  targetKey: "id",
+require("./JobView").associate({
+  sequelize,
+  User,
+  Job,
+  Application,
+  JobView,
+  Notification,
+  UserSavedJob,
 });
-
-// Job - Application associations
-Job.hasMany(Application, {
-  foreignKey: "job_id",
-  as: "applications",
-  sourceKey: "id",
+require("./Notification").associate({
+  sequelize,
+  User,
+  Job,
+  Application,
+  JobView,
+  Notification,
+  UserSavedJob,
 });
-Application.belongsTo(Job, {
-  foreignKey: "job_id",
-  as: "job",
-  targetKey: "id",
+require("./UserSavedJob").associate({
+  sequelize,
+  User,
+  Job,
+  Application,
+  JobView,
+  Notification,
+  UserSavedJob,
 });
-
-// User - JobView associations (for collaborative filtering)
-User.hasMany(JobView, {
-  foreignKey: "user_id",
-  as: "jobViews",
-  sourceKey: "id",
-});
-JobView.belongsTo(User, {
-  foreignKey: "user_id",
-  as: "user",
-  targetKey: "id",
-});
-
-// Job - JobView associations
-Job.hasMany(JobView, {
-  foreignKey: "job_id",
-  as: "views",
-  sourceKey: "id",
-});
-JobView.belongsTo(Job, {
-  foreignKey: "job_id",
-  as: "job",
-  targetKey: "id",
-});
-
-// Notifications associations
-User.hasMany(Notification, { foreignKey: "user_id", as: "notifications", onDelete: "CASCADE" });
-Notification.belongsTo(User, { foreignKey: "user_id", as: "user" });
 
 module.exports = {
   sequelize,
@@ -76,4 +69,5 @@ module.exports = {
   Application,
   JobView,
   Notification,
+  UserSavedJob,
 };

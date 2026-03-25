@@ -15,6 +15,8 @@ router.get("/:id", jobController.getJobById);
 
 // Protected routes
 router.post("/", auth.verifyToken, jobController.createJob);
+router.post("/save", auth.verifyToken, jobController.saveJob);
+router.get("/saved", auth.verifyToken, jobController.getSavedJobs);
 router.put("/:id", auth.verifyToken, jobController.updateJob);
 router.delete("/:id", auth.verifyToken, jobController.deleteJob);
 

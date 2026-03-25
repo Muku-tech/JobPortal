@@ -2,24 +2,30 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import '../styles/EmployerApplications.css'
 
-function EmployerApplications() {
+function EmployerApplications({ jobId }) {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [error, setError] = useState(null)
 
   const atsStages = ['pending', 'reviewed', 'shortlisted', 'interviewed', 'hired', 'rejected'];
 
   useEffect(() => {
-    fetchApplications()
-  }, [])
+    if (jobId) {
+      fetchApplications(jobId)
+    }
+  }, [jobId])
 
-  const fetchApplications = async () => {
+const fetchApplications = async (currentJobId) => {
     try {
       setLoading(true)
-      const response = await api.get('/applications/employer-all')
+      setError(null)
+      const endpoint = currentJobId ? `/applications/job/${currentJobId}` : '/applications/employer-all'
+      const response = await api.get(endpoint)
       setApplications(response.data)
     } catch (error) {
       console.error('Error fetching applications:', error)
+      setError(error.response?.data?.message || 'Failed to load applications')
     } finally {
       setLoading(false)
     }
@@ -44,6 +50,14 @@ function EmployerApplications() {
     <div className="loading-state">
       <div className="spinner"></div>
       <p>Loading applicant data...</p>
+    </div>
+  )
+
+  if (error) return (
+    <div className="error-state">
+      <h3>Error loading applications</h3>
+      <p>{error}</p>
+      <button onClick={() => window.location.reload()}>Retry</button>
     </div>
   )
 

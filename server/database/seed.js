@@ -379,9 +379,4 @@ console.log(`   - 4 Sample Job Views`);
     console.log("   - Collaborative Filtering: Based on user job views");
 
 seedDatabase().catch(console.error);
-}
-}
-seedDatabase().catch(console.error);
-
-seedDatabase().catch(console.error);
 

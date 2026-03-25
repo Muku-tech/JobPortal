@@ -87,6 +87,9 @@ function ManageJobs() {
                 </div>
                 <div className="job-row-actions">
                   <button onClick={() => handleEdit(job.id)} className="btn-edit">Edit</button>
+                  <Link to={`/employer/jobs/${job.id}/applicants`} className="btn-applicants">
+                    Applicants ({job.applications?.length || 0})
+                  </Link>
                   <button 
                     onClick={() => handleDelete(job.id)} 
                     disabled={deletingId === job.id}

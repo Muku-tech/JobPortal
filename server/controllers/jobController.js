@@ -1,4 +1,10 @@
-const { Job, User, Application, sequelize } = require("../models");
+const {
+  Job,
+  User,
+  Application,
+  sequelize,
+  UserSavedJob,
+} = require("../models");
 const { Op } = require("sequelize");
 
 // 1. GET GROUPED JOBS (For Homepage Tabs)
@@ -7,15 +13,19 @@ exports.getGroupedJobs = async (req, res) => {
     const { type = "company", limit = 2 } = req.query; // Default 2 jobs per card
 
     const where = { status: "active" };
-    const groupField = type === "industry" ? "category" : 
-                       type === "location" ? "location" : "company_name";
+    const groupField =
+      type === "industry"
+        ? "category"
+        : type === "location"
+          ? "location"
+          : "company_name";
 
     const groups = await Job.findAll({
       where,
       attributes: [
         [sequelize.fn("COUNT", sequelize.col("id")), "count"],
         groupField,
-        "company_logo" // Include logo in the initial group fetch
+        "company_logo", // Include logo in the initial group fetch
       ],
       group: [groupField, "company_logo"],
       having: sequelize.fn("COUNT", sequelize.col("id")) > 0,
@@ -35,7 +45,7 @@ exports.getGroupedJobs = async (req, res) => {
           status: "active",
           [groupField]: groupValue,
         },
-        attributes: ['id', 'title'],
+        attributes: ["id", "title"],
         order: [["createdAt", "DESC"]],
         limit: parseInt(limit),
       });
@@ -194,6 +204,50 @@ exports.deleteJob = async (req, res) => {
   }
 };
 
+// Save/unsave job toggle
+exports.saveJob = async (req, res) => {
+  try {
+    const { jobId } = req.body;
+    const userId = req.user.id;
+
+    const [savedJob, created] = await UserSavedJob.findOrCreate({
+      where: { user_id: userId, job_id: jobId },
+      defaults: { user_id: userId, job_id: jobId },
+    });
+
+    if (!created) {
+      await savedJob.destroy();
+      return res.json({ message: "Job unsaved", saved: false });
+    }
+
+    res.json({ message: "Job saved", saved: true });
+  } catch (error) {
+    console.error("Save job error:", error);
+    res.status(500).json({ message: "Error saving job" });
+  }
+};
+
+// GET saved jobs for user
+exports.getSavedJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const savedJobs = await UserSavedJob.findAll({
+      where: { user_id: userId },
+      include: [
+        {
+          model: Job,
+          as: "Job",
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+    res.json({ jobs: savedJobs.map((sj) => sj.Job) });
+  } catch (error) {
+    console.error("Get saved jobs error:", error);
+    res.status(500).json({ message: "Error fetching saved jobs" });
+  }
+};
+
 // 7. GET EMPLOYER-SPECIFIC JOBS (Dashboard)
 exports.getEmployerJobs = async (req, res) => {
   try {
@@ -209,7 +263,10 @@ exports.getEmployerJobs = async (req, res) => {
     const stats = {
       total: jobs.length,
       active: jobs.filter((j) => j.status === "active").length,
-      applications: jobs.reduce((sum, j) => sum + (j.applications?.length || 0), 0),
+      applications: jobs.reduce(
+        (sum, j) => sum + (j.applications?.length || 0),
+        0,
+      ),
     };
 
     res.json({ jobs, stats });

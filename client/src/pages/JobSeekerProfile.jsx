@@ -10,6 +10,12 @@ function JobSeekerProfile() {
     name: user?.name || '',
     phone: user?.phone || '',
     address: user?.address || '',
+    linkedin: user?.linkedin || '',
+    github: user?.github || '',
+    portfolio: user?.portfolio || '',
+    salary_expectation: user?.salary_expectation || '',
+    current_company: user?.current_company || '',
+    availability_date: user?.availability_date || '',
     skills: user?.skills?.join(', ') || '',
     education: user?.education || '',
     experience: user?.experience || '',
@@ -37,7 +43,27 @@ function JobSeekerProfile() {
       const response = await api.put('/users/profile', updatedData)
       updateUser(response.data.user)
       setEditing(false)
-      alert('Profile updated successfully!')
+      // Toast notification
+      const notification = document.createElement('div');
+      notification.textContent = 'Profile updated successfully! 🎉';
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-weight: 600;
+        font-size: 1rem;
+      `;
+      document.body.appendChild(notification);
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out forwards';
+        setTimeout(() => notification.remove(), 300);
+      }, 4000);
     } catch (error) {
       setErrorMsg('Failed to update profile. Please try again.')
     } finally {
@@ -77,9 +103,25 @@ function JobSeekerProfile() {
                   <input type="text" name="phone" value={formData.phone} onChange={handleChange} />
                 </div>
               </div>
-              <div className="form-group">
-                <label>Address</label>
-                <input type="text" name="address" value={formData.address} onChange={handleChange} />
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Address</label>
+                  <input type="text" name="address" value={formData.address} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                  <label>LinkedIn</label>
+                  <input type="url" name="linkedin" value={formData.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/yourprofile" />
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>GitHub</label>
+                  <input type="url" name="github" value={formData.github} onChange={handleChange} placeholder="https://github.com/yourusername" />
+                </div>
+                <div className="form-group">
+                  <label>Portfolio</label>
+                  <input type="url" name="portfolio" value={formData.portfolio} onChange={handleChange} placeholder="https://yourportfolio.com" />
+                </div>
               </div>
             </div>
 
@@ -95,8 +137,18 @@ function JobSeekerProfile() {
               </div>
               <div className="form-grid">
                 <div className="form-group">
-                  <label>Skills (comma separated)</label>
-                  <input type="text" name="skills" value={formData.skills} onChange={handleChange} placeholder="React, SQL, Marketing" />
+                  <label>Current Company</label>
+                  <input type="text" name="current_company" value={formData.current_company} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                  <label>Salary Expectation</label>
+                  <input type="text" name="salary_expectation" value={formData.salary_expectation} onChange={handleChange} placeholder="NPR 50,000 - 80,000" />
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Available From</label>
+                  <input type="date" name="availability_date" value={formData.availability_date} onChange={handleChange} />
                 </div>
                 <div className="form-group">
                   <label>Job Preference</label>
@@ -106,6 +158,12 @@ function JobSeekerProfile() {
                     <option value="part-time">Part Time</option>
                     <option value="contract">Contract</option>
                   </select>
+                </div>
+              </div>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Skills (comma separated)</label>
+                  <input type="text" name="skills" value={formData.skills} onChange={handleChange} placeholder="React, SQL, Marketing" />
                 </div>
               </div>
             </div>

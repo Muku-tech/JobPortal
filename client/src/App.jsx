@@ -15,8 +15,7 @@ import EmployerApplications from "./pages/EmployerApplications"
 import ManageJobs from "./pages/ManageJobs"
 import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
-
-
+import EmployerJobApplicants from "./pages/EmployerJobApplicants"
 
 
 
@@ -120,6 +119,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRole="employer">
                   <EmployerApplications />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/employer/jobs/:id/applicants"
+              element={
+                <ProtectedRoute allowedRole="employer">
+                  <EmployerJobApplicants />
                 </ProtectedRoute>
               }
             />

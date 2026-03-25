@@ -1,180 +1,190 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { 
+  Code2, 
+  Building2, 
+  BarChart3, 
+  Stethoscope 
+} from "lucide-react";
 import api from "../services/api";
 import "../styles/Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [search, setSearch] = useState(""); 
+  const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
-  
-  const [stats, setStats] = useState({ jobs: 0, companies: 0, seekers: 0, hires: 0 });
   const [featuredJobs, setFeaturedJobs] = useState([]);
-  const [featuredLoading, setFeaturedLoading] = useState(false);
+  
+  // High-impact stats for JobSathi
+  const [stats] = useState({ 
+    jobs: "1,200", 
+    companies: "450", 
+    users: "8,000", 
+    hires: "250" 
+  });
 
   useEffect(() => {
-    if (user?.role === 'employer') {
-      navigate('/employer', { replace: true });
-      return;
-    }
-    startStatsCounter();
-    fetchFeaturedJobs();
-  }, [user, navigate]); 
-
-  const fetchFeaturedJobs = async () => {
-    setFeaturedLoading(true);
-    try {
-      const res = await api.get('/jobs?limit=8');
-      setFeaturedJobs(res.data.jobs || []);
-    } catch (err) {
-      console.error("Featured jobs error:", err);
-      setFeaturedJobs([]);
-    }
-    setFeaturedLoading(false);
-  };
-
-  const startStatsCounter = () => {
-    const targets = { jobs: 10000, companies: 5000, seekers: 50000, hires: 1000 };
-    const duration = 1500;
-    const steps = 40;
-    const interval = duration / steps;
-    let current = { jobs: 0, companies: 0, seekers: 0, hires: 0 };
-
-    const counter = setInterval(() => {
-      current.jobs += targets.jobs / steps;
-      current.companies += targets.companies / steps;
-      current.seekers += targets.seekers / steps;
-      current.hires += targets.hires / steps;
-
-      setStats({
-        jobs: Math.min(Math.floor(current.jobs), targets.jobs),
-        companies: Math.floor(current.companies),
-        seekers: Math.floor(current.seekers),
-        hires: Math.floor(current.hires)
-      });
-    }, interval);
-    setTimeout(() => clearInterval(counter), duration);
-  };
+    const fetchHomeData = async () => {
+      try {
+        const res = await api.get('/jobs?limit=4&featured=true');
+        setFeaturedJobs(res.data.jobs || []);
+      } catch (err) {
+        console.error("Home data error:", err);
+      }
+    };
+    fetchHomeData();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (search) params.append("search", search);
-    if (location) params.append("location", location);
-    navigate(`/jobs?${params.toString()}`);
+    const query = new URLSearchParams();
+    if (search.trim()) query.append("search", search.trim());
+    if (location.trim()) query.append("location", location.trim());
+    navigate(`/jobs?${query.toString()}`);
   };
 
+  const categories = [
+    { name: 'IT & Software', icon: <Code2 size={28} />, bg: '#ebf5ff', color: '#3b82f6' },
+    { name: 'Banking', icon: <Building2 size={28} />, bg: '#fef3f2', color: '#f43f5e' },
+    { name: 'Marketing', icon: <BarChart3 size={28} />, bg: '#f0fdf4', color: '#22c55e' },
+    { name: 'Health Care', icon: <Stethoscope size={28} />, bg: '#fff7ed', color: '#f97316' }
+  ];
+
   return (
-    <div className="homepage">
-      {/* HERO SECTION */}
-      <section className="hero">
-        <div className="content-container">
-          <h1>Find Your Dream Job in <span>Nepal</span></h1>
-          <p className="hero-subtitle">The most trusted job portal for career growth in Nepal</p>
+    <div className="homepage-root">
+      {/* 1. HERO SECTION */}
+      <section className="hero-section">
+        <div className="container">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <h1>Find Your Dream Job in <span>Nepal</span></h1>
+            <p className="hero-sub">The most trusted job portal for career growth in Nepal</p>
 
-          <form className="search-box-container" onSubmit={handleSearch}>
-            <input
-              type="text"
-              placeholder="Job title or company"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-            <button type="submit" className="hero-search-btn">Find Jobs</button>
-          </form>
+            <form className="main-search-bar" onSubmit={handleSearch}>
+              <input 
+                type="text" 
+                placeholder="Job title or company" 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)} 
+              />
+              <input 
+                type="text" 
+                placeholder="Location" 
+                value={location} 
+                onChange={(e) => setLocation(e.target.value)} 
+              />
+              <button type="submit" className="hero-search-btn">Find Jobs</button>
+            </form>
+          </motion.div>
         </div>
       </section>
 
-      {/* STATS SECTION - MOVED UP */}
+      {/* 2. STATS OVERLAY (Dark Navy) */}
       <section className="stats-section">
-        <div className="content-container stats-grid">
+        <div className="container stats-grid">
           <div className="stat-item">
-            <h2>{stats.jobs.toLocaleString()}+</h2>
-            <p>ACTIVE JOBS</p>
+            <h3>{stats.jobs}+</h3>
+            <p>Active Jobs</p>
           </div>
           <div className="stat-item">
-            <h2>{stats.companies.toLocaleString()}+</h2>
-            <p>VERIFIED COMPANIES</p>
+            <h3>{stats.companies}+</h3>
+            <p>Verified Companies</p>
           </div>
           <div className="stat-item">
-            <h2>{stats.seekers.toLocaleString()}+</h2>
-            <p>HAPPY SEEKERS</p>
+            <h3>{stats.users}+</h3>
+            <p>Happy Seekers</p>
           </div>
           <div className="stat-item">
-            <h2>{stats.hires.toLocaleString()}+</h2>
-            <p>MONTHLY HIRES</p>
+            <h3>{stats.hires}+</h3>
+            <p>Monthly Hires</p>
           </div>
         </div>
       </section>
 
-      {/* FEATURED JOBS SECTION */}
-      <section className="featured-section">
-        <div className="content-container">
+      {/* 3. TRUST STRIP */}
+      <section className="trust-strip">
+        <div className="container">
+          <div className="logo-cloud">
+            <span>Nabil Bank</span>
+            <span>CG Corp</span>
+            <span>Daraz</span>
+            <span>Pathao</span>
+            <span>Nepal Telecom</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CATEGORIES (Centered Blocks) */}
+      <section className="section-padding">
+        <div className="container">
+          <h2 className="section-title">Job Categories</h2>
+          <div className="category-grid">
+            {categories.map((cat) => (
+              <div key={cat.name} className="cat-card" onClick={() => navigate(`/jobs?category=${cat.name}`)}>
+                <div className="cat-icon-box" style={{ backgroundColor: cat.bg, color: cat.color }}>
+                  {cat.icon}
+                </div>
+                <h4>{cat.name}</h4>
+                <p>Explore Openings</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. FEATURED JOBS (Modern Grid) */}
+      <section className="section-padding bg-light">
+        <div className="container">
           <h2 className="section-title">Featured Jobs</h2>
-          {featuredLoading ? (
-            <div className="loading-container">
-              <div className="spinner"></div>
-            </div>
-          ) : (
-            <div className="featured-grid">
-              {featuredJobs.map((job) => (
-                <Link to={`/jobs/${job.id}`} className="job-card featured-badge">
-                  <span className="featured-label">Featured</span>
-                  <h3>{job.title}</h3>
-                  <p className="job-company">{job.company_name}</p>
-                  <p className="job-location">{job.location}</p>
-                  <p className="job-type">{job.job_type}</p>
-                </Link>
-              ))}
-            </div>
-          )}
-          <div className="section-cta">
-            <button className="view-all-btn" onClick={() => navigate('/jobs')}>
-              View All Jobs
-            </button>
+          <div className="featured-grid">
+            {featuredJobs.map(job => (
+              <div key={job.id} className="job-card" onClick={() => navigate(`/jobs/${job.id}`)}>
+                <span className="feat-badge">Featured</span>
+                <h3>{job.title}</h3>
+                <p className="company-name">{job.company_name}</p>
+                <div className="job-card-footer">
+                  <span>{job.location}</span>
+                  <span className="job-type-pill">{job.job_type}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* 6. SKILLS SECTION */}
+      <section className="section-padding bg-navy text-white">
+        <div className="container text-center">
+          <h3 className="mb-4">Trending Skills</h3>
+          <div className="skill-cloud">
+            {['React', 'Node.js', 'SQL', 'Accounting', 'Graphic Design'].map(skill => (
+              <span key={skill} onClick={() => navigate(`/jobs?search=${skill}`)} className="skill-pill">
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
 
-
-      {/* HOW IT WORKS */}
-      <section className="howitworks-section">
-        <div className="content-container">
-          <h2 className="section-title">How It Works</h2>
-          <div className="steps-grid">
-            <div className="step-item">
-              <div className="step-icon">🔍</div>
-              <h3>Search Jobs</h3>
-              <p>Find jobs that match your skills and experience.</p>
+      {/* 7. CTA BANNER */}
+      <section className="section-padding">
+        <div className="container">
+          <div className="cta-banner">
+            <div className="cta-content">
+              <h2>Ready to take the next step?</h2>
+              <p>Upload your CV and let top employers find you.</p>
             </div>
-            <div className="step-item">
-              <div className="step-icon">📄</div>
-              <h3>Build Resume</h3>
-              <p>Create professional resumes with our builder tool.</p>
-            </div>
-            <div className="step-item">
-              <div className="step-icon">✅</div>
-              <h3>Apply & Get Hired</h3>
-              <p>Apply easily and get hired by top companies.</p>
+            <div className="cta-buttons">
+              <button className="btn-white" onClick={() => navigate('/profile')}>Upload Resume</button>
+              <button className="btn-outline" onClick={() => navigate('/register')}>Join Now</button>
             </div>
           </div>
         </div>
       </section>
 
-
-
-      <footer className="footer">
-        <p>© 2024 <strong>JobSathi Nepal</strong>. Your career partner</p>
+      <footer className="footer-simple">
+        <p>&copy; 2026 <strong>JobSathi Nepal</strong>. Your Career Partner.</p>
       </footer>
     </div>
   );
 }
-

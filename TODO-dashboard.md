@@ -1,0 +1,1 @@
+- [✅] 1. Create TODO-dashboard.md&#10;- [✅] 2. Edit client/src/pages/Dashboard.jsx - add 'orange' class to interviews and saved tabs&#10;- [✅] 3. Add JSX for interviews and saved tabs content in activity-box

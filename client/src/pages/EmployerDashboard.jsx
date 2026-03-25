@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { 
+  PlusCircle, Users, Briefcase, Activity, 
+  MapPin, Clock, ChevronRight, Search, Filter 
+} from "lucide-react";
 import api from "../services/api";
 import "../styles/EmployerDashboard.css";
 
@@ -38,104 +42,105 @@ function EmployerDashboard() {
   }
 
   return (
-    <div className="employer-home-container">
-      {/* HEADER SECTION */}
-      <header className="dashboard-top-bar">
-        <div className="title-group">
-          <h1>Employer Console</h1>
-          <p>Manage your job listings and track recruitment performance.</p>
-        </div>
-        <div className="quick-actions">
-          <Link to="/post-job" className="quick-btn">
-            + Post Job
-          </Link>
-          <Link to="/employer/manage-jobs" className="quick-btn">
-            Manage Jobs
-          </Link>
-          <Link to="/employer/applications" className="quick-btn">
-            Applications
-          </Link>
-        </div>
-      </header>
-
-      {/* STATS OVERVIEW */}
-      <section className="stats-overview-grid">
-        <div className="stat-summary-card">
-          <span className="stat-icon">TP</span>
-          <div className="stat-info">
-            <h3>{stats.total}</h3>
-            <p>Total Postings</p>
+    <div className="emp-dash-root">
+      <div className="emp-dash-container">
+        
+        {/* HEADER AREA */}
+        <header className="emp-header">
+          <div className="emp-welcome">
+            <h1>Employer Console</h1>
+            <p>Track your recruitment performance and manage vacancies.</p>
           </div>
-        </div>
-
-        <div className="stat-summary-card active">
-          <span className="stat-icon">LL</span>
-          <div className="stat-info">
-            <h3>{stats.active}</h3>
-            <p>Live Listings</p>
+          <div className="emp-actions">
+            <Link to="/post-job" className="btn-post-main">
+              <PlusCircle size={20} /> Post New Vacancy
+            </Link>
           </div>
-        </div>
+        </header>
 
-        <div className="stat-summary-card apps">
-          <span className="stat-icon">TA</span>
-          <div className="stat-info">
-            <h3>{stats.applications}</h3>
-            <p>Total Applicants</p>
-          </div>
-        </div>
-      </section>
-
-      {/* MAIN CONTENT */}
-      <section className="jobs-management-section">
-        <div className="section-header">
-          <h2>Active Job Listings</h2>
-        </div>
-
-        {jobs.length === 0 ? (
-            <div className="empty-jobs-state">
-              <div className="empty-illustration">--</div>
-              <h3>No jobs posted yet</h3>
-              <p>Start your recruitment journey by posting your first vacancy.</p>
-              <Link to="/post-job" className="btn-primary-link">Post a Job Now</Link>
+        {/* STATS TILES */}
+        <section className="emp-stats-grid">
+          <div className="emp-stat-card">
+            <div className="emp-stat-icon navy"><Briefcase size={24} /></div>
+            <div className="emp-stat-content">
+              <h3>{stats.total}</h3>
+              <p>Total Postings</p>
             </div>
-        ) : (
-          <div className="employer-jobs-table">
-            <div className="table-header">
-              <span className="col-job">Job Details</span>
-              <span className="col-stats">Activity</span>
-              <span className="col-action">Management</span>
+          </div>
+
+          <div className="emp-stat-card">
+            <div className="emp-stat-icon orange"><Activity size={24} /></div>
+            <div className="emp-stat-content">
+              <h3>{stats.active}</h3>
+              <p>Live Listings</p>
             </div>
+          </div>
 
-            {jobs.map((job) => (
-              <div key={job.id} className="employer-job-row">
-                <div className="job-main-info">
-                  <h3 className="job-row-title">{job.title}</h3>
-                  <div className="job-row-meta">
-                    <span className="meta-tag">{job.job_type}</span>
-                    <span className="meta-loc">{job.location}</span>
-                  </div>
-                </div>
+          <div className="emp-stat-card">
+            <div className="emp-stat-icon green"><Users size={24} /></div>
+            <div className="emp-stat-content">
+              <h3>{stats.applications}</h3>
+              <p>Total Applicants</p>
+            </div>
+          </div>
+        </section>
 
-                <div className="job-row-stats">
-                  <div className="app-count-badge">
-                    <strong>{job.ApplicationCount || 0}</strong>
-                    <span>Applicants</span>
-                  </div>
-                </div>
-
-                <div className="job-row-actions">
-                  <button 
-                    onClick={() => navigate('/employer/applications')} 
-                    className="btn-view-apps"
-                  >
-                    Review Candidates
-                  </button>
-                </div>
+        {/* ACTIVE JOBS LIST */}
+        <section className="emp-main-section">
+          <div className="list-header">
+            <h2>Active Job Listings</h2>
+            <div className="list-filters">
+              <div className="search-pill">
+                <Search size={16} />
+                <input type="text" placeholder="Search your jobs..." />
               </div>
-            ))}
+            </div>
           </div>
-        )}
-      </section>
+
+          {jobs.length === 0 ? (
+            <div className="emp-empty-state">
+              <div className="empty-graphic">
+                <Briefcase size={48} />
+              </div>
+              <h3>No jobs posted yet</h3>
+              <p>Start your recruitment journey by posting your first vacancy on JobSathi.</p>
+              <Link to="/post-job" className="btn-post-alt">Post a Job Now</Link>
+            </div>
+          ) : (
+            <div className="job-management-list">
+              {jobs.map((job) => (
+                <div key={job.id} className="job-mgmt-row">
+                  <div className="job-main-col">
+                    <h3 onClick={() => navigate(`/jobs/${job.id}`)}>{job.title}</h3>
+                    <div className="job-row-tags">
+                      <span><MapPin size={14} /> {job.location}</span>
+                      <span><Clock size={14} /> {job.job_type}</span>
+                    </div>
+                  </div>
+
+                  <div className="job-stats-col">
+                    <div className="stat-pill" onClick={() => navigate('/employer/applications')}>
+                      <Users size={16} />
+                      <strong>{job.ApplicationCount || 0}</strong>
+                      <span>Applicants</span>
+                    </div>
+                  </div>
+
+                  <div className="job-btns-col">
+                    <button 
+                      onClick={() => navigate('/employer/applications')} 
+                      className="btn-review"
+                    >
+                      Review Candidates <ChevronRight size={18} />
+                    </button>
+                    <button className="btn-dots">...</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

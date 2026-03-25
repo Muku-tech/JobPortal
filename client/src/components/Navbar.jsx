@@ -1,18 +1,25 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard } from 'lucide-react';
 import '../styles/Navbar.css';
 
 function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen ] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+    setOpenDropdown(null);
+  }, [location]);
 
   const handleLogout = () => {
     logout();
-    setMenuOpen(false);
     navigate('/');
   };
 
@@ -20,82 +27,70 @@ function Navbar() {
     setOpenDropdown(openDropdown === name ? null : name);
   };
 
-  const closeMenu = () => {
-    setMenuOpen(false);
-    setOpenDropdown(null);
-  };
-
   return (
-    <nav className="navbar">
+    <nav className="navbar-root">
       <div className="navbar-container">
-        <Link to={user?.role === 'employer' ? '/employer' : '/'} className="navbar-logo" onClick={closeMenu}>
-          <span className="logo-icon">JS</span>
-          <span className="logo-text">JobSathi</span>
+        {/* LOGO SECTION */}
+        <Link to={user?.role === 'employer' ? '/employer' : '/'} className="navbar-logo">
+          <img src="/logo.png" alt="JobSathi Logo" className="logo-image" />
         </Link>
 
-        {/* Mobile Toggle */}
-        <button 
-          className={`menu-icon ${menuOpen ? "open" : ""}`} 
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle navigation"
-        >
-          <span className="bar"></span>
-          <span className="bar"></span>
-          <span className="bar"></span>
+        {/* MOBILE TOGGLE */}
+        <button className="mobile-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+          {menuOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
 
-        <div className={`navbar-links ${menuOpen ? "active" : ""}`}>
+        {/* NAV LINKS */}
+        <div className={`navbar-menu ${menuOpen ? "is-open" : ""}`}>
           {!user ? (
-            <div className="auth-nav-group">
-              <div className="nav-item dropdown">
-                <button
-                  className={`dropbtn ${openDropdown === "jobseeker" ? "active" : ""}`}
-                  onClick={() => toggleDropdown("jobseeker")}
-                >
-                  Job Seeker <span className="arrow">▾</span>
+            <div className="auth-group">
+              <div className="nav-dropdown">
+                <button className="drop-trigger" onClick={() => toggleDropdown("seeker")}>
+                  Job Seeker <ChevronDown size={16} className={openDropdown === "seeker" ? "rotate" : ""} />
                 </button>
-                <div className={`dropdown-content ${openDropdown === "jobseeker" ? "show" : ""}`}>
-                  <Link to="/login?role=jobseeker" onClick={closeMenu}>Login</Link>
-                  <Link to="/register?role=jobseeker" onClick={closeMenu}>Register</Link>
+                <div className={`drop-menu ${openDropdown === "seeker" ? "show" : ""}`}>
+                  <Link to="/login?role=jobseeker">Login</Link>
+                  <Link to="/register?role=jobseeker">Register</Link>
                 </div>
               </div>
 
-              <div className="nav-item dropdown">
-                <button
-                  className={`dropbtn ${openDropdown === "employer" ? "active" : ""}`}
-                  onClick={() => toggleDropdown("employer")}
-                >
-                  Employer <span className="arrow">▾</span>
+              <div className="nav-dropdown">
+                <button className="drop-trigger" onClick={() => toggleDropdown("employer")}>
+                  Employer <ChevronDown size={16} className={openDropdown === "employer" ? "rotate" : ""} />
                 </button>
-                <div className={`dropdown-content ${openDropdown === "employer" ? "show" : ""}`}>
-                  <Link to="/login?role=employer" onClick={closeMenu}>Login</Link>
-                  <Link to="/register?role=employer" onClick={closeMenu}>Register</Link>
+                <div className={`drop-menu ${openDropdown === "employer" ? "show" : ""}`}>
+                  <Link to="/login?role=employer">Login</Link>
+                  <Link to="/register?role=employer">Register</Link>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="user-nav-group">
+            <div className="user-group">
               {user.role === "jobseeker" && (
                 <>
-                  <Link to="/jobs" className="nav-link" onClick={closeMenu}>Browse Jobs</Link>
-                  <Link to="/dashboard" className="nav-link" onClick={closeMenu}>Dashboard</Link>
+                  <Link to="/jobs" className={`nav-link ${location.pathname === '/jobs' ? 'active' : ''}`}>
+                    Browse Jobs
+                  </Link>
+                  <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
+                    Dashboard
+                  </Link>
                 </>
               )}
 
               {user.role === "employer" && (
                 <>
-                  <Link to="/employer" className="nav-link" onClick={closeMenu}>Overview</Link>
-                  <Link to="/post-job" className="nav-link" onClick={closeMenu}>Post Job</Link>
-                  <Link to="/employer/applications" className="nav-link" onClick={closeMenu}>Manage Applicants</Link>
+                  <Link to="/employer" className="nav-link">Overview</Link>
+                  <Link to="/post-job" className="nav-link">Post Job</Link>
+                  <Link to="/employer/applications" className="nav-link">Applicants</Link>
                 </>
               )}
 
-              <Link to="/profile" className="nav-link profile-link" onClick={closeMenu}>
-                My Profile
+              <Link to="/profile" className="nav-link profile-pill">
+                <User size={18} /> My Profile
               </Link>
 
-              <button onClick={handleLogout} className="btn-logout">
-                Logout
+              <button onClick={handleLogout} className="btn-nav-logout">
+                <LogOut size={18} /> Logout
               </button>
             </div>
           )}
