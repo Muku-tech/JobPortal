@@ -27,8 +27,8 @@ export default function Dashboard() {
     try {
       setLoading(true);
       const [recRes, appsRes, savedRes] = await Promise.all([
-        api.get('/recommendations/hybrid').catch(() => ({ data: [] })),
-        api.get('/applications/user/me'),
+api.get('/recommendations/smart').catch(() => ({ data: [] })),
+        api.get('/applications/user'),
         api.get('/jobs/saved')
       ]);
 

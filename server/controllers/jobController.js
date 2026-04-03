@@ -256,7 +256,24 @@ exports.getEmployerJobs = async (req, res) => {
     }
     const jobs = await Job.findAll({
       where: { employer_id: req.user.id },
-      include: [{ model: Application, as: "applications", attributes: ["id"] }],
+      attributes: {
+        include: [
+          [
+            sequelize.fn("COUNT", sequelize.col("applications.id")),
+            "ApplicationCount",
+          ],
+        ],
+      },
+      include: [
+        {
+          model: Application,
+          as: "applications",
+          attributes: [],
+          required: false,
+          duplicating: false,
+        },
+      ],
+      group: ["Job.id"],
       order: [["createdAt", "DESC"]],
     });
 
@@ -264,7 +281,7 @@ exports.getEmployerJobs = async (req, res) => {
       total: jobs.length,
       active: jobs.filter((j) => j.status === "active").length,
       applications: jobs.reduce(
-        (sum, j) => sum + (j.applications?.length || 0),
+        (sum, j) => sum + parseInt(j.dataValues.ApplicationCount || 0),
         0,
       ),
     };

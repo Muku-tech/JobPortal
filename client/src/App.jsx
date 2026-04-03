@@ -17,6 +17,14 @@ import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
 import EmployerJobApplicants from "./pages/EmployerJobApplicants"
 
+// ✅ NEW IMPORT
+import { useParams } from "react-router-dom"
+
+// ✅ WRAPPER COMPONENT (IMPORTANT)
+function EmployerApplicationsWrapper() {
+  const { jobId } = useParams()
+  return <EmployerApplications jobId={jobId} />
+}
 
 
 // 1. Protected Route Component
@@ -38,19 +46,20 @@ function ProtectedRoute({ children, allowedRole }) {
   return children
 }
 
-// 2. Profile Helper Component (To fix the Hook error)
+
+// 2. Profile Helper Component
 function ProfileRedirect() {
-  const { user } = useAuth();
+  const { user } = useAuth()
   
   if (user?.role === 'jobseeker') {
-    return <JobSeekerProfile />;
+    return <JobSeekerProfile />
   }
-  return <EmployerProfile />;
+  return <EmployerProfile />
 }
 
-function App() {
-  const { loading, user } = useAuth()
 
+function App() {
+  const { loading } = useAuth()
 
   if (loading) {
     return <div className="loading-spinner">Loading...</div>
@@ -64,14 +73,14 @@ function App() {
 
         <AnimatePresence mode="wait">
           <Routes key={window.location.pathname}>
-            {/* Public/Private Routes */}
-            <Route path="/" element={<Home />} />
 
+            {/* PUBLIC */}
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
 
-            {/* JobSeeker Specific Routes */}
+            {/* JOB SEEKER */}
             <Route
               path="/jobs"
               element={
@@ -80,6 +89,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/jobs/:id"
               element={
@@ -88,6 +98,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/dashboard"
               element={
@@ -97,7 +108,8 @@ function App() {
               }
             />
 
-            {/* Employer Specific Routes */}
+
+            {/* EMPLOYER */}
             <Route
               path="/employer"
               element={
@@ -106,6 +118,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/employer/manage-jobs"
               element={
@@ -114,6 +127,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* ✅ FIXED ROUTE (IMPORTANT) */}
+            <Route
+              path="/employer/applications/:jobId"
+              element={
+                <ProtectedRoute allowedRole="employer">
+                  <EmployerApplicationsWrapper />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* OPTIONAL: ALL APPLICATIONS */}
             <Route
               path="/employer/applications"
               element={
@@ -122,6 +147,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/employer/jobs/:id/applicants"
               element={
@@ -130,6 +156,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/post-job"
               element={
@@ -139,7 +166,8 @@ function App() {
               }
             />
 
-            {/* Dynamic Profile Route */}
+
+            {/* PROFILE */}
             <Route
               path="/profile"
               element={
@@ -149,8 +177,10 @@ function App() {
               }
             />
 
-            {/* Fallback */}
+
+            {/* FALLBACK */}
             <Route path="*" element={<Navigate to="/" replace />} />
+
           </Routes>
         </AnimatePresence>
 
