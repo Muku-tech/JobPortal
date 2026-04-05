@@ -15,5 +15,4 @@ router.use("/users", userRoutes);
 router.use("/recommendations", recommendationRoutes);
 router.use("/notifications", notificationRoutes);
 
-
 module.exports = router;

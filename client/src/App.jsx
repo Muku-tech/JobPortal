@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom"
 import { AnimatePresence } from "framer-motion"
 import { useAuth } from "./context/AuthContext"
+import { ToastProvider } from "./context/ToastContext"
 
 import Navbar from "./components/Navbar"
 import Home from "./pages/Home"
@@ -17,17 +18,16 @@ import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
 import EmployerJobApplicants from "./pages/EmployerJobApplicants"
 
-// ✅ NEW IMPORT
+// NEW IMPORT
 import { useParams } from "react-router-dom"
 
-// ✅ WRAPPER COMPONENT (IMPORTANT)
+// WRAPPER COMPONENT
 function EmployerApplicationsWrapper() {
   const { jobId } = useParams()
   return <EmployerApplications jobId={jobId} />
 }
 
-
-// 1. Protected Route Component
+// Protected Route Component
 function ProtectedRoute({ children, allowedRole }) {
   const { user, loading } = useAuth()
 
@@ -46,8 +46,7 @@ function ProtectedRoute({ children, allowedRole }) {
   return children
 }
 
-
-// 2. Profile Helper Component
+// Profile Helper Component
 function ProfileRedirect() {
   const { user } = useAuth()
   
@@ -56,7 +55,6 @@ function ProfileRedirect() {
   }
   return <EmployerProfile />
 }
-
 
 function App() {
   const { loading } = useAuth()
@@ -69,124 +67,123 @@ function App() {
     <div className="app-container">
       <Navbar />
       
-      <main className="main-content">
+      <ToastProvider>
+        <main className="main-content">
 
-        <AnimatePresence mode="wait">
-          <Routes key={window.location.pathname}>
+          <AnimatePresence mode="wait">
+            <Routes key={window.location.pathname}>
 
-            {/* PUBLIC */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+              {/* PUBLIC */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
 
+              {/* JOB SEEKER */}
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute allowedRole="jobseeker">
+                    <Jobs />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* JOB SEEKER */}
-            <Route
-              path="/jobs"
-              element={
-                <ProtectedRoute allowedRole="jobseeker">
-                  <Jobs />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/jobs/:id"
+                element={
+                  <ProtectedRoute allowedRole="jobseeker">
+                    <JobDetails />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/jobs/:id"
-              element={
-                <ProtectedRoute allowedRole="jobseeker">
-                  <JobDetails />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute allowedRole="jobseeker">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute allowedRole="jobseeker">
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* EMPLOYER */}
+              <Route
+                path="/employer"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerDashboard />
+                  </ProtectedRoute>
+                }
+              />
 
+              <Route
+                path="/employer/manage-jobs"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <ManageJobs />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* EMPLOYER */}
-            <Route
-              path="/employer"
-              element={
-                <ProtectedRoute allowedRole="employer">
-                  <EmployerDashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* FIXED ROUTE */}
+              <Route
+                path="/employer/applications/:jobId"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerApplicationsWrapper />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/employer/manage-jobs"
-              element={
-                <ProtectedRoute allowedRole="employer">
-                  <ManageJobs />
-                </ProtectedRoute>
-              }
-            />
+              {/* ALL APPLICATIONS */}
+              <Route
+                path="/employer/applications"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerApplications />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* ✅ FIXED ROUTE (IMPORTANT) */}
-            <Route
-              path="/employer/applications/:jobId"
-              element={
-                <ProtectedRoute allowedRole="employer">
-                  <EmployerApplicationsWrapper />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/employer/jobs/:id/applicants"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerJobApplicants />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* OPTIONAL: ALL APPLICATIONS */}
-            <Route
-              path="/employer/applications"
-              element={
-                <ProtectedRoute allowedRole="employer">
-                  <EmployerApplications />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/post-job"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <PostJob />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/employer/jobs/:id/applicants"
-              element={
-                <ProtectedRoute allowedRole="employer">
-                  <EmployerJobApplicants />
-                </ProtectedRoute>
-              }
-            />
+              {/* PROFILE */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfileRedirect />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/post-job"
-              element={
-                <ProtectedRoute allowedRole="employer">
-                  <PostJob />
-                </ProtectedRoute>
-              }
-            />
+              {/* FALLBACK */}
+              <Route path="*" element={<Navigate to="/" replace />} />
 
+            </Routes>
+          </AnimatePresence>
 
-            {/* PROFILE */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfileRedirect />
-                </ProtectedRoute>
-              }
-            />
-
-
-            {/* FALLBACK */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-
-          </Routes>
-        </AnimatePresence>
-
-      </main>
+        </main>
+      </ToastProvider>
     </div>
   )
 }
 
 export default App
+

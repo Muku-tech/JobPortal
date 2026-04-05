@@ -99,22 +99,22 @@ function Register() {
           <div className="form-grid">
             <div className="form-group">
               <label>Full Name</label>
-              <input type="text" name="name" placeholder="John Doe" value={formData.name} onChange={handleChange} required />
+              <input type="text" name="name" placeholder="Enter your name" value={formData.name} onChange={handleChange} required />
             </div>
 
             <div className="form-group">
               <label>Email Address</label>
-              <input type="email" name="email" placeholder="email@example.com" value={formData.email} onChange={handleChange} required />
+              <input type="email" name="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} required />
             </div>
 
             <div className="form-group">
               <label>Password</label>
-              <input type="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleChange} required />
+              <input type="password" name="password" placeholder="Enter password" value={formData.password} onChange={handleChange} required />
             </div>
 
             <div className="form-group">
               <label>Confirm Password</label>
-              <input type="password" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} required />
+              <input type="password" name="confirmPassword" placeholder="Confirm password" value={formData.confirmPassword} onChange={handleChange} required />
             </div>
           </div>
 

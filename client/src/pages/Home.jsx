@@ -1,189 +1,283 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  Code2, 
-  Building2, 
-  BarChart3, 
-  Stethoscope 
-} from "lucide-react";
+import { MapPin, Search, Heart, Briefcase, Code2, Star } from "lucide-react";
 import api from "../services/api";
 import "../styles/Home.css";
 
 export default function Home() {
+  const [searchParams, setSearchParams] = useState(new URLSearchParams());
   const navigate = useNavigate();
+  
+  const [jobs, setJobs] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [statsAnimating, setStatsAnimating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
-  const [featuredJobs, setFeaturedJobs] = useState([]);
-  
-  // High-impact stats for JobSathi
-  const [stats] = useState({ 
-    jobs: "1,200", 
-    companies: "450", 
-    users: "8,000", 
-    hires: "250" 
-  });
+
+  const quickTags = [
+    { name: 'IT Jobs', param: 'category=IT & Software' },
+    { name: 'Remote', param: 'jobType=remote' },
+    { name: 'Internship', param: 'jobType=internship' },
+    { name: 'Full Time', param: 'jobType=full-time' },
+    { name: 'React', param: 'search=React' },
+    { name: 'Backend', param: 'search=Node' }
+  ];
 
   useEffect(() => {
-    const fetchHomeData = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await api.get('/jobs?limit=4&featured=true');
-        setFeaturedJobs(res.data.jobs || []);
+        const [jobsRes, recRes] = await Promise.all([
+          api.get('/jobs/featured?limit=12'),
+          api.get('/recommendations/smart').catch(() => ({ data: { jobs: [] } }))
+        ]);
+        setJobs(jobsRes.data.jobs || []);
+        setRecommendations(recRes.data.jobs || []);
       } catch (err) {
-        console.error("Home data error:", err);
+        console.error(err);
+      } finally {
+        setLoading(false);
+        setStatsAnimating(true);
       }
     };
-    fetchHomeData();
+    fetchData();
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const query = new URLSearchParams();
-    if (search.trim()) query.append("search", search.trim());
-    if (location.trim()) query.append("location", location.trim());
-    navigate(`/jobs?${query.toString()}`);
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (location) params.append('location', location);
+    navigate(`/jobs?${params.toString()}`);
   };
 
-  const categories = [
-    { name: 'IT & Software', icon: <Code2 size={28} />, bg: '#ebf5ff', color: '#3b82f6' },
-    { name: 'Banking', icon: <Building2 size={28} />, bg: '#fef3f2', color: '#f43f5e' },
-    { name: 'Marketing', icon: <BarChart3 size={28} />, bg: '#f0fdf4', color: '#22c55e' },
-    { name: 'Health Care', icon: <Stethoscope size={28} />, bg: '#fff7ed', color: '#f97316' }
+  const handleQuickTag = (param) => {
+    navigate(`/jobs?${param}`);
+  };
+
+  const stats = { jobs: 1200, companies: 450, users: 8000 };
+  
+  const testimonials = [
+    { quote: "Found my dream job as React Developer in just 2 weeks!", name: "Sita R.", role: "Frontend Developer", company: "Nabil Bank" },
+    { quote: "Hired 5 developers through JobSathi this month!", name: "Raj K.", role: "Employer", company: "TechCorp" },
+    { quote: "Easy to use and great matches!", name: "Anil M.", role: "Backend Engineer", company: "Freelancer" }
   ];
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="homepage-root">
-      {/* 1. HERO SECTION */}
-      <section className="hero-section">
-        <div className="container">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1>Find Your Dream Job in <span>Nepal</span></h1>
-            <p className="hero-sub">The most trusted job portal for career growth in Nepal</p>
+    <div className="home-minimal">
 
-            <form className="main-search-bar" onSubmit={handleSearch}>
-              <input 
-                type="text" 
-                placeholder="Job title or company" 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
-              />
-              <input 
-                type="text" 
-                placeholder="Location" 
-                value={location} 
-                onChange={(e) => setLocation(e.target.value)} 
-              />
-              <button type="submit" className="hero-search-btn">Find Jobs</button>
-            </form>
+      {/* Hero */}
+      <section className="hero-min">
+
+        <div className="container">
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            Find Jobs in Nepal
+          </motion.h1>
+          <p className="hero-lead">Search and apply to opportunities that match your skills</p>
+          
+          <form className="search-hero" onSubmit={handleSearch}>
+            <input 
+              placeholder="Job title or skill" 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <input 
+              placeholder="Location" 
+              value={location} 
+              onChange={(e) => setLocation(e.target.value)}
+            />
+            <button type="submit">
+              <Search size={20} />
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* Quick Tags */}
+      <section className="quick-tags-section">
+        <div className="container">
+          <h3>Quick Search</h3>
+          <div className="tags-grid">
+            {quickTags.map((tag, i) => (
+              <motion.button
+                key={tag.name}
+                className="tag-btn"
+                onClick={() => handleQuickTag(tag.param)}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                {tag.name}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="stats-row">
+        <div className="container stats-flex">
+          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : {}}>
+            <div className="stat-num">{stats.jobs.toLocaleString()}+</div>
+            <div>Jobs</div>
+          </motion.div>
+          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : { delay: 0.2 }}>
+            <div className="stat-num">{stats.companies}+</div>
+            <div>Companies</div>
+          </motion.div>
+          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : { delay: 0.4 }}>
+            <div className="stat-num">{stats.users.toLocaleString()}+</div>
+            <div>Users</div>
           </motion.div>
         </div>
       </section>
 
-      {/* 2. STATS OVERLAY (Dark Navy) */}
-      <section className="stats-section">
-        <div className="container stats-grid">
-          <div className="stat-item">
-            <h3>{stats.jobs}+</h3>
-            <p>Active Jobs</p>
-          </div>
-          <div className="stat-item">
-            <h3>{stats.companies}+</h3>
-            <p>Verified Companies</p>
-          </div>
-          <div className="stat-item">
-            <h3>{stats.users}+</h3>
-            <p>Happy Seekers</p>
-          </div>
-          <div className="stat-item">
-            <h3>{stats.hires}+</h3>
-            <p>Monthly Hires</p>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. TRUST STRIP */}
-      <section className="trust-strip">
+      {/* Job List */}
+      <section className="jobs-home-section">
         <div className="container">
-          <div className="logo-cloud">
-            <span>Nabil Bank</span>
-            <span>CG Corp</span>
-            <span>Daraz</span>
-            <span>Pathao</span>
-            <span>Nepal Telecom</span>
+          <div className="section-header">
+            <h2>Latest Jobs</h2>
+            <a href="/jobs" className="view-all">View all →</a>
           </div>
-        </div>
-      </section>
-
-      {/* 4. CATEGORIES (Centered Blocks) */}
-      <section className="section-padding">
-        <div className="container">
-          <h2 className="section-title">Job Categories</h2>
-          <div className="category-grid">
-            {categories.map((cat) => (
-              <div key={cat.name} className="cat-card" onClick={() => navigate(`/jobs?category=${cat.name}`)}>
-                <div className="cat-icon-box" style={{ backgroundColor: cat.bg, color: cat.color }}>
-                  {cat.icon}
+          <div className="jobs-grid">
+            {loading ? (
+              <div className="loading-jobs">Loading jobs...</div>
+            ) : jobs.map((job, i) => (
+              <motion.div 
+                key={job.id}
+                className="job-home-card"
+                layout
+                whileHover={{ y: -4 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.03 }}
+                onClick={() => navigate(`/jobs/${job.id}`)}
+              >
+                <div className="job-head">
+                  <div className="job-logo-wrap">
+                    <div className="logo-initial">
+                      {job.company_name ? job.company_name[0].toUpperCase() : 'J'}
+                    </div>
+                  </div>
+                  <Heart className="save-icon" size={18} />
                 </div>
-                <h4>{cat.name}</h4>
-                <p>Explore Openings</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. FEATURED JOBS (Modern Grid) */}
-      <section className="section-padding bg-light">
-        <div className="container">
-          <h2 className="section-title">Featured Jobs</h2>
-          <div className="featured-grid">
-            {featuredJobs.map(job => (
-              <div key={job.id} className="job-card" onClick={() => navigate(`/jobs/${job.id}`)}>
-                <span className="feat-badge">Featured</span>
-                <h3>{job.title}</h3>
-                <p className="company-name">{job.company_name}</p>
-                <div className="job-card-footer">
-                  <span>{job.location}</span>
-                  <span className="job-type-pill">{job.job_type}</span>
+                <h3 className="job-title-small">{job.title}</h3>
+                <p className="job-company-small">{job.company_name || job.employer?.name}</p>
+                <div className="job-foot">
+                  <span className="location-small">
+                    <MapPin size={14} /> {job.location}
+                  </span>
+                  <span className="type-small">{job.job_type}</span>
+                  {job.salary_min && (
+                    <span className="salary-small">
+                      NPR {job.salary_min.toLocaleString()}
+                    </span>
+                  )}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 6. SKILLS SECTION */}
-      <section className="section-padding bg-navy text-white">
-        <div className="container text-center">
-          <h3 className="mb-4">Trending Skills</h3>
-          <div className="skill-cloud">
-            {['React', 'Node.js', 'SQL', 'Accounting', 'Graphic Design'].map(skill => (
-              <span key={skill} onClick={() => navigate(`/jobs?search=${skill}`)} className="skill-pill">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. CTA BANNER */}
-      <section className="section-padding">
-        <div className="container">
-          <div className="cta-banner">
-            <div className="cta-content">
-              <h2>Ready to take the next step?</h2>
-              <p>Upload your CV and let top employers find you.</p>
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <section className="rec-section">
+          <div className="container">
+            <div className="section-header">
+              <h2>Recommended for you</h2>
             </div>
-            <div className="cta-buttons">
-              <button className="btn-white" onClick={() => navigate('/profile')}>Upload Resume</button>
-              <button className="btn-outline" onClick={() => navigate('/register')}>Join Now</button>
+            <div className="jobs-grid">
+              {recommendations.slice(0, 4).map((job, i) => (
+                <motion.div 
+                  key={job.id}
+                  className="job-home-card rec-card"
+                  whileHover={{ y: -4 }}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                >
+                  <div className="job-head">
+                    <div className="logo-initial">
+                      {job.company_name ? job.company_name[0].toUpperCase() : 'J'}
+                    </div>
+                    <Star className="ai-badge" size={16} />
+                  </div>
+                  <h3>{job.title}</h3>
+                  <p>{job.company_name}</p>
+                  <div className="job-foot">
+                    <span><MapPin size={14} /> {job.location}</span>
+                    <span>{job.job_type}</span>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
+        </section>
+      )}
+
+      {/* Testimonials - Bottom */}
+      <section className="testimonials-section">
+        <div className="container">
+          <div className="section-header">
+            <h2>What users say</h2>
+          </div>
+          <div className="testimonials-container">
+            <motion.div 
+              key={currentTestimonial}
+              className="testimonial-card"
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.5 }}
+            >
+              <p className="testimonial-quote">"{testimonials[currentTestimonial].quote}"</p>
+              <div className="testimonial-author">
+                <div className="author-avatar">
+                  {testimonials[currentTestimonial].name[0]}
+                </div>
+                <div>
+                  <div className="author-name">{testimonials[currentTestimonial].name}</div>
+                  <div className="author-role">{testimonials[currentTestimonial].role}</div>
+                  <div className="author-company">{testimonials[currentTestimonial].company}</div>
+                </div>
+              </div>
+            </motion.div>
+            <div className="testimonial-dots">
+              {testimonials.map((_, i) => (
+                <button
+                  key={i}
+                  className={i === currentTestimonial ? 'dot active' : 'dot'}
+                  onClick={() => setCurrentTestimonial(i)}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      <footer className="footer-simple">
-        <p>&copy; 2026 <strong>JobSathi Nepal</strong>. Your Career Partner.</p>
+      {/* Footer */}
+      <footer className="footer-min">
+
+        <div className="container">
+          <p>© JobPortal. Find your next opportunity.</p>
+          <div className="footer-links">
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -81,13 +81,18 @@ exports.getAllJobs = async (req, res) => {
       salaryMin,
       salaryMax,
       experienceLevel,
+      sort = "createdAt",
     } = req.query;
 
     const where = { status: "active" };
 
-    // Use Op.iLike for case-insensitive searching in PostgreSQL/SQLite
+    // MySQL-compatible case-insensitive search
     if (location) {
-      where.location = { [Op.iLike]: `%${location}%` };
+      where.location = sequelize.where(
+        sequelize.fn("LOWER", sequelize.col("location")),
+        Op.like,
+        `%${location.toLowerCase()}%`,
+      );
     }
     if (jobType) {
       where.job_type = jobType;
@@ -96,16 +101,30 @@ exports.getAllJobs = async (req, res) => {
       where.category = category;
     }
     if (search) {
+      const searchLower = `%${search.toLowerCase()}%`;
       where[Op.or] = [
-        { title: { [Op.iLike]: `%${search}%` } },
-        { company_name: { [Op.iLike]: `%${search}%` } },
+        sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("title")),
+          Op.like,
+          searchLower,
+        ),
+        sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("company_name")),
+          Op.like,
+          searchLower,
+        ),
+        sequelize.where(
+          sequelize.fn("LOWER", sequelize.col("required_skills")),
+          Op.like,
+          searchLower,
+        ),
       ];
     }
     if (salaryMin) {
-      where.salary_max = { [Op.gte]: parseFloat(salaryMin) };
+      where.salary_min = { [Op.gte]: parseFloat(salaryMin) };
     }
     if (salaryMax) {
-      where.salary_min = { [Op.lte]: parseFloat(salaryMax) };
+      where.salary_max = { [Op.lte]: parseFloat(salaryMax) };
     }
     if (experienceLevel) {
       where.experience_level = experienceLevel;
@@ -122,7 +141,7 @@ exports.getAllJobs = async (req, res) => {
           attributes: ["id", "name", "email"],
         },
       ],
-      order: [["createdAt", "DESC"]],
+      order: [[sort, "DESC"]],
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
@@ -289,5 +308,63 @@ exports.getEmployerJobs = async (req, res) => {
     res.json({ jobs, stats });
   } catch (error) {
     res.status(500).json({ message: "Error fetching employer jobs" });
+  }
+};
+
+// 8. GET TOP COMPANIES (Homepage)
+exports.getTopCompanies = async (req, res) => {
+  try {
+    const { limit = 8 } = req.query;
+    const companies = await Job.findAll({
+      where: { status: "active" },
+      attributes: [
+        [sequelize.col("company_name"), "name"],
+        [sequelize.col("company_logo"), "logo"],
+        [sequelize.fn("COUNT", sequelize.col("id")), "jobCount"],
+      ],
+      group: ["company_name", "company_logo"],
+      order: [[sequelize.fn("COUNT", sequelize.col("id")), "DESC"]],
+      limit: parseInt(limit),
+    });
+    res.json(companies.map((c) => c.dataValues));
+  } catch (error) {
+    console.error("Error fetching top companies:", error);
+    res.status(500).json({ message: "Error fetching top companies" });
+  }
+};
+
+// 9. GET CATEGORIES WITH COUNTS (Homepage)
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Job.findAll({
+      where: { status: "active" },
+      attributes: [
+        [sequelize.col("category"), "name"],
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      ],
+      group: "category",
+      order: [[sequelize.fn("COUNT", sequelize.col("id")), "DESC"]],
+      limit: 8,
+    });
+    res.json(categories.map((c) => c.dataValues));
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res.status(500).json({ message: "Error fetching categories" });
+  }
+};
+
+// 10. GET FEATURED JOBS (Recent active)
+exports.getFeaturedJobs = async (req, res) => {
+  try {
+    const { limit = 8 } = req.query;
+    const jobs = await Job.findAll({
+      where: { status: "active" },
+      order: [["createdAt", "DESC"]],
+      limit: parseInt(limit),
+    });
+    res.json({ jobs });
+  } catch (error) {
+    console.error("Error fetching featured jobs:", error);
+    res.status(500).json({ message: "Error fetching featured jobs" });
   }
 };
