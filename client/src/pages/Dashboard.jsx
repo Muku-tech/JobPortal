@@ -29,24 +29,20 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [recRes, appsRes, savedRes] = await Promise.all([
+      const [recRes, appsRes] = await Promise.all([
         api.get('/recommendations/smart').catch(() => ({ data: [] })),
-        api.get('/applications/user'),
-        api.get('/jobs/saved')
+        api.get('/applications/user')
       ]);
 
       const recData = recRes.data.jobs || recRes.data || [];
       const appsData = appsRes.data || [];
-      const savedData = savedRes.data.jobs || [];
 
       setRecommendedJobs(recData.slice(0, 3)); // Compact: max 3
       setApplications(appsData);
-      setSavedJobs(savedData);
       
       setStats({
         applied: appsData.length,
-        interviews: appsData.filter(a => a.status === 'interview').length,
-        saved: savedData.length
+        interviews: appsData.filter(a => a.status === 'interview').length
       });
     } catch (err) {
       console.error("Dashboard fetch error:", err);
@@ -223,18 +219,7 @@ export default function Dashboard() {
                 <h2>{stats.interviews}</h2>
               </div>
             </motion.div>
-            <motion.div 
-              className="stat-box" 
-              whileHover={{ scale: 1.02, y: -5 }}
-              transition={{ type: "spring" }}
-              onClick={() => setApplicationsTab('saved')}
-            >
-              <div className="icon-wrap pink"><Heart size={20} /></div>
-              <div>
-                <p>Saved</p>
-                <h2>{stats.saved}</h2>
-              </div>
-            </motion.div>
+
           </motion.div>
 
           {/* 3. APPLICATIONS - MAIN FOCUS */}
