@@ -17,6 +17,7 @@ import ManageJobs from "./pages/ManageJobs"
 import JobSeekerProfile from "./pages/JobSeekerProfile"
 import EmployerProfile from "./pages/EmployerProfile"
 import EmployerJobApplicants from "./pages/EmployerJobApplicants"
+import ResumeBuilder from "./pages/ResumeBuilder"
 
 // NEW IMPORT
 import { useParams } from "react-router-dom"
@@ -169,6 +170,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ProfileRedirect />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resume-builder"
+                element={
+                  <ProtectedRoute allowedRole="jobseeker">
+                    <ResumeBuilder />
                   </ProtectedRoute>
                 }
               />

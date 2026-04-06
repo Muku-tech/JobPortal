@@ -40,8 +40,14 @@ const startServer = async (port) => {
 
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
-      console.log(`Port ${port} is in use, trying ${port + 1}...`);
-      startServer(port + 1);
+      const nextPort = parseInt(port) + 1;
+      if (nextPort > 6000) {
+        console.error("No available port found");
+        process.exit(1);
+        return;
+      }
+      console.log(`Port ${port} is in use, trying ${nextPort}...`);
+      startServer(nextPort);
     } else {
       console.error("Failed to start server:", err);
       process.exit(1);

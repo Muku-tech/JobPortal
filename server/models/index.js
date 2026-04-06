@@ -4,6 +4,7 @@ const Job = require("./Job");
 const Application = require("./Application");
 const JobView = require("./JobView");
 const Notification = require("./Notification");
+const Resume = require("./Resume");
 
 // Associations
 require("./User").associate({
@@ -46,6 +47,12 @@ require("./Notification").associate({
   JobView,
   Notification,
 });
+// require("./Resume").associate({
+//   sequelize,
+//   User,
+//   Resume,
+// });
+// Resume.associate({ sequelize, User });
 
 module.exports = {
   sequelize,
@@ -54,4 +61,5 @@ module.exports = {
   Application,
   JobView,
   Notification,
+  Resume,
 };

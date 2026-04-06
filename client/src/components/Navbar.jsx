@@ -66,13 +66,16 @@ function Navbar() {
             </div>
           ) : (
             <div className="user-group">
-              {user.role === "jobseeker" && (
+{user.role === "jobseeker" && (
                 <>
                   <Link to="/jobs" className={`nav-link ${location.pathname === '/jobs' ? 'active' : ''}`}>
                     Browse Jobs
                   </Link>
                   <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
                     Dashboard
+                  </Link>
+                  <Link to="/resume-builder" className={`nav-link ${location.pathname === '/resume-builder' ? 'active' : ''}`}>
+                    Resume Builder
                   </Link>
                 </>
               )}
