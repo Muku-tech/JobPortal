@@ -173,7 +173,6 @@ export default function Home() {
                       {job.company_name ? job.company_name[0].toUpperCase() : 'J'}
                     </div>
                   </div>
-                  <Heart className="save-icon" size={18} />
                 </div>
                 <h3 className="job-title-small">{job.title}</h3>
                 <p className="job-company-small">{job.company_name || job.employer?.name}</p>

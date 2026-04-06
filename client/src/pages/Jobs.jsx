@@ -64,12 +64,21 @@ export default function Jobs() {
 
 const { toast } = useToast();
 
+const fetchSavedJobIds = async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/jobs/saved');
+      setSavedJobIds(res.data.jobs.map(j => j.id));
+    } catch (error) {
+      console.error('Error fetching saved jobs:', error);
+    }
+  };
+
 const toggleSave = async (jobId) => {
     try {
       await api.post('/jobs/save', { jobId });
-      const saved = !savedJobIds.includes(jobId);
-      setSavedJobIds(prev => saved ? [...prev, jobId] : prev.filter(id => id !== jobId));
-      toast(saved ? 'Job saved ✅' : 'Job unsaved');
+      await fetchSavedJobIds(); // Refetch real state
+      toast(!savedJobIds.includes(jobId) ? 'Job saved ✅' : 'Job unsaved');
     } catch (err) {
       toast.error('Save failed');
     }

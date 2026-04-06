@@ -18,7 +18,7 @@ const UserSavedJob = sequelize.define(
 
 UserSavedJob.associate = (models) => {
   UserSavedJob.belongsTo(models.User, { foreignKey: "user_id" });
-  UserSavedJob.belongsTo(models.Job, { foreignKey: "job_id" });
+  UserSavedJob.belongsTo(models.Job, { foreignKey: "job_id", as: "Job" });
 };
 
 module.exports = UserSavedJob;

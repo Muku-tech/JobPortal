@@ -229,6 +229,9 @@ exports.saveJob = async (req, res) => {
     const { jobId } = req.body;
     const userId = req.user.id;
 
+    const job = await Job.findByPk(jobId);
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
     const [savedJob, created] = await UserSavedJob.findOrCreate({
       where: { user_id: userId, job_id: jobId },
       defaults: { user_id: userId, job_id: jobId },
@@ -238,6 +241,14 @@ exports.saveJob = async (req, res) => {
       await savedJob.destroy();
       return res.json({ message: "Job unsaved", saved: false });
     }
+
+    // Create notification
+    await Notification.create({
+      user_id: userId,
+      title: "Job Saved",
+      message: `You saved "${job.title}" at ${job.company_name}`,
+      type: "system",
+    });
 
     res.json({ message: "Job saved", saved: true });
   } catch (error) {
