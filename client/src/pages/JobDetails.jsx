@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Briefcase, MapPin, Calendar, Download, ChevronRight, CheckCircle } from 'lucide-react'
+import { Brain, Heart, Briefcase, MapPin, Calendar, Download, ChevronRight, CheckCircle } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { useTheme } from '../context/ThemeContext'
 import '../styles/JobDetails.css'
 
 export default function JobDetails() {
   const { id } = useParams()
   const { user } = useAuth()
-  const { toast } = useToast()
+const { toast } = useToast()
+  const { jobDetailsTheme, setJobDetailsTheme } = useTheme()
   const navigate = useNavigate()
 
   const [job, setJob] = useState(null)
@@ -19,7 +21,10 @@ export default function JobDetails() {
   const [coverLetter, setCoverLetter] = useState('')
   const [applied, setApplied] = useState(false)
   const [relatedJobs, setRelatedJobs] = useState([])
-  const [isSaved, setIsSaved] = useState(false)
+  const [showSkillGap, setShowSkillGap] = useState(false)
+  const [skillGap, setSkillGap] = useState(null)
+  const [loadingGap, setLoadingGap] = useState(false)
+
 
   useEffect(() => {
     fetchJob()
@@ -57,15 +62,7 @@ export default function JobDetails() {
         // Silently fail - don't block job display
       }
 
-      try {
-        // Check saved
-        const savedResponse = await api.get('/jobs/saved')
-        const isSavedJob = savedResponse.data.jobs?.some(j => j.id === Number(id)) || false
-        setIsSaved(isSavedJob)
-      } catch (savedError) {
-        console.error('Error checking saved jobs (404 expected if none):', savedError)
-        setIsSaved(false)
-      }
+
     }
     setLoading(false)
   }
@@ -99,26 +96,7 @@ export default function JobDetails() {
     }
   }
 
-  const fetchSavedStatus = async () => {
-    if (!user) return;
-    try {
-      const savedResponse = await api.get('/jobs/saved');
-      const isSavedJob = savedResponse.data.jobs?.some(j => j.id === Number(id)) || false;
-      setIsSaved(isSavedJob);
-    } catch (error) {
-      console.error('Error fetching saved status:', error);
-    }
-  };
 
-  const toggleSave = async () => {
-    try {
-      await api.post('/jobs/save', { jobId: Number(id) });
-      await fetchSavedStatus(); // Refetch real state
-      toast(!isSaved ? 'Job saved!' : 'Job unsaved');
-    } catch (err) {
-      toast.error('Save failed');
-    }
-  };
 
   // Skills parser
   const renderSkills = () => {
@@ -143,12 +121,21 @@ export default function JobDetails() {
   if (!job) return <div className="error-full">Job not found <Link to="/jobs">← Back</Link></div>
 
   return (
-    <div className="job-details-page">
+<div className={`job-details-page theme-${jobDetailsTheme}`}>
       {/* TOP HEADER */}
       <header className="job-header">
         <Link to="/jobs" className="back-btn">← Back to Jobs</Link>
         <div className="header-content">
           <div className="header-main">
+            <div className="theme-selector">
+              <label>View: </label>
+              <select value={jobDetailsTheme} onChange={(e) => setJobDetailsTheme(e.target.value)} className="theme-select">
+                <option value="modern">Modern</option>
+                <option value="compact">Compact</option>
+                <option value="cards">Cards</option>
+                <option value="minimal">Minimal</option>
+              </select>
+            </div>
             <motion.h1 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -289,16 +276,28 @@ export default function JobDetails() {
           </div>
 
           <div className="sidebar-section action-section">
-            <h3>Quick Actions</h3>
-            <motion.button 
-              className={`save-btn ${isSaved ? 'saved' : ''}`}
-              onClick={toggleSave}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Heart size={20} fill={isSaved ? 'currentColor' : 'none'} />
-              {isSaved ? 'Saved' : 'Save Job'}
-            </motion.button>
+            <h3>Skill Gap Analysis</h3>
+            {user && (
+              <motion.button 
+                className="skill-gap-btn"
+                onClick={async () => {
+                  setLoadingGap(true);
+                  try {
+                    const response = await api.get(`/jobs/${id}/skillgap`);
+                    setSkillGap(response.data);
+                    setShowSkillGap(true);
+                  } catch (err) {
+                    toast.error('Failed to analyze skills');
+                  } finally {
+                    setLoadingGap(false);
+                  }
+                }}
+                whileHover={{ scale: 1.05 }}
+                disabled={loadingGap}
+              >
+                {loadingGap ? 'Analyzing...' : <><Brain size={18} /> Check My Skill Fit</>}
+              </motion.button>
+            )}
           </div>
         </aside>
       </div>
@@ -316,6 +315,50 @@ export default function JobDetails() {
             ))}
           </div>
         </motion.section>
+      )}
+      {/* Skill Gap Modal */}
+      {showSkillGap && skillGap && (
+        <motion.div 
+          className="skill-gap-modal"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+        >
+          <div className="modal-header">
+            <h3>Skill Gap Analysis</h3>
+            <button onClick={() => setShowSkillGap(false)} className="close-btn">×</button>
+          </div>
+          <div className="gap-score">
+            <span className="score">{skillGap.gapScore}%</span>
+            <span>Match Score</span>
+          </div>
+          <div className="gap-stats">
+            <div>
+              <strong>{skillGap.totalMissing}</strong> skills missing
+            </div>
+            <div>
+              You have <strong>{skillGap.yourSkills.length}</strong> relevant skills
+            </div>
+          </div>
+          <div className="missing-skills">
+            <h4>Missing Skills ({skillGap.missingSkills.length}):</h4>
+            <div className="skills-list">
+              {skillGap.missingSkills.map((skill, i) => (
+                <span key={i} className="gap-skill">
+                  {skill} 
+                  <a href={`https://www.google.com/search?q=${encodeURIComponent(skill)}+tutorial+free`} target="_blank">
+                    Learn →
+                  </a>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="gap-actions">
+            <button className="btn-primary" onClick={() => setShowSkillGap(false)}>
+              Got it, thanks!
+            </button>
+          </div>
+        </motion.div>
       )}
     </div>
   )

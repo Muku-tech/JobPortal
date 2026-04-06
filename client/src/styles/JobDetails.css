@@ -414,3 +414,166 @@
     padding: 24px;
   }
 }
+
+ /* Theme Selector */
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.theme-select {
+  padding: 6px 12px;
+  border: 1px solid var(--js-border);
+  border-radius: 6px;
+  background: white;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.theme-select:focus {
+  outline: none;
+  border-color: var(--js-blue);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+/* THEME: Modern (default) */
+.theme-modern {
+  /* Current styles are default */
+}
+
+/* THEME: Compact - Single column, accordion */
+.theme-compact .job-grid {
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.theme-compact .job-sidebar {
+  position: static;
+  order: 1;
+}
+
+.theme-compact .section {
+  margin-bottom: 24px;
+}
+
+.theme-compact .section-content {
+  display: none;
+}
+
+.theme-compact .section-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--js-light);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.theme-compact .section-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.theme-compact .section-content.active {
+  display: block;
+  padding: 16px;
+  background: white;
+  border: 1px solid var(--js-border);
+  border-radius: 8px;
+}
+
+ /* THEME: Cards - Stacked card layout */
+.theme-cards .job-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.theme-cards .section {
+  background: white;
+  border: 1px solid var(--js-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+  margin-bottom: 0;
+}
+
+.theme-cards .section h2 {
+  background: linear-gradient(135deg, var(--js-blue), var(--js-navy));
+  color: white;
+  padding: 20px 32px;
+  margin: 0;
+  border-bottom: none;
+}
+
+.theme-cards .content {
+  padding: 32px;
+}
+
+.theme-cards .job-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.theme-cards .sidebar-section {
+  order: -1;
+}
+
+ /* THEME: Minimal - Plain text */
+.theme-minimal {
+  --js-light: #ffffff;
+  --js-border: #e5e7eb;
+  --js-text: #111827;
+  --js-muted: #6b7280;
+}
+
+.theme-minimal .job-header,
+.theme-minimal .job-main,
+.theme-minimal .sidebar-section,
+.theme-minimal .related-section {
+  box-shadow: none;
+  border: 1px solid var(--js-border);
+  border-radius: 8px;
+  padding: 24px;
+  background: transparent;
+}
+
+.theme-minimal .job-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--js-text);
+}
+
+.theme-minimal .btn,
+.theme-minimal .apply-top-btn {
+  background: var(--js-blue);
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.theme-minimal .btn:hover {
+  background: #1e3a8a;
+}
+
+.theme-minimal .skill-tag {
+  background: var(--js-light);
+  border: 1px solid var(--js-border);
+}
+
+ /* Theme Responsive */
+@media (max-width: 768px) {
+  .theme-selector {
+    margin-bottom: 12px;
+  }
+  
+  .theme-select {
+    width: 100%;
+    max-width: 200px;
+  }
+}

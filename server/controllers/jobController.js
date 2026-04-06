@@ -3,7 +3,7 @@ const {
   User,
   Application,
   sequelize,
-  UserSavedJob,
+  Notification,
 } = require("../models");
 const { Op } = require("sequelize");
 
@@ -223,61 +223,6 @@ exports.deleteJob = async (req, res) => {
   }
 };
 
-// Save/unsave job toggle
-exports.saveJob = async (req, res) => {
-  try {
-    const { jobId } = req.body;
-    const userId = req.user.id;
-
-    const job = await Job.findByPk(jobId);
-    if (!job) return res.status(404).json({ message: "Job not found" });
-
-    const [savedJob, created] = await UserSavedJob.findOrCreate({
-      where: { user_id: userId, job_id: jobId },
-      defaults: { user_id: userId, job_id: jobId },
-    });
-
-    if (!created) {
-      await savedJob.destroy();
-      return res.json({ message: "Job unsaved", saved: false });
-    }
-
-    // Create notification
-    await Notification.create({
-      user_id: userId,
-      title: "Job Saved",
-      message: `You saved "${job.title}" at ${job.company_name}`,
-      type: "system",
-    });
-
-    res.json({ message: "Job saved", saved: true });
-  } catch (error) {
-    console.error("Save job error:", error);
-    res.status(500).json({ message: "Error saving job" });
-  }
-};
-
-// GET saved jobs for user
-exports.getSavedJobs = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const savedJobs = await UserSavedJob.findAll({
-      where: { user_id: userId },
-      include: [
-        {
-          model: Job,
-          as: "Job",
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
-    res.json({ jobs: savedJobs.map((sj) => sj.Job) });
-  } catch (error) {
-    console.error("Get saved jobs error:", error);
-    res.status(500).json({ message: "Error fetching saved jobs" });
-  }
-};
-
 // 7. GET EMPLOYER-SPECIFIC JOBS (Dashboard)
 exports.getEmployerJobs = async (req, res) => {
   try {
@@ -377,5 +322,49 @@ exports.getFeaturedJobs = async (req, res) => {
   } catch (error) {
     console.error("Error fetching featured jobs:", error);
     res.status(500).json({ message: "Error fetching featured jobs" });
+  }
+};
+
+// 11. GET SKILL GAP ANALYSIS
+exports.getSkillGap = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const job = await Job.findByPk(id, {
+      include: [{ model: User, as: "employer" }],
+    });
+
+    if (!job) return res.status(404).json({ message: "Job not found" });
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(401).json({ message: "User not found" });
+
+    const userSkills = user.skills || [];
+    const jobSkills = job.required_skills || [];
+
+    // Simple set difference for missing skills
+    const userSet = new Set(userSkills.map((s) => s.toLowerCase().trim()));
+    const jobSet = new Set(jobSkills.map((s) => s.toLowerCase().trim()));
+    const missing = Array.from(jobSet).filter((skill) => !userSet.has(skill));
+
+    // Gap score: percentage of job skills user has
+    const gapScore =
+      jobSkills.length > 0
+        ? Math.round(
+            ((jobSkills.length - missing.length) / jobSkills.length) * 100,
+          )
+        : 0;
+
+    res.json({
+      gapScore,
+      missingSkills: missing.slice(0, 5), // Top 5
+      totalMissing: missing.length,
+      yourSkills: userSkills.slice(0, 5),
+      jobSkillsCount: jobSkills.length,
+    });
+  } catch (error) {
+    console.error("Skill gap error:", error);
+    res.status(500).json({ message: "Error calculating skill gap" });
   }
 };

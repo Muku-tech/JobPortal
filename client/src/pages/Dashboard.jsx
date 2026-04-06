@@ -19,7 +19,7 @@ export default function Dashboard() {
   const [applicationsTab, setApplicationsTab] = useState("all");
   const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
+
   const [stats, setStats] = useState({ applied: 0, interviews: 0, saved: 0 });
 
   useEffect(() => {

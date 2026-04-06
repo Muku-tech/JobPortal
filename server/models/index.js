@@ -4,7 +4,6 @@ const Job = require("./Job");
 const Application = require("./Application");
 const JobView = require("./JobView");
 const Notification = require("./Notification");
-const UserSavedJob = require("./UserSavedJob");
 
 // Associations
 require("./User").associate({
@@ -14,7 +13,6 @@ require("./User").associate({
   Application,
   JobView,
   Notification,
-  UserSavedJob,
 });
 require("./Job").associate({
   sequelize,
@@ -23,7 +21,6 @@ require("./Job").associate({
   Application,
   JobView,
   Notification,
-  UserSavedJob,
 });
 require("./Application").associate({
   sequelize,
@@ -32,7 +29,6 @@ require("./Application").associate({
   Application,
   JobView,
   Notification,
-  UserSavedJob,
 });
 require("./JobView").associate({
   sequelize,
@@ -41,7 +37,6 @@ require("./JobView").associate({
   Application,
   JobView,
   Notification,
-  UserSavedJob,
 });
 require("./Notification").associate({
   sequelize,
@@ -50,16 +45,6 @@ require("./Notification").associate({
   Application,
   JobView,
   Notification,
-  UserSavedJob,
-});
-require("./UserSavedJob").associate({
-  sequelize,
-  User,
-  Job,
-  Application,
-  JobView,
-  Notification,
-  UserSavedJob,
 });
 
 module.exports = {
@@ -69,5 +54,4 @@ module.exports = {
   Application,
   JobView,
   Notification,
-  UserSavedJob,
 };

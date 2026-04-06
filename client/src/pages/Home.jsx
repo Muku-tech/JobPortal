@@ -173,6 +173,21 @@ export default function Home() {
                       {job.company_name ? job.company_name[0].toUpperCase() : 'J'}
                     </div>
                   </div>
+                  <button 
+                    className="home-save-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Reuse Jobs toggle logic - call api directly
+                      api.post('/jobs/save', { jobId: job.id }).then(() => {
+                        // Toggle optimistically
+                        e.currentTarget.style.opacity = '0.7';
+                      }).catch(() => {
+                        toast.error('Save failed');
+                      });
+                    }}
+                  >
+                    <Heart size={16} fill="none" strokeWidth={2} />
+                  </button>
                 </div>
                 <h3 className="job-title-small">{job.title}</h3>
                 <p className="job-company-small">{job.company_name || job.employer?.name}</p>

@@ -11,7 +11,7 @@ export default function Jobs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [savedJobIds, setSavedJobIds] = useState([]);
+
   const { user } = useAuth();
 
   const [filters, setFilters] = useState({
@@ -24,14 +24,7 @@ export default function Jobs() {
 
   const [hasMore, setHasMore] = useState(true);
 
-  // Load saved jobs
-  useEffect(() => {
-    if (user) {
-      api.get('/jobs/saved').then(res => {
-        setSavedJobIds(res.data.jobs.map(j => j.id));
-      }).catch(() => {}); // Silent fail
-    }
-  }, [user]);
+
 
   const loadJobs = async (append = false) => {
     setLoading(true);
@@ -64,25 +57,7 @@ export default function Jobs() {
 
 const { toast } = useToast();
 
-const fetchSavedJobIds = async () => {
-    if (!user) return;
-    try {
-      const res = await api.get('/jobs/saved');
-      setSavedJobIds(res.data.jobs.map(j => j.id));
-    } catch (error) {
-      console.error('Error fetching saved jobs:', error);
-    }
-  };
 
-const toggleSave = async (jobId) => {
-    try {
-      await api.post('/jobs/save', { jobId });
-      await fetchSavedJobIds(); // Refetch real state
-      toast(!savedJobIds.includes(jobId) ? 'Job saved ✅' : 'Job unsaved');
-    } catch (err) {
-      toast.error('Save failed');
-    }
-  };
 
   const jobTypes = [
     { value: "", label: "All Types" },
@@ -162,19 +137,7 @@ const toggleSave = async (jobId) => {
                     <h3 className="job-title">{job.title}</h3>
                     <p className="job-company">{job.company_name}</p>
                   </div>
-                  <button 
-                    className="save-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleSave(job.id);
-                    }}
-                  >
-                    <Heart 
-                      size={20}
-                      fill={savedJobIds.includes(job.id) ? '#ff6b35' : 'none'}
-                      strokeWidth={2}
-                    />
-                  </button>
+
                 </div>
                 <div className="job-meta">
                   <span><MapPin size={16} /> {job.location}</span>

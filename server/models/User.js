@@ -139,7 +139,6 @@ User.prototype.toJSON = function () {
 
 User.associate = (models) => {
   User.hasMany(models.Job, { foreignKey: "employer_id", as: "employerJobs" });
-  User.hasMany(models.UserSavedJob, { foreignKey: "user_id", as: "savedJobs" });
 };
 
 module.exports = User;

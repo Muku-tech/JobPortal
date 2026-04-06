@@ -15,11 +15,11 @@ router.get("/employer", auth.verifyToken, jobController.getEmployerJobs);
 
 // Public single job
 router.get("/:id", jobController.getJobById);
+router.get("/:id/skillgap", auth.verifyToken, jobController.getSkillGap);
 
 // Protected routes
 router.post("/", auth.verifyToken, jobController.createJob);
-router.post("/save", auth.verifyToken, jobController.saveJob);
-router.get("/saved", auth.verifyToken, jobController.getSavedJobs);
+
 router.put("/:id", auth.verifyToken, jobController.updateJob);
 router.delete("/:id", auth.verifyToken, jobController.deleteJob);
 
