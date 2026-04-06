@@ -39,7 +39,7 @@ function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="auth-logo">JS</div>
+          <div className="auth-logo" ></div>
           <h1>{role === 'employer' ? 'Employer Login' : 'Job Seeker Login'}</h1>
           <p className="auth-subtitle">Log in as {role === 'employer' ? 'an employer' : 'a job seeker'} to your JobSathi account</p>
         </div>

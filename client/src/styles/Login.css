@@ -23,16 +23,15 @@
 }
 
 .auth-logo {
-  width: 48px;
-  height: 48px;
-  background: #2563eb;
-  color: white;
-  font-weight: 800;
-  font-size: 1.5rem;
+  background-image: url("../../public/logo.png");
+  background-size: cover;
+
+  width: 100px;
+  height: 55px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-bottom: 1px solid #F28F2C;
   margin: 0 auto 16px;
 }
 
@@ -82,7 +81,7 @@
 
 #forgot-link {
   font-size: 0.8rem;
-  color: #2563eb;
+  color: #EF862E;
   text-decoration: none;
 }
 
@@ -98,13 +97,13 @@
 
 .auth-form input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: #EF862E;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .login-btn {
   width: 100%;
-  background-color: #2563eb;
+  background-color: #EF862E;
   color: white;
   padding: 14px;
   border: none;
@@ -117,7 +116,7 @@
 }
 
 .login-btn:hover {
-  background-color: #1d4ed8;
+  background-color: #6B7795;
 }
 
 .login-btn:disabled {
@@ -134,7 +133,7 @@
 }
 
 .signup-link {
-  color: #2563eb;
+  color: #EF862E;
   font-weight: 700;
   text-decoration: none;
 }
