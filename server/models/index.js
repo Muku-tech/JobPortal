@@ -47,12 +47,10 @@ require("./Notification").associate({
   JobView,
   Notification,
 });
-// require("./Resume").associate({
-//   sequelize,
-//   User,
-//   Resume,
-// });
-// Resume.associate({ sequelize, User });
+require("./Resume").associate({
+  sequelize,
+  User,
+});
 
 module.exports = {
   sequelize,

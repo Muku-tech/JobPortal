@@ -33,4 +33,14 @@ api.interceptors.response.use(
   },
 );
 
+// Resume API functions
+export const resumeApi = {
+  getResumes: () => api.get("/resumes"),
+  getResume: (id) => api.get(`/resumes/${id}`),
+  createResume: (data) => api.post("/resumes", data),
+  updateResume: (id, data) => api.put(`/resumes/${id}`, data),
+  deleteResume: (id) => api.delete(`/resumes/${id}`),
+  setDefaultResume: (id) => api.patch(`/resumes/${id}/default`),
+};
+
 export default api;

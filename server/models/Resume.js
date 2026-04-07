@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/database");
+const User = require("./User");
 
 const Resume = sequelize.define(
   "Resume",
@@ -12,43 +13,94 @@ const Resume = sequelize.define(
     user_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: "users",
-        key: "id",
-      },
     },
     personal_info: {
       type: DataTypes.JSON,
       defaultValue: {},
-      comment: "name, email, phone, address, linkedin, github",
     },
     summary: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    education: {
-      type: DataTypes.JSON,
-      defaultValue: [],
-      comment: "Array of education objects",
-    },
-    experience: {
-      type: DataTypes.JSON,
-      defaultValue: [],
-      comment: "Array of work experience",
-    },
     skills: {
       type: DataTypes.JSON,
       defaultValue: [],
-      comment: "Array of skills",
+    },
+    technical_skills: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    experiences: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    educations: {
+      type: DataTypes.JSON,
+      defaultValue: [],
     },
     projects: {
       type: DataTypes.JSON,
       defaultValue: [],
-      comment: "Array of projects",
+    },
+    certifications: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    achievements: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    internships: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    publications: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    volunteer_experience: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    leadership_experience: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    extracurricular_activities: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    languages: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    interests: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    affiliations: {
+      type: DataTypes.JSON,
+      defaultValue: [],
+    },
+    conferences: {
+      type: DataTypes.JSON,
+      defaultValue: [],
     },
     template: {
       type: DataTypes.STRING(50),
       defaultValue: "modern",
+    },
+    font_family: {
+      type: DataTypes.STRING(100),
+      defaultValue: "Arial, sans-serif",
+    },
+    primary_color: {
+      type: DataTypes.STRING(7),
+      defaultValue: "#2c3e50",
+    },
+    secondary_color: {
+      type: DataTypes.STRING(7),
+      defaultValue: "#3498db",
     },
     is_default: {
       type: DataTypes.BOOLEAN,
@@ -60,5 +112,9 @@ const Resume = sequelize.define(
     timestamps: true,
   },
 );
+
+Resume.associate = ({ sequelize, User }) => {
+  Resume.belongsTo(User, { foreignKey: "user_id" });
+};
 
 module.exports = Resume;

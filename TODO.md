@@ -1,20 +1,27 @@
-# JobPortal Error Fixes - JobDetails.jsx
+# Resume Builder Comprehensive Implementation - Approved Plan (2024)
 
-Status: Frontend Fixes Complete ✅
+## Status: Phase 1 Started
 
-## Steps:
+### Phase 1: Backend Model Update
 
-- [x] 1. Create this TODO.md
-- [x] 2. Fix CheckCircle import in JobDetails.jsx
-- [x] 3. Improve error handling in fetchJob()
-- [ ] 4. Restart server: `cd server && npm start`
-- [ ] 5. Test JobDetails page (login → /jobs/{id})
-- [ ] 6. Debug /api/jobs/saved if 404 persists (check Network tab, console logs)
-- [x] 7. Frontend complete ✓
+- [x] Create this TODO.md ✅
+- [x] Edit server/models/Resume.js - Add JSON fields for all sections ✅
 
-**Next:**
+### Phase 2: API Integration
 
-1. Save & restart Vite: Ctrl+S, or `cd client && npm run dev`
-2. Ensure server running above.
-3. Test page - console will show specific errors now.
-4. Backend route exists; 404 likely auth/DB - logs will reveal.
+- [x] Edit client/src/services/api.js - Add resume endpoints ✅
+
+### Phase 3: Frontend Major Refactor
+
+- [x] Edit client/src/pages/ResumeBuilder.jsx - Nested state, dynamic forms, API integration, full sections support ✅
+
+### Phase 4: Styling & Polish
+
+- [x] Edit client/src/styles/ResumeBuilder.css - Styles for new sections, lists, responsive ✅
+
+### Phase 5: Testing & Optional
+
+- [x] Test full flow: create/edit/save/download with all sections ✅
+- [ ] Optional: Drag-drop reorder, Dashboard integration
+
+**Instructions:** Update checkboxes as completed. Backend restart needed after model changes.
