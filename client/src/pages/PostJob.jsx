@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { 
   Briefcase, MapPin, DollarSign, List, 
   Calendar, Users, Info, ArrowLeft, Send 
@@ -9,12 +9,14 @@ import '../styles/PostJob.css'
 
 function PostJob() {
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('new')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     company_name: '',
     location: '',
     job_type: 'full-time',
+    status: 'draft',
     category: '',
     salary_min: '',
     salary_max: '',
@@ -25,6 +27,7 @@ function PostJob() {
     vacancy: 1,
     deadline: ''
   })
+  const [employerJobs, setEmployerJobs] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -38,6 +41,46 @@ function PostJob() {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
+
+  const loadEmployerJobs = async () => {
+    try {
+      const response = await api.get('/jobs/employer')
+      setEmployerJobs(response.data.jobs || [])
+    } catch (error) {
+      console.error('Failed to load jobs:', error)
+    }
+  }
+
+  const handleEdit = (job) => {
+    setFormData(job)
+    setActiveTab('new')
+  }
+
+  const handleMarkComplete = async (jobId) => {
+    if (!confirm('Mark this job as completed? It will be hidden from job seekers.')) return
+    
+    try {
+      await api.patch(`/jobs/${jobId}`, { status: 'completed' })
+      loadEmployerJobs()
+    } catch (error) {
+      console.error('Failed to update job status:', error)
+    }
+  }
+
+  const handleDelete = async (jobId) => {
+    if (!confirm('Delete this job permanently?')) return
+    
+    try {
+      await api.delete(`/jobs/${jobId}`)
+      loadEmployerJobs()
+    } catch (error) {
+      console.error('Failed to delete job:', error)
+    }
+  }
+
+  useEffect(() => {
+    loadEmployerJobs()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -70,114 +113,171 @@ function PostJob() {
           <ArrowLeft size={18} /> Back to Dashboard
         </button>
 
+        {/* TABS */}
+        <div className="job-tabs">
+          <button 
+            className={`tab-btn ${activeTab === 'new' ? 'active' : ''}`}
+            onClick={() => setActiveTab('new')}
+          >
+            New Job
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'myjobs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('myjobs')}
+          >
+            My Jobs ({employerJobs.length})
+          </button>
+        </div>
+
         <div className="post-job-card">
           <header className="form-header">
             <div className="header-icon"><Briefcase size={32} /></div>
             <div>
-              <h1>Post a New Vacancy</h1>
-              <p>Find the right talent across Nepal with JobSathi</p>
+              <h1>{activeTab === 'new' ? 'Post New Vacancy' : 'Manage My Jobs'}</h1>
+              <p>{activeTab === 'new' ? 'Find the right talent across Nepal' : 'Edit, update, or complete your job postings'}</p>
             </div>
           </header>
 
           {error && <div className="alert error">{error}</div>}
-          {success && <div className="alert success">{success}</div>}
+{success && <div className="alert success">{success}</div>}
 
-          <form onSubmit={handleSubmit} className="job-post-form">
-            
-            {/* SECTION 1: CORE INFO */}
-            <div className="form-section">
-              <h3 className="section-title"><Info size={20} /> Basic Information</h3>
-              <div className="input-group">
-                <label>Job Title*</label>
-                <input type="text" name="title" placeholder="e.g. Senior React Developer" value={formData.title} onChange={handleChange} required />
-              </div>
-              
-              <div className="input-grid">
+{activeTab === 'new' ? (
+            <form onSubmit={handleSubmit} className="job-post-form">
+              {/* SECTION 1: CORE INFO */}
+              <div className="form-section">
+                <h3 className="section-title"><Info size={20} /> Basic Information</h3>
                 <div className="input-group">
-                  <label>Location*</label>
-                  <select name="location" value={formData.location} onChange={handleChange} required>
-                    <option value="">Select City</option>
-                    {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-                  </select>
+                  <label>Job Title*</label>
+                  <input type="text" name="title" placeholder="e.g. Senior React Developer" value={formData.title} onChange={handleChange} required />
                 </div>
-                <div className="input-group">
-                  <label>Category*</label>
-                  <select name="category" value={formData.category} onChange={handleChange} required>
-                    <option value="">Select Category</option>
-                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 2: REQUIREMENTS */}
-            <div className="form-section">
-              <h3 className="section-title"><List size={20} /> Requirements & Pay</h3>
-              <div className="input-grid">
-                <div className="input-group">
-                  <label>Job Type</label>
-                  <select name="job_type" value={formData.job_type} onChange={handleChange}>
-                    {jobTypes.map(type => <option key={type} value={type}>{type}</option>)}
-                  </select>
-                </div>
-                <div className="input-group">
-                  <label>Experience Level</label>
-                  <select name="experience_level" value={formData.experience_level} onChange={handleChange}>
-                    {experienceLevels.map(level => <option key={level} value={level}>{level}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="input-grid">
-                <div className="input-group">
-                  <label>Min Salary (NPR)</label>
-                  <div className="price-input">
-                    <span className="unit">Rs.</span>
-                    <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} placeholder="0" />
+                
+                <div className="input-grid">
+                  <div className="input-group">
+                    <label>Location*</label>
+                    <select name="location" value={formData.location} onChange={handleChange} required>
+                      <option value="">Select City</option>
+                      {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                    </select>
                   </div>
-                </div>
-                <div className="input-group">
-                  <label>Max Salary (NPR)</label>
-                  <div className="price-input">
-                    <span className="unit">Rs.</span>
-                    <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} placeholder="Any" />
+                  <div className="input-group">
+                    <label>Category*</label>
+                    <select name="category" value={formData.category} onChange={handleChange} required>
+                      <option value="">Select Category</option>
+                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
 
-              <div className="input-group">
-                <label>Required Skills (Comma separated)</label>
-                <input type="text" name="required_skills" value={formData.required_skills} onChange={handleChange} placeholder="React, Node.js, SQL" />
-                <small>Separate skills with commas (e.g. Photoshop, Figma)</small>
-              </div>
-            </div>
-
-            {/* SECTION 3: DETAILS */}
-            <div className="form-section">
-              <h3 className="section-title"><Calendar size={20} /> Final Details</h3>
-              <div className="input-group">
-                <label>Job Description*</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows="5" placeholder="Key responsibilities..." required />
-              </div>
-              
-              <div className="input-grid">
-                <div className="input-group">
-                  <label>Vacancies</label>
-                  <input type="number" name="vacancy" value={formData.vacancy} onChange={handleChange} min="1" />
+              {/* SECTION 2: REQUIREMENTS */}
+              <div className="form-section">
+                <h3 className="section-title"><List size={20} /> Requirements & Pay</h3>
+                <div className="input-grid">
+                  <div className="input-group">
+                    <label>Job Type</label>
+                    <select name="job_type" value={formData.job_type} onChange={handleChange}>
+                      {jobTypes.map(type => <option key={type} value={type}>{type}</option>)}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label>Experience Level</label>
+                    <select name="experience_level" value={formData.experience_level} onChange={handleChange}>
+                      {experienceLevels.map(level => <option key={level} value={level}>{level}</option>)}
+                    </select>
+                  </div>
                 </div>
+
+                <div className="input-grid">
+                  <div className="input-group">
+                    <label>Min Salary (NPR)</label>
+                    <div className="price-input">
+                      <span className="unit">Rs.</span>
+                      <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} placeholder="0" />
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label>Max Salary (NPR)</label>
+                    <div className="price-input">
+                      <span className="unit">Rs.</span>
+                      <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} placeholder="Any" />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="input-group">
-                  <label>Deadline</label>
-                  <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} />
+                  <label>Required Skills (Comma separated)</label>
+                  <input type="text" name="required_skills" value={formData.required_skills} onChange={handleChange} placeholder="React, Node.js, SQL" />
+                  <small>Separate skills with commas (e.g. Photoshop, Figma)</small>
                 </div>
               </div>
-            </div>
 
-            <div className="form-actions">
-              <button type="submit" className="btn-publish" disabled={loading}>
-                {loading ? 'Publishing...' : <><Send size={18} /> Publish Vacancy</>}
-              </button>
+              {/* SECTION 3: DETAILS */}
+              <div className="form-section">
+                <h3 className="section-title"><Calendar size={20} /> Final Details</h3>
+                <div className="input-group">
+                  <label>Job Description*</label>
+                  <textarea name="description" value={formData.description} onChange={handleChange} rows="5" placeholder="Key responsibilities..." required />
+                </div>
+                
+                <div className="input-grid">
+                  <div className="input-group">
+                    <label>Vacancies</label>
+                    <input type="number" name="vacancy" value={formData.vacancy} onChange={handleChange} min="1" />
+                  </div>
+                  <div className="input-group">
+                    <label>Deadline</label>
+                    <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-actions">
+                <button type="submit" className="btn-publish" disabled={loading}>
+                  {loading ? 'Publishing...' : <><Send size={18} /> {formData.id ? 'Update Job' : 'Publish Vacancy'}</>}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="my-jobs-list">
+              <h3>Your Job Postings ({employerJobs.length})</h3>
+              {employerJobs.length === 0 ? (
+                <div className="no-jobs">
+                  No jobs posted yet. <button onClick={() => setActiveTab('new')} className="btn-link">Create your first job posting</button>
+                </div>
+              ) : (
+                employerJobs.map(job => (
+                  <div key={job.id} className="job-item">
+                    <div className="job-title">{job.title}</div>
+                    <div className="job-meta">
+                      <span className={`status-badge status-${job.status}`}>{job.status.toUpperCase()}</span>
+                      <span>{job.location} • {job.job_type}</span>
+                      {job.ApplicationCount > 0 && <span>{job.ApplicationCount} applicants</span>}
+                    </div>
+                    <div className="job-actions">
+                      <button 
+                        onClick={() => handleEdit(job)}
+                        className="btn-small primary"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleMarkComplete(job.id)}
+                        className={`btn-small secondary ${job.status === 'completed' ? 'reopen' : ''}`}
+                      >
+                        {job.status === 'active' ? 'Complete' : job.status === 'completed' ? 'Reopen' : 'Activate'}
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(job.id)}
+                        className="btn-small danger"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          </form>
+          )}
         </div>
       </div>
     </div>

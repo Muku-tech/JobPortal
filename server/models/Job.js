@@ -77,7 +77,7 @@ const Job = sequelize.define(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM("active", "closed", "draft"),
+      type: DataTypes.ENUM("active", "draft", "closed", "completed"),
       defaultValue: "active",
     },
     vacancy: {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { toast } from 'react-hot-toast';
 import { 
   PlusCircle, Users, Briefcase, Activity, 
   MapPin, Clock, ChevronRight, Search 
@@ -31,6 +32,18 @@ function EmployerDashboard() {
       console.error("Error fetching employer data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (jobId) => {
+    if (!confirm('Are you sure you want to delete this job?')) return;
+    
+    try {
+      await api.delete(`/jobs/${jobId}`);
+      setJobs(jobs.filter(job => job.id !== jobId));
+      toast.success('Job deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete job');
     }
   };
 
@@ -151,7 +164,22 @@ function EmployerDashboard() {
                       Review Candidates <ChevronRight size={18} />
                     </button>
 
-                    <button className="btn-dots">...</button>
+                    <div className="job-actions">
+                      <button 
+                        onClick={() => navigate(`/post-job/edit/${job.id}`)}
+                        className="btn-edit"
+                        title="Edit Job"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(job.id)}
+                        className="btn-delete"
+                        title="Delete Job"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
 
                 </div>

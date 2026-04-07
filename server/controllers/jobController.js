@@ -12,7 +12,7 @@ exports.getGroupedJobs = async (req, res) => {
   try {
     const { type = "company", limit = 2 } = req.query; // Default 2 jobs per card
 
-    const where = { status: "active" };
+    const where = { status: { [Op.in]: ["active", "draft"] } };
     const groupField =
       type === "industry"
         ? "category"
@@ -42,7 +42,7 @@ exports.getGroupedJobs = async (req, res) => {
 
       const sampleJobs = await Job.findAll({
         where: {
-          status: "active",
+          status: { [Op.in]: ["active", "draft"] },
           [groupField]: groupValue,
         },
         attributes: ["id", "title"],
@@ -84,7 +84,7 @@ exports.getAllJobs = async (req, res) => {
       sort = "createdAt",
     } = req.query;
 
-    const where = { status: "active" };
+    const where = { status: { [Op.in]: ["active", "draft"] } };
 
     // MySQL-compatible case-insensitive search
     if (location) {
