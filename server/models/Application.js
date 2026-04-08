@@ -31,10 +31,10 @@ const Application = sequelize.define(
     },
     status: {
       type: DataTypes.ENUM(
-        "pending",
-        "reviewed",
+        "applied",
+        "under_review",
         "shortlisted",
-        "interviewed",
+        "interview_scheduled",
         "hired",
         "rejected",
       ),

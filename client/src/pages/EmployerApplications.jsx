@@ -9,7 +9,7 @@ function EmployerApplications({ jobId }) {
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState(null)
 
-  const atsStages = ['pending', 'reviewed', 'shortlisted', 'interviewed', 'hired', 'rejected']
+const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_scheduled', 'hired', 'rejected']
 
   useEffect(() => {
     fetchApplications(jobId)

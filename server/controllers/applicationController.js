@@ -20,7 +20,7 @@ exports.applyForJob = async (req, res) => {
       job_id: jobId,
       user_id: userId,
       cover_letter: coverLetter,
-      status: "pending",
+      status: "applied",
     });
     res.status(201).json({
       message: "Application submitted successfully",
@@ -166,10 +166,10 @@ exports.updateApplicationStatus = async (req, res) => {
     }
 
     const validStatuses = [
-      "pending",
-      "reviewed",
+      "applied",
+      "under_review",
       "shortlisted",
-      "interviewed",
+      "interview_scheduled",
       "hired",
       "rejected",
     ];
