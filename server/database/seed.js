@@ -317,20 +317,17 @@ async function seedDatabase() {
     await Application.create({
       job_id: createdJobs[0].id,
       user_id: jobSeekers[0].id,
-      status: "pending"
-    });
+      status: "under_review"\n    });
 
     await Application.create({
       job_id: createdJobs[1].id,
       user_id: jobSeekers[1].id,
-      status: "reviewing"
-    });
+      status: "under_review"\n    });
 
     await Application.create({
       job_id: createdJobs[4].id,
       user_id: jobSeekers[0].id,
-      status: "accepted"
-    });
+      status: "shortlisted"\n    });
 
     // Create some job views for collaborative filtering
     await JobView.create({

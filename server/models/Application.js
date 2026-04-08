@@ -30,15 +30,8 @@ const Application = sequelize.define(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM(
-        "applied",
-        "under_review",
-        "shortlisted",
-        "interview_scheduled",
-        "hired",
-        "rejected",
-      ),
-      defaultValue: "pending",
+      type: DataTypes.STRING(50),
+      defaultValue: "applied",
     },
     employer_notes: {
       type: DataTypes.TEXT,
