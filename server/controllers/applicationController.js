@@ -137,10 +137,17 @@ exports.getJobApplications = async (req, res) => {
 
 exports.updateApplicationStatus = async (req, res) => {
   try {
+    console.log("=== STATUS UPDATE DEBUG START ===");
+    console.log("App ID:", req.params.id);
+    console.log("Body:", req.body);
+    console.log("User ID:", req.user.id);
+    console.log("User role:", req.user.role);
+
     const { id } = req.params;
     const { status, notes } = req.body;
     const userId = req.user.id;
 
+    console.log("Finding application ID:", id);
     const application = await Application.findByPk(id, {
       include: [
         {
@@ -150,6 +157,16 @@ exports.updateApplicationStatus = async (req, res) => {
         },
       ],
     });
+    console.log("Found application:", !!application);
+    if (application) {
+      console.log("App job_id:", application.job_id);
+      console.log(
+        "App job:",
+        application.job
+          ? { id: application.job.id, employer_id: application.job.employer_id }
+          : "NO JOB",
+      );
+    }
 
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
@@ -178,20 +195,33 @@ exports.updateApplicationStatus = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
+    console.log("Setting status to:", status, "notes provided:", !!notes);
     application.status = status;
 
     if (notes !== undefined) {
       application.employer_notes = notes;
     }
 
+    console.log("Saving application...");
     await application.save();
+    console.log("Save successful!");
 
     res.json({
       message: "Application status updated successfully",
       application,
     });
   } catch (error) {
-    console.error("Error in updateApplicationStatus:", error);
-    res.status(500).json({ message: "Error updating application" });
+    console.error("=== STATUS UPDATE ERROR ===");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    if (error.name === "SequelizeValidationError") {
+      console.error("Validation errors:", error.errors);
+    }
+    console.error("========================");
+    res.status(500).json({
+      message: "Error updating application",
+      debug: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 };
