@@ -204,7 +204,27 @@ exports.updateApplicationStatus = async (req, res) => {
 
     console.log("Saving application...");
     await application.save();
+
     console.log("Save successful!");
+
+    // Send status update email to applicant if trigger status
+    if (
+      ["shortlisted", "interview_scheduled", "hired", "rejected"].includes(
+        status,
+      )
+    ) {
+      const applicant = await User.findByPk(application.user_id);
+      if (applicant && applicant.email) {
+        const { sendStatusUpdateEmail } = require("../utils/emailService");
+        await sendStatusUpdateEmail(
+          applicant.email,
+          applicant.name,
+          application.job.title,
+          status,
+        );
+        console.log("✅ Status update email sent to", applicant.email);
+      }
+    }
 
     res.json({
       message: "Application status updated successfully",
