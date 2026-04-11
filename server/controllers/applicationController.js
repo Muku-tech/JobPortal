@@ -215,14 +215,23 @@ exports.updateApplicationStatus = async (req, res) => {
     ) {
       const applicant = await User.findByPk(application.user_id);
       if (applicant && applicant.email) {
-        const { sendStatusUpdateEmail } = require("../utils/emailService");
-        await sendStatusUpdateEmail(
-          applicant.email,
-          applicant.name,
-          application.job.title,
-          status,
-        );
-        console.log("✅ Status update email sent to", applicant.email);
+        try {
+          const { sendStatusUpdateEmail } = require("../utils/emailService");
+          const result = await sendStatusUpdateEmail(
+            applicant.email,
+            applicant.name,
+            application.job.title,
+            status,
+          );
+          if (result) {
+            console.log("✅ Status update email sent to", applicant.email);
+          }
+        } catch (emailError) {
+          console.error(
+            "⚠️ Email failed but status saved:",
+            emailError.message,
+          );
+        }
       }
     }
 

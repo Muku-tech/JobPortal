@@ -7,16 +7,12 @@ let isTestMode = true; // default fallback
 
 async function createTransporter() {
   console.log("🔄 Initializing email transporter...");
-
+  
   // Production Gmail SMTP
-  if (
-    process.env.NODE_ENV === "production" &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS
-  ) {
+  if (process.env.NODE_ENV === 'production' && process.env.SMTP_USER && process.env.SMTP_PASS) {
     console.log("🚀 Using PRODUCTION Gmail SMTP");
-    transporter = nodemailer.createTransporter({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT) || 587,
       secure: false, // true for 465, false for other ports
       auth: {
@@ -25,19 +21,19 @@ async function createTransporter() {
       },
     });
     isTestMode = false;
-
+    
     // Test connection
     await transporter.verify();
     console.log("✅ PRODUCTION SMTP connection verified");
     return transporter;
   }
-
+  
   // Fallback to Ethereal test
   console.log("🧪 Using ETHREAL TEST MODE (add SMTP vars for real emails)");
   const testAccount = await nodemailer.createTestAccount();
   console.log("Test account:", testAccount.user);
-
-  transporter = nodemailer.createTransport({
+  
+  transporter = nodemailer.createTransporter({
     host: "smtp.ethereal.email",
     port: 587,
     secure: false,
@@ -46,11 +42,9 @@ async function createTransporter() {
       pass: testAccount.pass,
     },
   });
-
+  
   console.log("✅ Ethereal test transporter ready");
-  console.log(
-    `📧 View test emails: https://ethereal.email/login#/${testAccount.user}`,
-  );
+  console.log(`📧 View test emails: https://ethereal.email/login#/${testAccount.user}`);
   return transporter;
 }
 
@@ -112,8 +106,7 @@ const sendStatusUpdateEmail = async (
       return null;
     }
 
-    const fromEmail =
-      process.env.SMTP_USER || '"JobPortal" <no-reply@jobportal.com>';
+    const fromEmail = process.env.SMTP_USER || '"JobPortal" <no-reply@jobportal.com>';
     const mailOptions = {
       from: fromEmail,
       to: applicantEmail,
@@ -121,26 +114,20 @@ const sendStatusUpdateEmail = async (
       html: template.html,
     };
 
-    console.log(
-      `${isTestMode ? "🧪 TEST" : "📧 REAL"}: Sending to ${applicantEmail} (Status: ${newStatus})`,
-    );
-
+    console.log(`${isTestMode ? '🧪 TEST' : '📧 REAL'}: Sending to ${applicantEmail} (Status: ${newStatus})`);
+    
     const info = await transporter.sendMail(mailOptions);
-
+    
     if (isTestMode) {
       console.log("✅ Test email sent:", nodemailer.getTestMessageUrl(info));
     } else {
-      console.log(
-        "✅ REAL email sent successfully! Message ID:",
-        info.messageId,
-      );
+      console.log("✅ REAL email sent successfully! Message ID:", info.messageId);
     }
-
+    
     return info;
   } catch (error) {
     console.error("❌ Email send failed:", error.message);
-    // Don't throw - don't break status update
-    return null;
+    throw error; // Let caller handle
   }
 };
 
