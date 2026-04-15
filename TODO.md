@@ -1,14 +1,22 @@
-# Task Progress: Remove Edit/Delete buttons from Employer Dashboard active jobs section
+# JobPortal TODO - Notifications Fixed ✅
 
-## Steps to Complete:
+**Notification System Complete:**
 
-- [x] 1. Create TODO.md with approved plan steps
-- [x] 2. Edit EmployerDashboard.jsx: Remove handleDelete function
-- [x] 3. Edit EmployerDashboard.jsx: Remove job-actions div (Edit/Delete buttons)
-- [x] 1. Create TODO.md with approved plan steps
-- [x] 2. Edit EmployerDashboard.jsx: Remove handleDelete function
-- [x] 3. Edit EmployerDashboard.jsx: Remove job-actions div (Edit/Delete buttons)
-- [x] 4. Edit EmployerDashboard.jsx: Adjust Review Candidates button layout
-- [x] 5. Verify changes and complete task
+✅ Fixed server/controllers/notificationController.js exports (ReferenceError)
+✅ Fixed applicationController.js Notification import and added from_user_id
+✅ Added missing `from_user_id` DB column + index
+✅ Made sender join optional in queries
+✅ Status changes now send notifications to job seekers (shortlisted, interview, hired, rejected)
 
-**Task completed. Delete this file when done.**
+**Test Flow:**
+
+1. Employer changes status → Job seeker gets notification
+2. Notifications API fully functional
+3. Frontend EmployerApplications ready
+
+**Next:**
+
+- Navbar unread count integration
+- Job seeker MyApplications status updates
+- Real email notifications
+- Resume enhancements

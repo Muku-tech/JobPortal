@@ -144,7 +144,7 @@ exports.updateApplicationStatus = async (req, res) => {
     console.log("User role:", req.user.role);
 
     const { id } = req.params;
-    const { status, notes } = req.body;
+    const { status, notes, interviewDate } = req.body;
     const userId = req.user.id;
 
     console.log("Finding application ID:", id);
@@ -207,29 +207,49 @@ exports.updateApplicationStatus = async (req, res) => {
 
     console.log("Save successful!");
 
-    // Send status update email to applicant if trigger status
+    // Send internal notification to applicant if trigger status
     if (
       ["shortlisted", "interview_scheduled", "hired", "rejected"].includes(
         status,
       )
     ) {
       const applicant = await User.findByPk(application.user_id);
-      if (applicant && applicant.email) {
+      if (applicant) {
         try {
-          const { sendStatusUpdateEmail } = require("../utils/emailService");
-          const result = await sendStatusUpdateEmail(
-            applicant.email,
-            applicant.name,
-            application.job.title,
-            status,
-          );
-          if (result) {
-            console.log("✅ Status update email sent to", applicant.email);
-          }
-        } catch (emailError) {
+          const Notification = require("../models/Notification");
+          const statusTemplates = {
+            shortlisted: {
+              title: "🎉 Shortlisted for Job!",
+              message: `Congratulations ${applicant.name}! You have been shortlisted for "${application.job.title}". Next steps coming soon!`,
+            },
+            interview_scheduled: {
+              title: "📅 Interview Scheduled",
+              message: interviewDate
+                ? `Hello ${applicant.name}, an interview has been scheduled for "${application.job.title}" on **${interviewDate}**. Please confirm availability or reply to reschedule.`
+                : `Hello ${applicant.name}, an interview has been scheduled for "${application.job.title}". Check details or reply to confirm.`,
+            },
+            hired: {
+              title: "🎊 You're Hired!",
+              message: `Congratulations ${applicant.name}! You have been hired for "${application.job.title}". Welcome aboard!`,
+            },
+            rejected: {
+              title: "Application Update",
+              message: `Thank you ${applicant.name} for applying to "${application.job.title}". We will keep your profile for future opportunities.`,
+            },
+          };
+          const template = statusTemplates[status];
+          await Notification.create({
+            user_id: applicant.id,
+            from_user_id: req.user.id,
+            title: template.title,
+            message: template.message,
+            type: "status_update",
+          });
+          console.log("✅ Internal notification sent to", applicant.name);
+        } catch (notifError) {
           console.error(
-            "⚠️ Email failed but status saved:",
-            emailError.message,
+            "⚠️ Notification failed but status saved:",
+            notifError.message,
           );
         }
       }

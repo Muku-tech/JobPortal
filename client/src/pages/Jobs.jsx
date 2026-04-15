@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Heart, MapPin, Search, ChevronDown } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { MapPin, Search } from "lucide-react";
 import api from "../services/api";
 import "../styles/Jobs.css";
-import { useToast } from "../context/ToastContext";
 
 export default function Jobs() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const { user } = useAuth();
 
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
@@ -24,13 +21,12 @@ export default function Jobs() {
 
   const [hasMore, setHasMore] = useState(true);
 
-
-
   const loadJobs = async (append = false) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ ...filters, limit: 10 });
       const res = await api.get(`/jobs?${params}`);
+
       setJobs(append ? [...jobs, ...res.data.jobs] : res.data.jobs);
       setHasMore(res.data.page < res.data.totalPages);
       setFilters(prev => ({ ...prev, page: res.data.page }));
@@ -51,13 +47,9 @@ export default function Jobs() {
   };
 
   const loadMore = () => {
-    const newFilters = { ...filters, page: filters.page + 1 };
+    setFilters(prev => ({ ...prev, page: prev.page + 1 }));
     loadJobs(true);
   };
-
-const { toast } = useToast();
-
-
 
   const jobTypes = [
     { value: "", label: "All Types" },
@@ -69,7 +61,7 @@ const { toast } = useToast();
 
   return (
     <div className="jobs-page">
-      {/* Compact Search */}
+      {/* Search Section: Uses Navy background with overlapping search row */}
       <div className="search-section">
         <div className="search-row">
           <input
@@ -78,33 +70,36 @@ const { toast } = useToast();
             value={filters.search}
             onChange={(e) => handleChange("search", e.target.value)}
           />
-          <input
-            className="location-input"
-            placeholder="Location"
-            value={filters.location}
-            onChange={(e) => handleChange("location", e.target.value)}
-          />
+          <div className="location-wrapper">
+            <input
+              className="location-input"
+              placeholder="Location"
+              value={filters.location}
+              onChange={(e) => handleChange("location", e.target.value)}
+            />
+          </div>
           <button className="search-btn">
             <Search size={18} />
           </button>
         </div>
       </div>
 
-      {/* Filter + Sort Row */}
-      <div className="filter-row">
-        <div className="type-filters">
-          {jobTypes.map(type => (
-            <button
-              key={type.value}
-              className={`type-btn ${filters.jobType === type.value ? 'active' : ''}`}
-              onClick={() => handleChange("jobType", type.value)}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-        <div className="sort-container">
-          <select 
+      <div className="jobs-container">
+        {/* Filter Bar: Positioned just below the search overlap */}
+        <div className="filter-row">
+          <div className="type-filters">
+            {jobTypes.map(type => (
+              <button
+                key={type.value}
+                className={`type-btn ${filters.jobType === type.value ? "active" : ""}`}
+                onClick={() => handleChange("jobType", type.value)}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+
+          <select
             className="sort-select"
             value={filters.sort}
             onChange={(e) => handleChange("sort", e.target.value)}
@@ -113,36 +108,33 @@ const { toast } = useToast();
             <option value="salary_max">Salary High-Low</option>
           </select>
         </div>
-      </div>
 
-      {/* Jobs */}
-      <div className="jobs-container">
+        {/* Loading & Empty States */}
         {loading && jobs.length === 0 ? (
-          <div className="loading">Loading jobs...</div>
+          <div className="loading">Gathering positions...</div>
         ) : jobs.length === 0 ? (
           <div className="empty-state">
-            <h3>No jobs found</h3>
-            <p>Try different search or filters</p>
+            <h3>No positions found</h3>
+            <p>Try adjusting your filters or location.</p>
           </div>
         ) : (
           <div className="jobs-grid">
             {jobs.map(job => (
-              <div 
+              <div
                 key={job.id}
-                className="job-card"
+                className="job-card highlight-bar" 
                 onClick={() => navigate(`/jobs/${job.id}`)}
               >
                 <div className="job-header">
-                  <div>
-                    <h3 className="job-title">{job.title}</h3>
-                    <p className="job-company">{job.company_name}</p>
-                  </div>
-
+                  <h3 className="job-title">{job.title}</h3>
+                  <p className="job-company">{job.company_name}</p>
                 </div>
+
                 <div className="job-meta">
-                  <span><MapPin size={16} /> {job.location}</span>
+                  <span><MapPin size={14} /> {job.location}</span>
                   <span className="job-type">{job.job_type}</span>
                 </div>
+
                 <div className="job-footer">
                   <button className="view-btn">View Details</button>
                 </div>
@@ -150,13 +142,13 @@ const { toast } = useToast();
             ))}
           </div>
         )}
+
         {hasMore && (
           <button className="load-more-btn" onClick={loadMore} disabled={loading}>
-            {loading ? 'Loading...' : 'Load More Jobs'}
+            {loading ? "Loading..." : "Load More"}
           </button>
         )}
       </div>
     </div>
   );
 }
-

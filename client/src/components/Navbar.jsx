@@ -74,11 +74,17 @@ function Navbar() {
                   <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
                     Dashboard
                   </Link>
+                  <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`}>
+                    Messages
+                  </Link>
                   <Link to="/resume-builder" className={`nav-link ${location.pathname === '/resume-builder' ? 'active' : ''}`}>
                     Resume Builder
                   </Link>
                 </>
               )}
+              <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} id="messages-link">
+                Messages
+              </Link>
 
               {user.role === "employer" && (
                 <>

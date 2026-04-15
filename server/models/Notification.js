@@ -31,6 +31,14 @@ const Notification = sequelize.define(
       ),
       defaultValue: "system",
     },
+    from_user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "users",
+        key: "id",
+      },
+    },
     read: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
@@ -43,7 +51,14 @@ const Notification = sequelize.define(
 );
 
 Notification.associate = (models) => {
-  Notification.belongsTo(models.User, { foreignKey: "user_id", as: "user" });
+  Notification.belongsTo(models.User, {
+    foreignKey: "user_id",
+    as: "recipient",
+  });
+  Notification.belongsTo(models.User, {
+    foreignKey: "from_user_id",
+    as: "sender",
+  });
 };
 
 module.exports = Notification;

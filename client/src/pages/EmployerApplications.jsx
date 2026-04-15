@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import '../styles/EmployerApplications.css'
 
-function EmployerApplications({ jobId }) {
-
+const EmployerApplications = ({ jobId }) => {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
+  const [updatingAppId, setUpdatingAppId] = useState(null)
+  const [showMessageModal, setShowMessageModal] = useState(false)
+  const [messageModalAppId, setMessageModalAppId] = useState(null)
+  const [messageText, setMessageText] = useState('')
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState(null)
 
-const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_scheduled', 'hired', 'rejected']
+  const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_scheduled', 'hired', 'rejected']
 
   useEffect(() => {
     fetchApplications(jobId)
@@ -28,7 +31,6 @@ const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_schedule
 
       const response = await api.get(endpoint)
 
-      // handle different response formats safely
       const data = response.data?.applications || response.data || []
 
       setApplications(Array.isArray(data) ? data : [])
@@ -41,14 +43,15 @@ const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_schedule
     }
   }
 
-  const updateStatus = async (applicationId, status, notes) => {
+  const updateStatus = async (applicationId, status, notes, interviewDate) => {
     try {
-      await api.put(`/applications/${applicationId}/status`, { status, notes })
+      setUpdatingAppId(applicationId)
+      await api.put(`/applications/${applicationId}/status`, { status, notes, interviewDate })
 
       setApplications(prev =>
         prev.map(app =>
           app.id === applicationId
-            ? { ...app, status, employer_notes: notes }
+            ? { ...app, status, employer_notes: notes, interview_date: interviewDate }
             : app
         )
       )
@@ -56,6 +59,8 @@ const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_schedule
     } catch (error) {
       console.error(error)
       alert('Failed to update status')
+    } finally {
+      setUpdatingAppId(null)
     }
   }
 
@@ -64,7 +69,24 @@ const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_schedule
       ? applications
       : applications.filter(app => app.status === filter)
 
-  // ✅ LOADING STATE
+  const sendMessage = async () => {
+    if (!messageText.trim()) return alert('Message cannot be empty');
+    
+    try {
+      await api.post('/notifications', {  // Fixed endpoint to match routes
+        applicantId: messageModalAppId,
+        message: messageText.trim()
+      });
+      setShowMessageModal(false);
+      setMessageText('');
+      alert('Message sent successfully!');
+      fetchApplications(jobId);  // Refresh list
+    } catch (error) {
+      console.error('Send message error:', error);
+      alert('Failed to send message');
+    }
+  }
+
   if (loading) {
     return (
       <div className="loading-state">
@@ -74,7 +96,6 @@ const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_schedule
     )
   }
 
-  // ✅ ERROR STATE
   if (error) {
     return (
       <div className="error-state">
@@ -86,136 +107,160 @@ const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_schedule
   }
 
   return (
-    <div className="employer-ats-container">
-
-      {/* HEADER */}
-      <header className="ats-header">
-        <div className="header-content">
-          <h1>Applicant Tracking System</h1>
-          <p>Manage and move candidates through your recruitment pipeline.</p>
-        </div>
-      </header>
-
-      {/* FILTER BAR */}
-      <div className="ats-filter-bar">
-
-        <button
-          onClick={() => setFilter('all')}
-          className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-        >
-          All Candidates ({applications.length})
-        </button>
-
-        {atsStages.map(stage => (
-          <button
-            key={stage}
-            onClick={() => setFilter(stage)}
-            className={`filter-tab ${filter === stage ? 'active' : ''}`}
-          >
-            {stage}
-          </button>
-        ))}
-
-      </div>
-
-      {/* APPLICATION LIST */}
-      <div className="applications-feed">
-
-        {filteredApps.length === 0 ? (
-
-          <div className="empty-ats-state">
-            <p>No candidates found in the <strong>{filter}</strong> stage.</p>
+    <>
+      <div className="employer-ats-container">
+        {/* HEADER */}
+        <header className="ats-header">
+          <div className="header-content">
+            <h1>Applicant Tracking System</h1>
+            <p>Manage and move candidates through your recruitment pipeline.</p>
           </div>
+        </header>
 
-        ) : (
+        {/* FILTER BAR */}
+        <div className="ats-filter-bar">
+          <button
+            onClick={() => setFilter('all')}
+            className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
+          >
+            All Candidates ({applications.length})
+          </button>
 
-          filteredApps.map(app => (
+          {atsStages.map(stage => (
+            <button
+              key={stage}
+              onClick={() => setFilter(stage)}
+              className={`filter-tab ${filter === stage ? 'active' : ''}`}
+            >
+              {stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </button>
+          ))}
+        </div>
 
-            <div key={app.id} className="candidate-card">
-
-              {/* TOP */}
-              <div className="card-top">
-
-                <div className="candidate-info">
-                  <h3 className="job-title-tag">
-                    {app.job?.title || 'Job Title'}
-                  </h3>
-
-                  <h2 className="applicant-name">
-                    {app.applicant?.name || 'Unknown Applicant'}
-                  </h2>
-
-                  <p className="applicant-email">
-                    {app.applicant?.email || 'No Email'}
-                  </p>
+        {/* APPLICATION LIST */}
+        <div className="applications-feed">
+          {filteredApps.length === 0 ? (
+            <div className="empty-ats-state">
+              <p>No candidates found in the <strong>{filter.replace('_', ' ')}</strong> stage.</p>
+            </div>
+          ) : (
+            filteredApps.map(app => (
+              <div key={app.id} className="candidate-card">
+                {/* TOP */}
+                <div className="card-top">
+                  <div className="candidate-info">
+                    <h3 className="job-title-tag">
+                      {app.job?.title || 'Job Title'}
+                    </h3>
+                    <h2 className="applicant-name">
+                      {app.applicant?.name || 'Unknown Applicant'}
+                    </h2>
+                    <p className="applicant-email">
+                      {app.applicant?.email || 'No Email'}
+                    </p>
+                  </div>
+                  <div className={`status-pill pill-${app.status}`}>
+                    {app.status?.replace('_', ' ')}
+                  </div>
                 </div>
 
-                <div className={`status-pill pill-${app.status}`}>
-                  {app.status}
+                {/* COVER LETTER */}
+                <div className="cover-letter-preview">
+                  <label>Cover Letter</label>
+                  <p>{app.cover_letter || 'No cover letter provided.'}</p>
                 </div>
 
-              </div>
+                {/* ACTIONS */}
+                <div className="ats-actions-row">
+                  <div className="action-group">
+                    <label>Status</label>
+                    <div className="status-buttons">
+                      {atsStages.map(stage => (
+                        <button
+                          key={stage}
+                          className={`status-btn ${app.status === stage ? 'active' : ''} ${updatingAppId === app.id ? 'loading' : ''}`}
+                          onClick={() => {
+                            const applicantName = app.applicant?.name || 'applicant';
+                            const jobTitle = app.job?.title || 'this position';
+                            const stageName = stage.replace('_', ' ');
+                            if (confirm(`Send "${stageName}" notification to ${applicantName} for ${jobTitle}?`)) {
+                              if (stage === 'interview_scheduled') {
+                                const interviewDate = prompt('Enter interview date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+                                if (interviewDate) {
+                                  updateStatus(app.id, stage, app.employer_notes, interviewDate);
+                                  return;
+                                }
+                              }
+                              updateStatus(app.id, stage, app.employer_notes);
+                            }
+                          }}
 
-              {/* COVER LETTER */}
-              <div className="cover-letter-preview">
-                <label>Cover Letter</label>
-                <p>{app.cover_letter || 'No cover letter provided.'}</p>
-              </div>
-
-              {/* ACTIONS */}
-              <div className="ats-actions-row">
-
-                <div className="action-group">
-
-                  <label>Status</label>
-
-                  <div className="status-buttons">
-
-                    {atsStages.map(stage => (
-
-                      <button
-                        key={stage}
-                        className={`status-btn ${app.status === stage ? 'active' : ''}`}
-                        onClick={() => updateStatus(app.id, stage, app.employer_notes)}
-                      >
-                        {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                      </button>
-
-                    ))}
-
+                          disabled={updatingAppId === app.id}
+                        >
+                          {updatingAppId === app.id ? '...' : stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
+                  <div className="action-group flex-grow">
+                    <label>Internal Hiring Notes</label>
+                    <input
+                      type="text"
+                      placeholder="Add feedback or interview notes..."
+                      defaultValue={app.employer_notes}
+                      className="ats-input"
+                      onBlur={(e) => {
+                        if (e.target.value !== app.employer_notes) {
+                          updateStatus(app.id, app.status, e.target.value)
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className="action-group">
+                    <button 
+                      className="btn-message" 
+                      onClick={() => {
+                        setMessageModalAppId(app.id)
+                        setMessageText('')
+                        setShowMessageModal(true)
+                      }}
+                    >
+                      Send Message
+                    </button>
+                  </div>
                 </div>
-
-                <div className="action-group flex-grow">
-
-                  <label>Internal Hiring Notes</label>
-
-                  <input
-                    type="text"
-                    placeholder="Add feedback or interview notes..."
-                    defaultValue={app.employer_notes}
-                    className="ats-input"
-                    onBlur={(e) => {
-                      if (e.target.value !== app.employer_notes) {
-                        updateStatus(app.id, app.status, e.target.value)
-                      }
-                    }}
-                  />
-
-                </div>
-
               </div>
-
-            </div>
-
-          ))
-
-        )}
-
+            ))
+          )}
+        </div>
       </div>
 
-    </div>
+      {/* MESSAGE MODAL - INSIDE RETURN */}
+      {showMessageModal && (
+        <div className="modal-overlay" onClick={() => setShowMessageModal(false)}>
+          <div className="message-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Send Message</h3>
+            <textarea 
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="Enter your message or instructions..."
+              rows="6"
+              className="message-textarea"
+            />
+            <div className="modal-buttons">
+              <button className="btn-cancel" onClick={() => setShowMessageModal(false)}>
+                Cancel
+              </button>
+              <button className="btn-send" onClick={sendMessage}>
+                Send Message
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

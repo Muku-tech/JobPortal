@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const { connectDB } = require("./config/database");
 const routes = require("./routes");
+const notificationsRoutes = require("./routes/notifications");
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api", routes);
+app.use("/api/notifications", notificationsRoutes);
 
 // Serve static logos
 const path = require("path");
