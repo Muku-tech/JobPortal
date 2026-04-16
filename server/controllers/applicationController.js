@@ -1,4 +1,4 @@
-const { Application, Job, User } = require("../models");
+const { Application, Job, User, Message } = require("../models");
 
 exports.applyForJob = async (req, res) => {
   try {
@@ -216,7 +216,6 @@ exports.updateApplicationStatus = async (req, res) => {
       const applicant = await User.findByPk(application.user_id);
       if (applicant) {
         try {
-          const Notification = require("../models/Notification");
           const statusTemplates = {
             shortlisted: {
               title: "🎉 Shortlisted for Job!",
@@ -238,13 +237,14 @@ exports.updateApplicationStatus = async (req, res) => {
             },
           };
           const template = statusTemplates[status];
-          await Notification.create({
-            user_id: applicant.id,
-            from_user_id: req.user.id,
+          await Message.create({
+            sender_id: req.user.id,
+            recipient_id: applicant.id,
             title: template.title,
-            message: template.message,
+            content: template.message,
             type: "status_update",
           });
+          console.log("✅ Status message sent to", applicant.name);
           console.log("✅ Internal notification sent to", applicant.name);
         } catch (notifError) {
           console.error(

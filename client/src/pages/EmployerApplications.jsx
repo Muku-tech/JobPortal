@@ -73,9 +73,10 @@ const EmployerApplications = ({ jobId }) => {
     if (!messageText.trim()) return alert('Message cannot be empty');
     
     try {
-      await api.post('/notifications', {  // Fixed endpoint to match routes
-        applicantId: messageModalAppId,
-        message: messageText.trim()
+      await api.post('/messages', {
+        recipientId: messageModalAppId,
+        title: 'New Message',
+        content: messageText.trim()
       });
       setShowMessageModal(false);
       setMessageText('');

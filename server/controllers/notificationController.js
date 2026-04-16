@@ -2,6 +2,9 @@ const { Notification, User } = require("../models");
 
 const getNotifications = async (req, res) => {
   try {
+    console.log(`🔍 Fetching notifications for user ID: ${req.user.id}`);
+    console.log(`🔍 User object:`, req.user);
+
     const notifications = await Notification.findAll({
       where: { user_id: req.user.id },
       include: [
@@ -15,6 +18,12 @@ const getNotifications = async (req, res) => {
       order: [["createdAt", "DESC"]],
       limit: 50,
     });
+
+    console.log(
+      `📊 Found ${notifications.length} notifications for user ${req.user.id}`,
+    );
+    console.log(`📋 First notification:`, notifications[0]);
+
     res.json(notifications);
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -88,12 +97,14 @@ const sendMessage = async (req, res) => {
 
 const getUnreadCount = async (req, res) => {
   try {
+    console.log(`🔍 Unread count for user ${req.user.id}`);
     const count = await Notification.count({
       where: {
         user_id: req.user.id,
         read: false,
       },
     });
+    console.log(`📊 Unread count: ${count}`);
     res.json({ unreadCount: count });
   } catch (error) {
     console.error("Error fetching unread count:", error);

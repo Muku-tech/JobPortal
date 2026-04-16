@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+
 import { Bell, Check, Trash2, RefreshCw } from 'lucide-react';
 import api from '../services/api';
 import '../styles/Messages.css';  // Create this CSS next
@@ -9,27 +10,30 @@ function Messages() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState('all');  // all, unread, read
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/notifications');
+      console.log('📡 Fetching messages from API...');
+      const response = await api.get('/messages');
       const data = response.data || [];
+      console.log(`📊 Received ${data.length} messages`);
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.read).length);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching messages:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
 
   const markAsRead = async (id) => {
     try {
-      await api.put(`/notifications/${id}/read`);
+      await api.put(`/messages/${id}/read`);
       setNotifications(prev => prev.map(n => 
         n.id === id ? { ...n, read: true } : n
       ));
@@ -41,7 +45,7 @@ function Messages() {
 
   const markAllRead = async () => {
     try {
-      await api.put('/notifications/read-all');
+      await api.put('/messages/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -67,9 +71,15 @@ function Messages() {
             <p>{unreadCount} unread</p>
           </div>
         </div>
-        <button onClick={markAllRead} className="mark-all-btn" disabled={unreadCount === 0}>
-          Mark All Read
-        </button>
+        <div className="header-right">
+          <button onClick={fetchMessages} className="refresh-btn" title="Refresh" disabled={loading}>
+            <RefreshCw size={20} />
+          </button>
+
+          <button onClick={markAllRead} className="mark-all-btn" disabled={unreadCount === 0}>
+            Mark All Read
+          </button>
+        </div>
       </header>
 
       <div className="filter-tabs">
@@ -88,8 +98,13 @@ function Messages() {
         {filteredNotifs.length === 0 ? (
           <div className="empty-state">
             <Bell size={64} />
-            <h3>No messages yet</h3>
-            <p>Status updates and important notices will appear here.</p>
+            <h3>No messages ({filter})</h3>
+            <p>Check browser console for API response. Try refresh button.</p>
+            <details>
+              <summary>Debug Info</summary>
+              <pre>Total notifications: {notifications.length}</pre>
+              <pre>Unread count: {unreadCount}</pre>
+            </details>
           </div>
         ) : (
           filteredNotifs.map(notif => (
@@ -104,7 +119,7 @@ function Messages() {
                   )}
                 </div>
               </div>
-              <p className="message-body">{notif.message}</p>
+<p className="message-body">{notif.content}</p>
               <div className="message-meta">
                 <span>{new Date(notif.createdAt).toLocaleString()}</span>
                 {notif.type === 'status_update' && <span className="type-badge">Application Update</span>}

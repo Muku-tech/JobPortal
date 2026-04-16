@@ -15,8 +15,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+const messagesRoutes = require("./routes/messages");
 app.use("/api", routes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/messages", messagesRoutes);
 
 // Serve static logos
 const path = require("path");
