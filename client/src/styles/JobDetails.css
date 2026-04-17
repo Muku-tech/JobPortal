@@ -1,234 +1,254 @@
 :root {
-  --navy: #0f172a;
-  --orange: #f97316;
-  --emerald: #10b981;
-  --slate-50: #f8fafc;
-  --slate-100: #f1f5f9;
-  --slate-200: #e2e8f0;
-  --slate-300: #cbd5e1;
-  --slate-400: #94a3b8;
-  --slate-600: #475569;
-  --white: #ffffff;
-  --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+  --primary-color: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --text-main: #1e293b;
+  --text-muted: #64748b;
 }
 
 .job-details-page {
-  background-color: var(--slate-50);
   min-height: 100vh;
+  background: var(--bg-gradient);
+  padding: 2rem 5%;
+  color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* --- Professional Header --- */
+/* --- HEADER SECTION --- */
 .job-header {
-  background-color: var(--navy);
-  padding: 40px 20px 60px;
-  text-align: center;
-  position: relative;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
 }
 
 .back-btn {
-  position: absolute;
-  top: 30px;
-  left: 40px;
-  color: var(--slate-400);
+  display: inline-block;
+  color: var(--text-muted);
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s ease;
+  margin-bottom: 1.5rem;
+  transition: color 0.2s;
 }
 
-.back-btn:hover {
-  color: var(--white);
+.back-btn:hover { color: var(--primary-color); }
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
 }
 
-/* Fix for Contrast: Title and Meta Information */
 .job-title {
-  color: var(--white) !important; 
   font-size: 2.5rem;
   font-weight: 800;
-  margin: 0 0 12px 0;
-  letter-spacing: -0.02em;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  letter-spacing: -0.025em;
+  margin: 0.5rem 0;
 }
 
 .job-meta-line {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 20px;
-  color: var(--slate-200);
-  font-weight: 500;
-  min-height: 2rem;
+  gap: 1rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
 }
 
-.job-meta-line .company {
-  color: #f97316;
-  font-weight: 800;
-  font-size: 1.2rem;
+.company {
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 1.1rem;
 }
 
-/* Applied Button State */
-.apply-top-btn.applied {
-  background-color: var(--emerald);
+.apply-top-btn {
+  padding: 0.8rem 2rem;
+  background: var(--primary-color);
   color: white;
   border: none;
-  padding: 12px 36px;
-  border-radius: 99px;
-  font-weight: 700;
-  margin-top: 24px;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-/* --- Layout Grid --- */
+.apply-top-btn.applied {
+  background: #10b981;
+}
+
+/* --- GRID LAYOUT --- */
 .job-grid {
-  max-width: 1200px;
-  margin: -60px auto 0; /* Professional overlap effect */
-  padding: 0 30px 60px;
   display: grid;
-  grid-template-columns: 1.8fr 1fr;
-  gap: 30px;
-  position: relative;
-  z-index: 2;
+  grid-template-columns: 1fr 350px;
+  gap: 2rem;
+  align-items: start;
 }
 
-.job-main, .sidebar-section {
-  background: var(--white);
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--slate-100);
+.section {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--card-shadow);
+}
+
+.section h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 0.75rem;
+}
+
+/* --- SKILLS --- */
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.skill-tag {
+  background: #eef2ff;
+  color: var(--primary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #dee1ff;
+}
+
+/* --- SIDEBAR --- */
+.job-sidebar.sticky {
+  position: sticky;
+  top: 2rem;
 }
 
 .sidebar-section {
-  padding: 30px;
-  margin-bottom: 24px;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--card-shadow);
 }
 
-/* --- Skill Gap Modal Fixes --- */
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.summary-item span:first-child { color: var(--text-muted); }
+.summary-item span:last-child { font-weight: 600; }
+
+/* --- FORMS & BUTTONS --- */
+.apply-form textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  resize: vertical;
+}
+
+.btn {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 10px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--primary-color); color: white; border: none; }
+.btn-primary:hover { background: var(--primary-hover); }
+
+.skill-gap-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #1e293b;
+  color: white;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+/* --- SKILL GAP MODAL --- */
 .skill-gap-modal {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1000;
-  background: var(--white);
   width: 90%;
   max-width: 500px;
-  padding: 40px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
   border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.modal-header h3 {
-  font-size: 1.5rem;
-  color: var(--navy);
-  margin: 0;
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .gap-score {
   text-align: center;
-  margin-bottom: 30px;
-  padding: 20px;
-  background: var(--slate-50);
-  border-radius: 16px;
+  margin: 1.5rem 0;
 }
 
-.gap-score .score {
-  display: block;
-  font-size: 3.5rem;
+.score {
+  font-size: 3rem;
   font-weight: 800;
-  color: var(--orange);
-}
-
-/* Fix for Skill Tags in Modal */
-.skills-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 16px;
+  color: var(--primary-color);
+  display: block;
 }
 
 .gap-skill {
-  background: #fff7ed;
-  border: 1px solid #ffedd5;
-  color: #9a3412;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 600;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  background: #fff1f2;
+  color: #be123c;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .gap-skill a {
-  color: var(--orange);
   text-decoration: none;
-  font-size: 0.8rem;
-  border-left: 1px solid #fed7aa;
-  padding-left: 8px;
-}
-
-/* Got it button */
-.btn-primary {
-  width: 100%;
-  background-color: var(--navy);
-  color: white;
-  padding: 14px;
-  border-radius: 12px;
+  color: #e11d48;
   font-weight: 700;
-  border: none;
-  cursor: pointer;
-  margin-top: 20px;
 }
 
-/* --- Section Styling --- */
-.section h2 {
-  font-size: 1.4rem;
-  color: var(--navy);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* --- THEME VARIATIONS --- */
+.theme-compact .section { padding: 1rem; margin-bottom: 0.75rem; }
+.theme-compact .job-main { padding: 1.5rem; }
+.theme-compact .sidebar-section { padding: 1.25rem; }
+.theme-compact .job-grid { gap: 1.5rem; }
+.theme-compact .content { font-size: 0.95rem; line-height: 1.6; }
 
-.section h2::before {
-  content: "";
-  display: block;
-  width: 4px;
-  height: 24px;
-  background: var(--orange);
-  border-radius: 2px;
-}
+.theme-compact .job-title { font-size: 1.75rem; }
+.theme-compact .job-meta-line { gap: 1rem; font-size: 0.9rem; }
+.theme-compact .apply-top-btn { padding: 0.75rem 1.5rem; font-size: 0.9rem; }
 
-.content p, .content li {
-  line-height: 1.8;
-  color: var(--slate-600);
-}
+.theme-minimal { background: white; }
+.theme-minimal .job-main, .theme-minimal .sidebar-section { box-shadow: none; border: none; padding: 1.5rem; background: #fafbfc; }
+.theme-minimal .job-grid { gap: 1rem; max-width: 1000px; }
+.theme-minimal .section { padding: 1rem 0; }
+.theme-minimal .section { box-shadow: none; border: 1px solid #f1f5f9; border-radius: 8px; margin-bottom: 1rem; }
+.theme-minimal .section h2 { font-size: 1.2rem; color: #1e293b; }
+.theme-minimal .content { font-size: 0.95rem; color: #475569; }
 
-/* Responsive Fix */
-@media (max-width: 992px) {
-  .job-grid {
-    grid-template-columns: 1fr;
-    margin-top: -40px;
-  }
-}
-
-@media (max-width: 768px) {
-  .job-title {
-    font-size: 2rem;
-  }
-  
-  .job-header {
-    padding: 30px 16px 40px;
-  }
+/* --- RESPONSIVE --- */
+@media (max-width: 968px) {
+  .job-grid { grid-template-columns: 1fr; }
+  .job-sidebar.sticky { position: static; }
+  .header-main { flex-direction: column; }
+  .apply-top-btn { width: 100%; }
 }

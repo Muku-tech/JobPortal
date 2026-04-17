@@ -127,15 +127,7 @@ const { toast } = useToast()
         <Link to="/jobs" className="back-btn">← Back to Jobs</Link>
         <div className="header-content">
           <div className="header-main">
-            <div className="theme-selector">
-              <label>View: </label>
-              <select value={jobDetailsTheme} onChange={(e) => setJobDetailsTheme(e.target.value)} className="theme-select">
-                <option value="modern">Modern</option>
-                <option value="compact">Compact</option>
-                <option value="cards">Cards</option>
-                <option value="minimal">Minimal</option>
-              </select>
-            </div>
+
             <motion.h1 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -345,10 +337,7 @@ const { toast } = useToast()
             <div className="skills-list">
               {skillGap.missingSkills.map((skill, i) => (
                 <span key={i} className="gap-skill">
-                  {skill} 
-                  <a href={`https://www.google.com/search?q=${encodeURIComponent(skill)}+tutorial+free`} target="_blank">
-                    Learn →
-                  </a>
+                  {skill}
                 </span>
               ))}
             </div>
