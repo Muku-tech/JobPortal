@@ -1,271 +1,211 @@
-/* Base */
+/* --- Variables & Reset --- */
+:root {
+  --primary: #6366f1;
+  --secondary: #0ea5e9;
+  --bg-main: #fdfeff;
+  --bg-subtle: #f8fafc;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  --radius-xl: 24px;
+}
+
 .home-minimal {
-  font-family: system-ui, -apple-system, sans-serif;
-  color: #111827;
-  background: linear-gradient(to bottom, #f8fafc, #eef2ff);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-main);
+  background: var(--bg-main);
+  overflow-x: hidden;
 }
 
 .container {
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 1.5rem;
 }
 
-/* Hero */
+/* --- Hero Section --- */
 .hero-min {
-  padding: 90px 0 50px;
+  padding: 100px 0 80px;
   text-align: center;
+  background: radial-gradient(circle at 50% 0%, #eef2ff 0%, #ffffff 70%);
 }
 
 .hero-min h1 {
-  font-size: 38px;
-  font-weight: 700;
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  margin-bottom: 1rem;
 }
 
 .hero-lead {
-  color: #6b7280;
-  margin-top: 10px;
-  margin-bottom: 26px;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  margin-bottom: 3rem;
 }
 
-/* Search */
 .search-hero {
   display: flex;
+  background: white;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  max-width: 800px;
+  margin: 0 auto;
   gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
+  border: 1px solid var(--border);
 }
 
 .search-hero input {
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  min-width: 230px;
-  background: white;
+  flex: 1;
+  padding: 15px;
+  border: none;
+  background: var(--bg-subtle);
+  border-radius: 12px;
+  outline: none;
 }
 
 .search-hero button {
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: var(--primary);
   color: white;
   border: none;
-  padding: 12px 16px;
-  border-radius: 10px;
+  padding: 0 25px;
+  border-radius: 12px;
   cursor: pointer;
 }
 
-.search-hero button:hover {
-  opacity: 0.9;
-}
-
-/* Tags */
-.tags-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
+/* --- Quick Tags --- */
+.quick-tags-section { padding: 40px 0; }
+.tags-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
 .tag-btn {
-  background: linear-gradient(135deg, #eff6ff, #f5f3ff);
-  border: none;
-  color: #374151;
-  padding: 7px 14px;
-  border-radius: 999px;
-  font-size: 13px;
+  background: white;
+  border: 1px solid var(--border);
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-weight: 500;
   cursor: pointer;
+  transition: 0.2s;
 }
+.tag-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-.tag-btn:hover {
-  background: linear-gradient(135deg, #dbeafe, #ede9fe);
-}
-
-/* Stats */
+/* --- Stats --- */
+.stats-row { padding: 40px 0; }
 .stats-flex {
   display: flex;
   justify-content: space-around;
-  padding: 40px 0;
+  text-align: center;
+  background: white;
+  padding: 40px;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
 }
+.stat-num { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
 
-.stat {
+/* --- Job Grid --- */
+.jobs-home-section { padding: 80px 0; background: var(--bg-subtle); }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+.job-home-card {
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  transition: 0.3s;
+  cursor: pointer;
+}
+.job-home-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+
+/* --- Testimonials (The Fix) --- */
+.testimonials-section {
+  padding: 100px 0;
+  background: white;
   text-align: center;
 }
 
-.stat-num {
-  font-size: 24px;
-  font-weight: 700;
-  color: #2563eb;
-}
-
-/* Section */
-.section-header {
+.testimonials-container {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-
-.section-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.view-all {
-  color: #7c3aed;
-  font-size: 14px;
-}
-
-/* Jobs Grid */
-.jobs-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-}
-
-/* Job Card */
-.job-home-card {
-  background: white;
-  border-radius: 14px;
-  padding: 16px;
-  cursor: pointer;
-  border: 1px solid #e5e7eb;
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-/* gradient top line */
-.job-home-card::before {
-  content: "";
-  position: absolute;
-  height: 3px;
-  width: 100%;
-  top: 0;
-  left: 0;
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
-  opacity: 0;
-  transition: 0.3s;
-}
-
-.job-home-card:hover::before {
-  opacity: 1;
-}
-
-.job-home-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-}
-
-/* Header */
-.job-head {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.logo-initial {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #dbeafe, #ede9fe);
-  display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: center; /* Centering the card horizontally */
   justify-content: center;
-  font-weight: 600;
-  color: #4f46e5;
-}
-
-/* Save */
-.home-save-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #9ca3af;
-}
-
-.home-save-btn:hover {
-  color: #ef4444;
-}
-
-/* Text */
-.job-title-small {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.job-company-small {
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 12px;
-}
-
-/* Footer */
-.job-foot {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 12px;
-}
-
-.type-small {
-  background: #eef2ff;
-  color: #4f46e5;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-
-.salary-small {
-  color: #059669;
-  font-weight: 600;
-}
-
-/* Recommendation */
-.rec-card {
-  background: linear-gradient(135deg, #f8fafc, #eef2ff);
-  border: 1px solid #dbeafe;
-}
-
-.ai-badge {
-  color: #7c3aed;
-}
-
-/* Testimonials */
-.testimonials-section {
-  padding: 60px 0;
+  width: 100%;
 }
 
 .testimonial-card {
-  text-align: center;
-  max-width: 520px;
-  margin: auto;
+  background: white;
+  padding: 60px;
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border);
+  max-width: 800px;
+  width: 100%;
+  text-align: left; /* Keep text left-aligned inside the centered card */
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 .testimonial-quote {
-  font-size: 15px;
-  color: #374151;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .author-avatar {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #e11d48, #312e81); /* Matched to your image */
   color: white;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 10px auto;
+  font-weight: 800;
+  font-size: 1.2rem;
 }
 
-/* Footer */
+.author-name { font-weight: 700; color: var(--text-main); }
+.author-role, .author-company { font-size: 0.9rem; color: var(--text-muted); }
+
+/* Testimonial Dots Centering */
+.testimonial-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.dot.active {
+  background: var(--accent-rose, #f43f5e);
+  width: 32px;
+  border-radius: 10px;
+}
+
+/* --- Footer --- */
 .footer-min {
-  border-top: 1px solid #e5e7eb;
-  padding: 24px 0;
-  margin-top: 60px;
+  padding: 60px 0;
+  background: white;
+  border-top: 1px solid var(--border);
   text-align: center;
 }
-
-.footer-links a {
-  margin: 0 10px;
-  color: #6b7280;
-}
+.footer-links a { margin: 0 15px; text-decoration: none; color: var(--text-muted); font-weight: 600; }

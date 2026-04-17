@@ -82,10 +82,6 @@ function Navbar() {
                   </Link>
                 </>
               )}
-              <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} id="messages-link">
-                Messages
-              </Link>
-
               {user.role === "employer" && (
                 <>
                   <Link to="/employer" className="nav-link">Overview</Link>

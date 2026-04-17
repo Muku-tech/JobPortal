@@ -21,7 +21,7 @@
 /* --- Professional Header --- */
 .job-header {
   background-color: var(--navy);
-  padding: 60px 20px 100px;
+  padding: 40px 20px 60px;
   text-align: center;
   position: relative;
 }
@@ -43,24 +43,30 @@
 /* Fix for Contrast: Title and Meta Information */
 .job-title {
   color: var(--white) !important; 
-  font-size: 3.5rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   letter-spacing: -0.02em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .job-meta-line {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
-  color: var(--slate-300); /* Fixed invisible text */
+  gap: 20px;
+  color: var(--slate-200);
   font-weight: 500;
+  min-height: 2rem;
 }
 
 .job-meta-line .company {
-  color: var(--orange);
-  font-weight: 700;
+  color: #f97316;
+  font-weight: 800;
+  font-size: 1.2rem;
 }
 
 /* Applied Button State */
@@ -214,5 +220,15 @@
   .job-grid {
     grid-template-columns: 1fr;
     margin-top: -40px;
+  }
+}
+
+@media (max-width: 768px) {
+  .job-title {
+    font-size: 2rem;
+  }
+  
+  .job-header {
+    padding: 30px 16px 40px;
   }
 }

@@ -6,9 +6,6 @@ const EmployerApplications = ({ jobId }) => {
   const [applications, setApplications] = useState([])
   const [loading, setLoading] = useState(true)
   const [updatingAppId, setUpdatingAppId] = useState(null)
-  const [showMessageModal, setShowMessageModal] = useState(false)
-  const [messageModalAppId, setMessageModalAppId] = useState(null)
-  const [messageText, setMessageText] = useState('')
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState(null)
 
@@ -69,24 +66,7 @@ const EmployerApplications = ({ jobId }) => {
       ? applications
       : applications.filter(app => app.status === filter)
 
-  const sendMessage = async () => {
-    if (!messageText.trim()) return alert('Message cannot be empty');
-    
-    try {
-      await api.post('/messages', {
-        recipientId: messageModalAppId,
-        title: 'New Message',
-        content: messageText.trim()
-      });
-      setShowMessageModal(false);
-      setMessageText('');
-      alert('Message sent successfully!');
-      fetchApplications(jobId);  // Refresh list
-    } catch (error) {
-      console.error('Send message error:', error);
-      alert('Failed to send message');
-    }
-  }
+
 
   if (loading) {
     return (
@@ -218,19 +198,6 @@ const EmployerApplications = ({ jobId }) => {
                       }}
                     />
                   </div>
-
-                  <div className="action-group">
-                    <button 
-                      className="btn-message" 
-                      onClick={() => {
-                        setMessageModalAppId(app.id)
-                        setMessageText('')
-                        setShowMessageModal(true)
-                      }}
-                    >
-                      Send Message
-                    </button>
-                  </div>
                 </div>
               </div>
             ))
@@ -238,29 +205,6 @@ const EmployerApplications = ({ jobId }) => {
         </div>
       </div>
 
-      {/* MESSAGE MODAL - INSIDE RETURN */}
-      {showMessageModal && (
-        <div className="modal-overlay" onClick={() => setShowMessageModal(false)}>
-          <div className="message-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Send Message</h3>
-            <textarea 
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Enter your message or instructions..."
-              rows="6"
-              className="message-textarea"
-            />
-            <div className="modal-buttons">
-              <button className="btn-cancel" onClick={() => setShowMessageModal(false)}>
-                Cancel
-              </button>
-              <button className="btn-send" onClick={sendMessage}>
-                Send Message
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   )
 }
