@@ -1,211 +1,331 @@
-/* --- Variables & Reset --- */
+/* --- Brand Palette --- */
 :root {
-  --primary: #6366f1;
-  --secondary: #0ea5e9;
-  --bg-main: #fdfeff;
-  --bg-subtle: #f8fafc;
+  --js-orange: #f37021;      /* Logo Orange */
+  --js-navy: #1e293b;        /* Logo Navy */
+  --js-blue-light: #eff6ff;
+  --bg-page: #f8faff;        /* Subtle blue-grey tint */
+  --white: #ffffff;
+  --border: #e2e8f0;
   --text-main: #1e293b;
   --text-muted: #64748b;
-  --border: #e2e8f0;
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
-  --radius-xl: 24px;
+  --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+  --radius-lg: 24px;
+}
+
+/* --- Layout Base --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 .home-minimal {
-  font-family: 'Inter', system-ui, sans-serif;
-  color: var(--text-main);
-  background: var(--bg-main);
-  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: var(--bg-page);
+  color: var(--js-navy);
+  line-height: 1.6;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers all content sections */
 }
 
 /* --- Hero Section --- */
 .hero-min {
-  padding: 100px 0 80px;
+  width: 100%;
+  padding: 100px 0 60px;
   text-align: center;
-  background: radial-gradient(circle at 50% 0%, #eef2ff 0%, #ffffff 70%);
+  background: radial-gradient(circle at 50% 0%, #eef2ff 0%, var(--bg-page) 70%);
 }
 
 .hero-min h1 {
   font-size: clamp(2.5rem, 5vw, 4rem);
   font-weight: 900;
   letter-spacing: -0.05em;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: var(--js-navy);
 }
 
 .hero-lead {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   color: var(--text-muted);
-  margin-bottom: 3rem;
+  max-width: 600px;
+  margin: 0 auto 3rem;
 }
 
+/* --- Centered Search Bar --- */
 .search-hero {
   display: flex;
-  background: white;
+  background: var(--white);
   padding: 10px;
   border-radius: 20px;
-  box-shadow: var(--shadow-lg);
-  max-width: 800px;
-  margin: 0 auto;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 850px;
   gap: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--white);
 }
 
 .search-hero input {
   flex: 1;
-  padding: 15px;
+  padding: 16px;
   border: none;
-  background: var(--bg-subtle);
+  background: #f1f5f9;
   border-radius: 12px;
+  font-size: 1rem;
   outline: none;
 }
 
 .search-hero button {
-  background: var(--primary);
+  background: var(--js-orange);
   color: white;
   border: none;
-  padding: 0 25px;
+  width: 60px;
   border-radius: 12px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
 }
 
-/* --- Quick Tags --- */
-.quick-tags-section { padding: 40px 0; }
-.tags-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.search-hero button:hover {
+  background: #d95d12;
+  transform: scale(1.05);
+}
+
+/* --- Quick Search Tags --- */
+.quick-tags-section {
+  width: 100%;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.quick-tags-section h3 {
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
 .tag-btn {
-  background: white;
+  background: var(--white);
   border: 1px solid var(--border);
-  padding: 8px 20px;
+  padding: 10px 24px;
   border-radius: 50px;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--js-navy);
   cursor: pointer;
   transition: 0.2s;
 }
-.tag-btn:hover { border-color: var(--primary); color: var(--primary); }
 
-/* --- Stats --- */
-.stats-row { padding: 40px 0; }
+.tag-btn:hover {
+  border-color: var(--js-orange);
+  color: var(--js-orange);
+  transform: translateY(-2px);
+}
+
+/* --- Stats: Horizontal & Centered --- */
+.stats-row {
+  width: 100%;
+  padding: 60px 0;
+}
+
 .stats-flex {
   display: flex;
+  flex-direction: row; /* Horizontal alignment */
   justify-content: space-around;
-  text-align: center;
-  background: white;
-  padding: 40px;
-  border-radius: var(--radius-xl);
+  align-items: center;
+  background: var(--white);
+  padding: 50px 20px;
+  border-radius: 30px;
+  box-shadow: var(--shadow);
   border: 1px solid var(--border);
+  width: 100%;
 }
-.stat-num { font-size: 2.5rem; font-weight: 800; color: var(--primary); }
 
-/* --- Job Grid --- */
-.jobs-home-section { padding: 80px 0; background: var(--bg-subtle); }
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.stat {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+/* Divider lines between stats */
+.stat:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: var(--border);
+}
+
+.stat-num {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--js-orange); /* Matching logo arrow */
+  display: block;
+  margin-bottom: 5px;
+}
+
+.stat div:last-child {
+  font-weight: 700;
+  color: var(--js-navy);
+  opacity: 0.8;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+/* --- Jobs Grid --- */
+.jobs-home-section {
+  width: 100%;
+  padding: 80px 0;
+}
+
+.section-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
 .jobs-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
+  width: 100%;
 }
+
 .job-home-card {
-  background: white;
+  background: var(--white);
   padding: 24px;
   border-radius: 20px;
   border: 1px solid var(--border);
-  transition: 0.3s;
   cursor: pointer;
+  transition: 0.3s;
 }
-.job-home-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
 
-/* --- Testimonials (The Fix) --- */
+.job-home-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--js-orange);
+  box-shadow: var(--shadow);
+}
+
+.logo-initial {
+  width: 50px;
+  height: 50px;
+  background: var(--js-blue-light);
+  color: var(--js-navy);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+/* --- Testimonials: Fixed Alignment --- */
 .testimonials-section {
+  width: 100%;
   padding: 100px 0;
-  background: white;
-  text-align: center;
+  background: var(--js-blue-light);
+  display: flex;
+  justify-content: center;
 }
 
 .testimonials-container {
+  max-width: 800px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centering the card horizontally */
-  justify-content: center;
-  width: 100%;
+  align-items: center; /* Horizontally centered */
 }
 
 .testimonial-card {
-  background: white;
-  padding: 60px;
-  border-radius: 32px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border);
-  max-width: 800px;
+  background: var(--white);
+  padding: 50px;
+  border-radius: 30px;
+  box-shadow: var(--shadow);
+  text-align: left;
   width: 100%;
-  text-align: left; /* Keep text left-aligned inside the centered card */
   margin-bottom: 30px;
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
 }
 
 .testimonial-quote {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 600;
-  color: var(--text-main);
-  line-height: 1.4;
+  margin-bottom: 30px;
+  color: var(--js-navy);
 }
 
 .testimonial-author {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 }
 
 .author-avatar {
   width: 60px;
   height: 60px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #e11d48, #312e81); /* Matched to your image */
+  border-radius: 14px;
+  background: linear-gradient(135deg, #e11d48, #312e81);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 1.2rem;
-}
-
-.author-name { font-weight: 700; color: var(--text-main); }
-.author-role, .author-company { font-size: 0.9rem; color: var(--text-muted); }
-
-/* Testimonial Dots Centering */
-.testimonial-dots {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
 }
 
 .dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: #cbd5e1;
   border: none;
+  margin: 0 5px;
   cursor: pointer;
-  transition: 0.3s;
 }
 
 .dot.active {
-  background: var(--accent-rose, #f43f5e);
-  width: 32px;
+  background: var(--js-orange);
+  width: 30px;
   border-radius: 10px;
 }
 
 /* --- Footer --- */
 .footer-min {
+  width: 100%;
   padding: 60px 0;
-  background: white;
+  background: var(--white);
   border-top: 1px solid var(--border);
   text-align: center;
 }
-.footer-links a { margin: 0 15px; text-decoration: none; color: var(--text-muted); font-weight: 600; }
+
+/* --- Mobile Responsive --- */
+@media (max-width: 768px) {
+  .stats-flex {
+    flex-direction: column;
+    gap: 40px;
+  }
+  .stat:not(:last-child)::after {
+    display: none;
+  }
+  .search-hero {
+    flex-direction: column;
+    padding: 15px;
+  }
+}

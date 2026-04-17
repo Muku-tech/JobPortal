@@ -7,7 +7,6 @@ import "../styles/Jobs.css";
 export default function Jobs() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -26,10 +25,8 @@ export default function Jobs() {
     try {
       const params = new URLSearchParams({ ...filters, limit: 10 });
       const res = await api.get(`/jobs?${params}`);
-
       setJobs(append ? [...jobs, ...res.data.jobs] : res.data.jobs);
       setHasMore(res.data.page < res.data.totalPages);
-      setFilters(prev => ({ ...prev, page: res.data.page }));
     } catch (err) {
       console.error(err);
     } finally {
@@ -61,7 +58,6 @@ export default function Jobs() {
 
   return (
     <div className="jobs-page">
-      {/* Search Section: Uses Navy background with overlapping search row */}
       <div className="search-section">
         <div className="search-row">
           <input
@@ -71,6 +67,7 @@ export default function Jobs() {
             onChange={(e) => handleChange("search", e.target.value)}
           />
           <div className="location-wrapper">
+            <MapPin size={18} className="search-icon" />
             <input
               className="location-input"
               placeholder="Location"
@@ -79,14 +76,13 @@ export default function Jobs() {
             />
           </div>
           <button className="search-btn">
-            <Search size={18} />
+            <Search size={20} />
           </button>
         </div>
       </div>
 
       <div className="jobs-container">
-        {/* Filter Bar: Positioned just below the search overlap */}
-        <div className="filter-row">
+        <div className="filter-area">
           <div className="type-filters">
             {jobTypes.map(type => (
               <button
@@ -98,55 +94,44 @@ export default function Jobs() {
               </button>
             ))}
           </div>
-
           <select
             className="sort-select"
             value={filters.sort}
             onChange={(e) => handleChange("sort", e.target.value)}
           >
-            <option value="createdAt">Latest</option>
-            <option value="salary_max">Salary High-Low</option>
+            <option value="createdAt">Latest First</option>
+            <option value="salary_max">Highest Salary</option>
           </select>
         </div>
 
-        {/* Loading & Empty States */}
-        {loading && jobs.length === 0 ? (
-          <div className="loading">Gathering positions...</div>
-        ) : jobs.length === 0 ? (
-          <div className="empty-state">
-            <h3>No positions found</h3>
-            <p>Try adjusting your filters or location.</p>
-          </div>
-        ) : (
-          <div className="jobs-grid">
-            {jobs.map(job => (
-              <div
-                key={job.id}
-                className="job-card highlight-bar" 
-                onClick={() => navigate(`/jobs/${job.id}`)}
-              >
-                <div className="job-header">
-                  <h3 className="job-title">{job.title}</h3>
-                  <p className="job-company">{job.company_name}</p>
-                </div>
-
-                <div className="job-meta">
-                  <span><MapPin size={14} /> {job.location}</span>
-                  <span className="job-type">{job.job_type}</span>
-                </div>
-
-                <div className="job-footer">
-                  <button className="view-btn">View Details</button>
+        <div className="jobs-grid">
+          {jobs.map(job => (
+            <div key={job.id} className="job-card" onClick={() => navigate(`/jobs/${job.id}`)}>
+              {/* Single Header Section */}
+              <div className="job-banner">
+                <div className="banner-overlay">
+                  <h3>{job.title}</h3>
+                  <p className="banner-company">{job.company_name || "Hiring Company"}</p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+              
+              <div className="job-content">
+                <div className="card-meta">
+                  <span className="meta-item"><MapPin size={14} /> {job.location}</span>
+                  <span className="card-tag">{job.job_type}</span>
+                </div>
+                <button className="card-view-btn">View Details</button>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {hasMore && (
-          <button className="load-more-btn" onClick={loadMore} disabled={loading}>
-            {loading ? "Loading..." : "Load More"}
-          </button>
+          <div className="load-more-container">
+            <button className="load-more-btn" onClick={loadMore} disabled={loading}>
+              {loading ? "Loading..." : "Show More Jobs"}
+            </button>
+          </div>
         )}
       </div>
     </div>
