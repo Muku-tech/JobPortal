@@ -1,10 +1,31 @@
-# Task Progress: Remove messages from employer section
+# Fix JobSeekerProfile PUT /users/profile 500 Error
 
-**Feedback Update:** Removed employer navbar Messages link (keep general messaging for jobseekers; employers can still send via backend if needed, but no UI).
+Status: In progress
 
-## Completed Steps:
+## Approved Plan Breakdown:
 
-- Removed messaging from EmployerApplications.jsx
-- Removed Messages link from employer Navbar
+**1. Update backend route handling (server/routes/users.js)**
 
-Task fully complete.
+- Normalize skills/languages to arrays regardless of input type
+- Filter employer-specific fields based on user.role (jobseeker skips company\_\*)
+- Improve error handling with detailed Sequelize error logging
+- Add validation
+
+**2. Verify model/database compatibility**
+
+- Check if all fields exist and match types
+- Run sequelize.sync() if needed
+
+**3. Testing**
+
+- Manual API test
+- Frontend test
+- Server restart & verification
+
+## Progress:
+
+- [x] Create TODO.md
+- [x] Edit server/routes/users.js (added array normalization, role-based filtering, detailed Sequelize errors)
+- [x] Verified model schema compatibility
+- [ ] User to test: cd server && npm start, then update profile in frontend
+- [x] Core fix complete
