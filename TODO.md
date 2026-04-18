@@ -1,19 +1,21 @@
-# JobPortal Public Browse Implementation
+# JobPortal Fixes: COMPLETE ✅
 
-## Status: ✅ COMPLETE
+## Completed:
 
-### 1. ✅ Create TODO.md with steps
+- [x] **Syntax Fix**: `server/models/Application.js` recreated (full Sequelize model)
+- [x] **Resume Integration**:
+      | File | Changes |
+      |------|---------|
+      | server/models/Application.js | Added `resume_id` + Resume association |
+      | server/controllers/applicationController.js | `applyForJob` accepts `resumeId`, auto-selects default |
+      | client/src/pages/JobDetails.jsx | Resume dropdown selector, fetches via `resumeApi.getResumes()` |
+- [x] **TODO Updates**: Progress tracked
 
-### 2. ✅ Edit App.jsx - Remove ProtectedRoute from /jobs routes
+## Test Flow:
 
-### 3. ✅ Edit Navbar.jsx - Add "Browse Jobs" link for unauthenticated users
+1. **Server**: `cd server && npm start` → Port 5001, /health OK
+2. **JobSeeker**: JobDetails → Select resume → Cover letter → Apply → Success toast
+3. **Employer**: EmployerApplications → See applicant + resume_id populated
+4. **Auto-default**: No resume selected → Uses `is_default: true` resume
 
-### 4. ✅ Test the flow:
-
-- Unauth: Home → Browse Jobs → Job Details → Apply → Login prompt
-- Navbar shows "Browse Jobs" for unauth
-- Auth behavior unchanged
-
-### 5. ✅ Verified changes work as expected
-
-### 6. ✅ Task complete
+**Status**: Fully functional resume attachment in job applications. Original syntax error + resume feature complete.

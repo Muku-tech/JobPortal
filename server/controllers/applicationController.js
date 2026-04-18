@@ -1,13 +1,23 @@
-const { Application, Job, User, Message } = require("../models");
+const { Application, Job, User, Message, Resume } = require("../models");
 
 exports.applyForJob = async (req, res) => {
   try {
-    const { jobId, coverLetter } = req.body;
+    const { jobId, coverLetter, resumeId } = req.body;
     const userId = req.user.id;
     const job = await Job.findByPk(jobId);
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
+
+    // Auto-select default resume if none provided
+    let finalResumeId = resumeId;
+    if (!finalResumeId) {
+      const defaultResume = await Resume.findOne({
+        where: { user_id: userId, is_default: true },
+      });
+      finalResumeId = defaultResume?.id;
+    }
+
     const existingApplication = await Application.findOne({
       where: { job_id: jobId, user_id: userId },
     });
@@ -20,6 +30,7 @@ exports.applyForJob = async (req, res) => {
       job_id: jobId,
       user_id: userId,
       cover_letter: coverLetter,
+      resume_id: finalResumeId,
       status: "applied",
     });
     res.status(201).json({

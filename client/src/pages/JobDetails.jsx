@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Brain, Heart, Briefcase, MapPin, Calendar, Download, ChevronRight, CheckCircle } from 'lucide-react'
-import api from '../services/api'
+import { Brain, Heart, Briefcase, MapPin, Calendar, Download, ChevronRight, CheckCircle, FileText } from 'lucide-react'
+import api, { resumeApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useTheme } from '../context/ThemeContext'
@@ -11,7 +11,7 @@ import '../styles/JobDetails.css'
 export default function JobDetails() {
   const { id } = useParams()
   const { user } = useAuth()
-const { toast } = useToast()
+  const { toast } = useToast()
   const { jobDetailsTheme, setJobDetailsTheme } = useTheme()
   const navigate = useNavigate()
 
@@ -24,7 +24,10 @@ const { toast } = useToast()
   const [showSkillGap, setShowSkillGap] = useState(false)
   const [skillGap, setSkillGap] = useState(null)
   const [loadingGap, setLoadingGap] = useState(false)
-
+  // Resume states
+  const [resumes, setResumes] = useState([])
+  const [loadingResumes, setLoadingResumes] = useState(false)
+  const [selectedResumeId, setSelectedResumeId] = useState(null)
 
   useEffect(() => {
     fetchJob()
@@ -33,6 +36,12 @@ const { toast } = useToast()
   useEffect(() => {
     fetchRelatedJobs()
   }, [job])
+
+  useEffect(() => {
+    if (user) {
+      fetchResumes()
+    }
+  }, [user])
 
   const fetchJob = async () => {
     try {
@@ -61,21 +70,38 @@ const { toast } = useToast()
         console.error('Error checking applications:', appError)
         // Silently fail - don't block job display
       }
-
-
     }
     setLoading(false)
   }
 
-    const fetchRelatedJobs = async () => {
-      if (!job?.category) return;
-      try {
-        const response = await api.get(`/jobs?category=${job.category}&limit=3`)
-        setRelatedJobs(response.data.jobs?.filter(j => j.id !== Number(id)) || [])
-      } catch (error) {
-        console.error('Related jobs error:', error)
+  const fetchResumes = async () => {
+    if (!user) return
+    try {
+      setLoadingResumes(true)
+      const response = await resumeApi.getResumes()
+      setResumes(response.data)
+      // Auto-select default resume
+      const defaultResume = response.data.find(r => r.is_default)
+      if (defaultResume) {
+        setSelectedResumeId(defaultResume.id)
       }
+    } catch (error) {
+      console.error('Error fetching resumes:', error)
+      toast.error('Failed to load resumes')
+    } finally {
+      setLoadingResumes(false)
     }
+  }
+
+  const fetchRelatedJobs = async () => {
+    if (!job?.category) return;
+    try {
+      const response = await api.get(`/jobs?category=${job.category}&limit=3`)
+      setRelatedJobs(response.data.jobs?.filter(j => j.id !== Number(id)) || [])
+    } catch (error) {
+      console.error('Related jobs error:', error)
+    }
+  }
 
   const handleApply = async (e) => {
     e.preventDefault()
@@ -84,19 +110,18 @@ const { toast } = useToast()
     try {
       await api.post('/applications', {
         jobId: Number(id),
-        coverLetter
+        coverLetter,
+        resumeId: selectedResumeId
       })
       setApplied(true)
-      toast.success('Application submitted! Check Dashboard.')
+      toast.success('Application submitted with resume! Check Dashboard.')
       navigate('/dashboard')
     } catch (error) {
-    toast.error(error.response?.data?.message || error.message || 'Failed to apply')
+      toast.error(error.response?.data?.message || error.message || 'Failed to apply')
     } finally {
       setApplying(false)
     }
   }
-
-
 
   // Skills parser
   const renderSkills = () => {
@@ -121,13 +146,12 @@ const { toast } = useToast()
   if (!job) return <div className="error-full">Job not found <Link to="/jobs">← Back</Link></div>
 
   return (
-<div className={`job-details-page theme-${jobDetailsTheme}`}>
+    <div className={`job-details-page theme-${jobDetailsTheme}`}>
       {/* TOP HEADER */}
       <header className="job-header">
         <Link to="/jobs" className="back-btn">← Back to Jobs</Link>
         <div className="header-content">
           <div className="header-main">
-
             <motion.h1 
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -193,7 +217,7 @@ const { toast } = useToast()
 
           {job.benefits && (
             <section className="section">
-              <h2>Benefits</h2>
+              <h3>Benefits</h3>
               <div className="content list">
                 <ul>
                   {job.benefits.split('\n').map((benefit, i) => (
@@ -217,20 +241,43 @@ const { toast } = useToast()
               </div>
             ) : user ? (
               <form onSubmit={handleApply} className="apply-form">
+                <label>Attach Resume <FileText size={16} /></label>
+                {loadingResumes ? (
+                  <div>Loading resumes...</div>
+                ) : resumes.length === 0 ? (
+                  <div className="no-resume">
+                    <p>No resumes found. <Link to="/resume-builder">Create one</Link></p>
+                  </div>
+                ) : (
+                  <select 
+                    value={selectedResumeId || ''} 
+                    onChange={(e) => setSelectedResumeId(e.target.value ? Number(e.target.value) : null)}
+                    className="resume-select"
+                    required
+                  >
+                    <option value="">Select a resume...</option>
+                    {resumes.map(resume => (
+                      <option key={resume.id} value={resume.id}>
+                        {resume.template} Resume {resume.is_default && '(Default)'}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <label>Cover Letter (Optional)</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
-                  placeholder="Tell us why you're a great fit (optional)..."
+                  placeholder="Tell us why you're a great fit..."
                   rows="4"
                 />
                 <motion.button 
                   type="submit" 
                   className="btn btn-primary"
-                  disabled={applying}
+                  disabled={applying || !selectedResumeId}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {applying ? 'Submitting...' : 'Submit Application'}
+                  {applying ? 'Submitting...' : 'Submit Application + Resume'}
                 </motion.button>
               </form>
             ) : (
@@ -272,7 +319,7 @@ const { toast } = useToast()
             {user && (
               <motion.button 
                 className="skill-gap-btn"
-onClick={async () => {
+                onClick={async () => {
                   console.log('🔍 Skill Gap Click - user:', user?.id, 'jobId:', id);
                   console.log('🔍 User skills from context:', user?.skills);
                   setLoadingGap(true);
@@ -300,7 +347,7 @@ onClick={async () => {
 
       {/* RELATED JOBS BOTTOM */}
       {relatedJobs.length > 0 && (
-        <motion.section className="related-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }} >
+        <motion.section className="related-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <h2>Similar Jobs</h2>
           <div className="related-grid">
             {relatedJobs.map(job => (
@@ -312,8 +359,9 @@ onClick={async () => {
           </div>
         </motion.section>
       )}
+
       {/* Skill Gap Modal */}
-{showSkillGap && skillGap && (
+      {showSkillGap && skillGap && (
         <div className="skill-gap-modal">
           <div className="skill-gap-backdrop" onClick={() => setShowSkillGap(false)} />
           <div className="modal-content">
@@ -343,7 +391,6 @@ onClick={async () => {
                 ))}
               </div>
             </div>
-            {/* No close button per user request - use backdrop click or ESC */}
           </div>
         </div>
       )}

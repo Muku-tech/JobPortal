@@ -30,12 +30,27 @@ const Application = sequelize.define(
       allowNull: true,
     },
     status: {
-      type: DataTypes.STRING(50),
+      type: DataTypes.ENUM(
+        "applied",
+        "under_review",
+        "shortlisted",
+        "interview_scheduled",
+        "hired",
+        "rejected",
+      ),
       defaultValue: "applied",
     },
     employer_notes: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    resume_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "resumes",
+        key: "id",
+      },
     },
   },
   {
@@ -51,11 +66,18 @@ const Application = sequelize.define(
 );
 
 Application.associate = (models) => {
+  Application.belongsTo(models.Job, {
+    foreignKey: "job_id",
+    as: "job",
+  });
   Application.belongsTo(models.User, {
     foreignKey: "user_id",
     as: "applicant",
   });
-  Application.belongsTo(models.Job, { foreignKey: "job_id", as: "job" });
+  Application.belongsTo(models.Resume, {
+    foreignKey: "resume_id",
+    as: "resume",
+  });
 };
 
 module.exports = Application;
