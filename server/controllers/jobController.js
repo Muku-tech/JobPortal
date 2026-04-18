@@ -325,7 +325,61 @@ exports.getFeaturedJobs = async (req, res) => {
   }
 };
 
-// 11. GET SKILL GAP ANALYSIS
+// 11. GET CATEGORY JOBS (for Home page Jobs by Category)
+exports.getCategoryJobs = async (req, res) => {
+  try {
+    const { type = "location", limit = 8 } = req.query;
+    const where = { status: { [Op.in]: ["active", "draft"] } };
+
+    let order = [["createdAt", "DESC"]];
+
+    if (type === "location") {
+      // Top 8 recent jobs across different locations
+      order = [
+        ["location", "ASC"],
+        ["createdAt", "DESC"],
+      ];
+    } else if (type === "industry") {
+      // Top by category count, then recent
+      const categoryJobs = await Job.findAll({
+        where,
+        attributes: [
+          "category",
+          [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+        ],
+        group: "category",
+        order: [[sequelize.fn("COUNT", sequelize.col("id")), "DESC"]],
+        limit: 3,
+      });
+      if (categoryJobs.length > 0) {
+        where.category = {
+          [Op.in]: categoryJobs.map((c) => c.category),
+        };
+      }
+    } else if (type === "experience") {
+      // By experience level enum order
+      const levels = ["entry", "mid", "senior", "lead", "executive"];
+      where.experience_level = { [Op.in]: levels };
+      order = [
+        ["experience_level", "ASC"],
+        ["createdAt", "DESC"],
+      ];
+    }
+
+    const jobs = await Job.findAll({
+      where,
+      order,
+      limit: parseInt(limit),
+    });
+
+    res.json({ jobs });
+  } catch (error) {
+    console.error("Error fetching category jobs:", error);
+    res.status(500).json({ message: "Error fetching category jobs" });
+  }
+};
+
+// 12. GET SKILL GAP ANALYSIS
 exports.getSkillGap = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,19 +1,22 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, Search, Heart, Briefcase, Code2, Star } from "lucide-react";
+import { MapPin, Search, Heart, Star } from "lucide-react";
 import api from "../services/api";
 import "../styles/Home.css";
 
 export default function Home() {
-  const [searchParams, setSearchParams] = useState(new URLSearchParams());
   const navigate = useNavigate();
-  
-  const [jobs, setJobs] = useState([]);
+
+  const [categoryJobs, setCategoryJobs] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('location');
+  const [loadingCategory, setLoadingCategory] = useState(false);
+
   const [recommendations, setRecommendations] = useState([]);
   const [statsAnimating, setStatsAnimating] = useState(false);
+  const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, users: 0 });
   const [loading, setLoading] = useState(true);
-  
+
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
 
@@ -26,15 +29,25 @@ export default function Home() {
     { name: 'Backend', param: 'search=Node' }
   ];
 
+  const testimonials = [
+    { quote: "Found my dream job as React Developer in just 2 weeks!", name: "Mukunda Mahat", role: "Frontend Developer", company: "Nabil Bank" },
+    { quote: "Hired 5 developers through JobSathi this month!", name: "Raj K.", role: "Employer", company: "TechCorp" },
+    { quote: "Easy to use and great matches!", name: "Anil M.", role: "Backend Engineer", company: "Freelancer" }
+  ];
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [jobsRes, recRes] = await Promise.all([
-          api.get('/jobs/featured?limit=12'),
-          api.get('/recommendations/smart').catch(() => ({ data: { jobs: [] } }))
-        ]);
-        setJobs(jobsRes.data.jobs || []);
+        const recRes = await api.get('/recommendations/smart').catch(() => ({ data: { jobs: [] } }));
         setRecommendations(recRes.data.jobs || []);
       } catch (err) {
         console.error(err);
@@ -45,6 +58,71 @@ export default function Home() {
     };
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchCategoryJobs = async () => {
+      setLoadingCategory(true);
+      try {
+        const params = new URLSearchParams({
+          type: activeCategory,
+          limit: 8
+        });
+        const res = await api.get(`/jobs/category?${params.toString()}`);
+        setCategoryJobs(res.data.jobs || []);
+      } catch (err) {
+        console.error(err);
+        setCategoryJobs([]);
+      } finally {
+        setLoadingCategory(false);
+      }
+    };
+    fetchCategoryJobs();
+  }, [activeCategory]);
+
+  useEffect(() => {
+    if (!statsAnimating) return;
+
+    const targetStats = { jobs: 1200, companies: 450, users: 8000 };
+    const duration = 2500;
+    const staggerDelay = 300;
+
+    const animateStat = (statKey, startDelay = 0) => {
+      const startTime = performance.now() + startDelay;
+      let rafId;
+      const target = targetStats[statKey];
+
+      const frame = (time) => {
+        if (time < startTime) {
+          rafId = requestAnimationFrame(frame);
+          return;
+        }
+
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = Math.floor(target * eased);
+
+        setAnimatedStats(prev => ({ ...prev, [statKey]: value }));
+
+        if (progress < 1) {
+          rafId = requestAnimationFrame(frame);
+        }
+      };
+
+      rafId = requestAnimationFrame(frame);
+      return () => cancelAnimationFrame(rafId);
+    };
+
+    const jobsRaf = animateStat('jobs', 0);
+    const companiesRaf = animateStat('companies', staggerDelay);
+    const usersRaf = animateStat('users', staggerDelay * 2);
+
+    return () => {
+      jobsRaf();
+      companiesRaf();
+      usersRaf();
+    };
+  }, [statsAnimating]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -58,34 +136,16 @@ export default function Home() {
     navigate(`/jobs?${param}`);
   };
 
-  const stats = { jobs: 1200, companies: 450, users: 8000 };
-  
-  const testimonials = [
-    { quote: "Found my dream job as React Developer in just 2 weeks!", name: "Sita R.", role: "Frontend Developer", company: "Nabil Bank" },
-    { quote: "Hired 5 developers through JobSathi this month!", name: "Raj K.", role: "Employer", company: "TechCorp" },
-    { quote: "Easy to use and great matches!", name: "Anil M.", role: "Backend Engineer", company: "Freelancer" }
-  ];
-  const [currentTestimonial, setCurrentTestimonial] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="home-minimal">
-
       {/* Hero */}
       <section className="hero-min">
-
         <div className="container">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             Find Jobs in Nepal
           </motion.h1>
           <p className="hero-lead">Search and apply to opportunities that match your skills</p>
-          
+
           <form className="search-hero" onSubmit={handleSearch}>
             <input 
               placeholder="Job title or skill" 
@@ -101,6 +161,24 @@ export default function Home() {
               <Search size={20} />
             </button>
           </form>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="stats-row">
+        <div className="container stats-flex">
+          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : {}}>
+            <div className="stat-num">{animatedStats.jobs.toLocaleString()}+</div>
+            <div>Jobs</div>
+          </motion.div>
+          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : { delay: 0.2 }}>
+            <div className="stat-num">{animatedStats.companies.toLocaleString()}+</div>
+            <div>Companies</div>
+          </motion.div>
+          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : { delay: 0.4 }}>
+            <div className="stat-num">{animatedStats.users.toLocaleString()}+</div>
+            <div>Users</div>
+          </motion.div>
         </div>
       </section>
 
@@ -127,39 +205,37 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="stats-row">
-        <div className="container stats-flex">
-          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : {}}>
-            <div className="stat-num">{stats.jobs.toLocaleString()}+</div>
-            <div>Jobs</div>
-          </motion.div>
-          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : { delay: 0.2 }}>
-            <div className="stat-num">{stats.companies}+</div>
-            <div>Companies</div>
-          </motion.div>
-          <motion.div className="stat" initial={{ opacity: 0 }} animate={statsAnimating ? { opacity: 1 } : { delay: 0.4 }}>
-            <div className="stat-num">{stats.users.toLocaleString()}+</div>
-            <div>Users</div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Job List */}
-      <section className="jobs-home-section">
+      {/* Jobs by Category */}
+      <section className="jobs-category-section">
         <div className="container">
           <div className="section-header">
-            <h2>Latest Jobs</h2>
+            <h2>Jobs by Category</h2>
             <a href="/jobs" className="view-all">View all →</a>
           </div>
+
+          <div className="category-tabs">
+            <button className={`tab-btn ${activeCategory === 'location' ? 'active' : ''}`} onClick={() => setActiveCategory('location')}>
+              Location
+            </button>
+            <button className={`tab-btn ${activeCategory === 'industry' ? 'active' : ''}`} onClick={() => setActiveCategory('industry')}>
+              Industry
+            </button>
+            <button className={`tab-btn ${activeCategory === 'experience' ? 'active' : ''}`} onClick={() => setActiveCategory('experience')}>
+              Experience
+            </button>
+          </div>
+
           <div className="jobs-grid">
-            {loading ? (
+            {loadingCategory ? (
               <div className="loading-jobs">Loading jobs...</div>
-            ) : jobs.map((job, i) => (
+            ) : categoryJobs.length === 0 ? (
+              <div className="empty-state">
+                <p>No jobs found for this category</p>
+              </div>
+            ) : categoryJobs.map((job, i) => (
               <motion.div 
                 key={job.id}
                 className="job-home-card"
-                layout
                 whileHover={{ y: -4 }}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -167,28 +243,7 @@ export default function Home() {
                 transition={{ delay: i * 0.03 }}
                 onClick={() => navigate(`/jobs/${job.id}`)}
               >
-                <div className="job-head">
-                  <div className="job-logo-wrap">
-                    <div className="logo-initial">
-                      {job.company_name ? job.company_name[0].toUpperCase() : 'J'}
-                    </div>
-                  </div>
-                  <button 
-                    className="home-save-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Reuse Jobs toggle logic - call api directly
-                      api.post('/jobs/save', { jobId: job.id }).then(() => {
-                        // Toggle optimistically
-                        e.currentTarget.style.opacity = '0.7';
-                      }).catch(() => {
-                        toast.error('Save failed');
-                      });
-                    }}
-                  >
-                    <Heart size={16} fill="none" strokeWidth={2} />
-                  </button>
-                </div>
+
                 <h3 className="job-title-small">{job.title}</h3>
                 <p className="job-company-small">{job.company_name || job.employer?.name}</p>
                 <div className="job-foot">
@@ -223,12 +278,7 @@ export default function Home() {
                   whileHover={{ y: -4 }}
                   onClick={() => navigate(`/jobs/${job.id}`)}
                 >
-                  <div className="job-head">
-                    <div className="logo-initial">
-                      {job.company_name ? job.company_name[0].toUpperCase() : 'J'}
-                    </div>
-                    <Star className="ai-badge" size={16} />
-                  </div>
+
                   <h3>{job.title}</h3>
                   <p>{job.company_name}</p>
                   <div className="job-foot">
@@ -242,7 +292,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Testimonials - Bottom */}
+      {/* Testimonials */}
       <section className="testimonials-section">
         <div className="container">
           <div className="section-header">
@@ -284,7 +334,6 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="footer-min">
-
         <div className="container">
           <p>© JobPortal. Find your next opportunity.</p>
           <div className="footer-links">

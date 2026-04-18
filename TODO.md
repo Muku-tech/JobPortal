@@ -1,31 +1,33 @@
-# Fix JobSeekerProfile PUT /users/profile 500 Error
+# Login Fix - Progress Tracker
 
-Status: In progress
+## [✅ COMPLETE] Diagnosis
 
-## Approved Plan Breakdown:
+- Port mismatch confirmed (frontend 5002 → backend 5001)
+- Server running on 5001 (PID 10384)
+- Auth stack verified complete
 
-**1. Update backend route handling (server/routes/users.js)**
+## [✅ COMPLETE] Step 1: Fix Frontend API URL
 
-- Normalize skills/languages to arrays regardless of input type
-- Filter employer-specific fields based on user.role (jobseeker skips company\_\*)
-- Improve error handling with detailed Sequelize error logging
-- Add validation
+- Updated `client/src/services/api.js` baseURL to `http://localhost:5001/api`
+- Restart Vite: `cd client && npm run dev`
 
-**2. Verify model/database compatibility**
+## [PENDING] Step 2: Verify Database Users
 
-- Check if all fields exist and match types
-- Run sequelize.sync() if needed
+```bash
+mysql -u root -p jobportal_nepal -e "DESCRIBE users; SELECT COUNT(*) as user_count, email FROM users LIMIT 5;"
+```
 
-**3. Testing**
+## [PENDING] Step 3: Test Login
 
-- Manual API test
-- Frontend test
-- Server restart & verification
+- Try login/register from frontend
+- Check server console logs
+- Verify token storage & redirect
 
-## Progress:
+## [PENDING] Step 4: Handle Edge Cases
 
-- [x] Create TODO.md
-- [x] Edit server/routes/users.js (added array normalization, role-based filtering, detailed Sequelize errors)
-- [x] Verified model schema compatibility
-- [ ] User to test: cd server && npm start, then update profile in frontend
-- [x] Core fix complete
+- If no users: Register new or seed test users
+- Monitor for Sequelize/bcrypt errors
+
+```
+
+```
