@@ -81,23 +81,9 @@ function App() {
               <Route path="/register" element={<Register />} />
 
               {/* JOB SEEKER */}
-              <Route
-                path="/jobs"
-                element={
-                  <ProtectedRoute allowedRole="jobseeker">
-                    <Jobs />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/jobs" element={<Jobs />} />
 
-              <Route
-                path="/jobs/:id"
-                element={
-                  <ProtectedRoute allowedRole="jobseeker">
-                    <JobDetails />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/jobs/:id" element={<JobDetails />} />
 
               <Route
                 path="/dashboard"

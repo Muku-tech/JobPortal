@@ -44,6 +44,9 @@ function Navbar() {
         <div className={`navbar-menu ${menuOpen ? "is-open" : ""}`}>
           {!user ? (
             <div className="auth-group">
+              <Link to="/jobs" className={`nav-link ${location.pathname === '/jobs' ? 'active' : ''}`}>
+                Browse Jobs
+              </Link>
               <div className="nav-dropdown">
                 <button className="drop-trigger" onClick={() => toggleDropdown("seeker")}>
                   Job Seeker <ChevronDown size={16} className={openDropdown === "seeker" ? "rotate" : ""} />

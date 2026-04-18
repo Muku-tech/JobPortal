@@ -1,12 +1,19 @@
-# JobPortal TODO Tracker
+# JobPortal Public Browse Implementation
 
-## Current Task: Fix "Check My Skill Fit" No Results
+## Status: ✅ COMPLETE
 
-**✅ Step 1:** Create TODO.md with plan breakdown
-**✅ Step 2:** Add debug logging to JobDetails.jsx
-**✅ Step 3:** Add debug logging to jobController.js  
-**✅ Step 4:** Improve empty state UX in JobDetails.jsx (reverted extra buttons per feedback)
-**✅ Step 5:** Polish CSS for better visibility  
-**✅ All Steps Complete!** 🎉
+### 1. ✅ Create TODO.md with steps
 
-Skill Gap modal now visible with backdrop, animations fixed, original "Got it, thanks!" button restored. Test: Click button → popup shows match score + missing skills.
+### 2. ✅ Edit App.jsx - Remove ProtectedRoute from /jobs routes
+
+### 3. ✅ Edit Navbar.jsx - Add "Browse Jobs" link for unauthenticated users
+
+### 4. ✅ Test the flow:
+
+- Unauth: Home → Browse Jobs → Job Details → Apply → Login prompt
+- Navbar shows "Browse Jobs" for unauth
+- Auth behavior unchanged
+
+### 5. ✅ Verified changes work as expected
+
+### 6. ✅ Task complete
