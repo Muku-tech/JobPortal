@@ -272,13 +272,17 @@ const { toast } = useToast()
             {user && (
               <motion.button 
                 className="skill-gap-btn"
-                onClick={async () => {
+onClick={async () => {
+                  console.log('🔍 Skill Gap Click - user:', user?.id, 'jobId:', id);
+                  console.log('🔍 User skills from context:', user?.skills);
                   setLoadingGap(true);
                   try {
                     const response = await api.get(`/jobs/${id}/skillgap`);
+                    console.log('✅ Skill Gap API Response:', response.data);
                     setSkillGap(response.data);
                     setShowSkillGap(true);
                   } catch (err) {
+                    console.error('❌ Skill Gap Error:', err.response?.data || err.message);
                     toast.error('Failed to analyze skills');
                   } finally {
                     setLoadingGap(false);
@@ -309,45 +313,39 @@ const { toast } = useToast()
         </motion.section>
       )}
       {/* Skill Gap Modal */}
-      {showSkillGap && skillGap && (
-        <motion.div 
-          className="skill-gap-modal"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-        >
-          <div className="modal-header">
-            <h3>Skill Gap Analysis</h3>
-            <button onClick={() => setShowSkillGap(false)} className="close-btn">×</button>
-          </div>
-          <div className="gap-score">
-            <span className="score">{skillGap.gapScore}%</span>
-            <span>Match Score</span>
-          </div>
-          <div className="gap-stats">
-            <div>
-              <strong>{skillGap.totalMissing}</strong> skills missing
+{showSkillGap && skillGap && (
+        <div className="skill-gap-modal">
+          <div className="skill-gap-backdrop" onClick={() => setShowSkillGap(false)} />
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Skill Gap Analysis</h3>
+              <button onClick={() => setShowSkillGap(false)} className="close-btn">×</button>
             </div>
-            <div>
-              You have <strong>{skillGap.yourSkills.length}</strong> relevant skills
+            <div className="gap-score">
+              <span className="score">{skillGap.gapScore}%</span>
+              <span>Match Score</span>
             </div>
-          </div>
-          <div className="missing-skills">
-            <h4>Missing Skills ({skillGap.missingSkills.length}):</h4>
-            <div className="skills-list">
-              {skillGap.missingSkills.map((skill, i) => (
-                <span key={i} className="gap-skill">
-                  {skill}
-                </span>
-              ))}
+            <div className="gap-stats">
+              <div>
+                <strong>{skillGap.totalMissing}</strong> skills missing
+              </div>
+              <div>
+                You have <strong>{skillGap.yourSkills.length}</strong> relevant skills
+              </div>
             </div>
+            <div className="missing-skills">
+              <h4>Missing Skills ({skillGap.missingSkills.length}):</h4>
+              <div className="skills-list">
+                {skillGap.missingSkills.map((skill, i) => (
+                  <span key={i} className="gap-skill">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* No close button per user request - use backdrop click or ESC */}
           </div>
-          <div className="gap-actions">
-            <button className="btn-primary" onClick={() => setShowSkillGap(false)}>
-              Got it, thanks!
-            </button>
-          </div>
-        </motion.div>
+        </div>
       )}
     </div>
   )

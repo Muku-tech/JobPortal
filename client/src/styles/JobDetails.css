@@ -8,12 +8,20 @@
   --text-muted: #64748b;
 }
 
-.job-details-page {
-  min-height: 100vh;
-  background: var(--bg-gradient);
-  padding: 2rem 5%;
-  color: var(--text-main);
-  font-family: 'Inter', system-ui, sans-serif;
+/* Modal Overlay */
+.skill-gap-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: none;
+}
+
+.skill-gap-overlay.show {
+  display: block;
 }
 
 /* --- HEADER SECTION --- */
@@ -183,18 +191,30 @@
 /* --- SKILL GAP MODAL --- */
 .skill-gap-modal {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 500px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
   padding: 2rem;
+}
+
+.skill-gap-modal .modal-content {
+  position: relative;
+  z-index: 10002;
+  width: min(90vw, 500px);
+  max-height: 90vh;
+  background: white;
+  backdrop-filter: blur(20px);
+  padding: 2.5rem;
   border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  z-index: 1000;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  overflow-y: auto;
+  max-width: 90vw;
 }
 
 .gap-score {
@@ -209,21 +229,54 @@
   display: block;
 }
 
-.gap-skill {
+.missing-skills {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #fef2f2, #fce7e7);
+  border-radius: 16px;
+  border-left: 5px solid #ef4444;
+}
+
+.skills-list {
   display: flex;
-  justify-content: space-between;
-  background: #fff1f2;
-  color: #be123c;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  margin-top: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.gap-skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #dc2626;
+  padding: 0.75rem 1.25rem;
+  border-radius: 25px;
+  margin: 0.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+  border: 2px solid #fca5a5;
 }
 
 .gap-skill a {
   text-decoration: none;
   color: #e11d48;
   font-weight: 700;
+}
+
+.skill-gap-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
 }
 
 /* --- THEME VARIATIONS --- */
@@ -252,3 +305,4 @@
   .header-main { flex-direction: column; }
   .apply-top-btn { width: 100%; }
 }
+

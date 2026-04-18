@@ -111,7 +111,7 @@ export default function Jobs() {
               <div className="job-banner">
                 <div className="banner-overlay">
                   <h3>{job.title}</h3>
-                  <p className="banner-company">{job.company_name || "Hiring Company"}</p>
+{job.employer?.name || job.company_name || job.employer_id || "Hiring Company"}
                 </div>
               </div>
               

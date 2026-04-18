@@ -382,6 +382,12 @@ exports.getCategoryJobs = async (req, res) => {
 // 12. GET SKILL GAP ANALYSIS
 exports.getSkillGap = async (req, res) => {
   try {
+    console.log(
+      "🔍 SkillGap called - jobId:",
+      req.params.id,
+      "userId:",
+      req.user?.id,
+    );
     const { id } = req.params;
     const userId = req.user.id;
 
@@ -392,10 +398,12 @@ exports.getSkillGap = async (req, res) => {
     if (!job) return res.status(404).json({ message: "Job not found" });
 
     const user = await User.findByPk(userId);
+    console.log("🔍 Found user:", user?.id, "skills:", user?.skills);
     if (!user) return res.status(401).json({ message: "User not found" });
 
     const userSkills = user.skills || [];
     const jobSkills = job.required_skills || [];
+    console.log("🔍 Parsed - userSkills:", userSkills, "jobSkills:", jobSkills);
 
     // Simple set difference for missing skills
     const userSet = new Set(userSkills.map((s) => s.toLowerCase().trim()));

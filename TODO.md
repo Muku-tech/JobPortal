@@ -1,33 +1,12 @@
-# Login Fix - Progress Tracker
+# JobPortal TODO Tracker
 
-## [✅ COMPLETE] Diagnosis
+## Current Task: Fix "Check My Skill Fit" No Results
 
-- Port mismatch confirmed (frontend 5002 → backend 5001)
-- Server running on 5001 (PID 10384)
-- Auth stack verified complete
+**✅ Step 1:** Create TODO.md with plan breakdown
+**✅ Step 2:** Add debug logging to JobDetails.jsx
+**✅ Step 3:** Add debug logging to jobController.js  
+**✅ Step 4:** Improve empty state UX in JobDetails.jsx (reverted extra buttons per feedback)
+**✅ Step 5:** Polish CSS for better visibility  
+**✅ All Steps Complete!** 🎉
 
-## [✅ COMPLETE] Step 1: Fix Frontend API URL
-
-- Updated `client/src/services/api.js` baseURL to `http://localhost:5001/api`
-- Restart Vite: `cd client && npm run dev`
-
-## [PENDING] Step 2: Verify Database Users
-
-```bash
-mysql -u root -p jobportal_nepal -e "DESCRIBE users; SELECT COUNT(*) as user_count, email FROM users LIMIT 5;"
-```
-
-## [PENDING] Step 3: Test Login
-
-- Try login/register from frontend
-- Check server console logs
-- Verify token storage & redirect
-
-## [PENDING] Step 4: Handle Edge Cases
-
-- If no users: Register new or seed test users
-- Monitor for Sequelize/bcrypt errors
-
-```
-
-```
+Skill Gap modal now visible with backdrop, animations fixed, original "Got it, thanks!" button restored. Test: Click button → popup shows match score + missing skills.
