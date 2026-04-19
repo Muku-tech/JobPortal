@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Search, Heart, Star } from "lucide-react";
 import api from "../services/api";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const publicApi = axios.create({
   baseURL: "http://localhost:5001/api",
@@ -13,6 +14,7 @@ import "../styles/Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [categoryJobs, setCategoryJobs] = useState([]);
   const [activeCategory, setActiveCategory] = useState('location');
@@ -55,16 +57,32 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        setRecommendations([]);
+        if (user) {
+          // Authenticated user - fetch personalized recs using two algorithms
+          const [contentRes, collabRes] = await Promise.all([
+            publicApi.get('/recommendations/content-based?limit=4'),
+            publicApi.get('/recommendations/collaborative?limit=4')
+          ]);
+          const contentJobs = contentRes.data.jobs || [];
+          const collabJobs = collabRes.data.jobs || [];
+          // Combine and dedupe
+          const combined = [...contentJobs, ...collabJobs].filter((job, index, self) => 
+            index === self.findIndex(j => j.id === job.id)
+          ).slice(0, 8);
+          setRecommendations(combined);
+        } else {
+          setRecommendations([]);
+        }
       } catch (err) {
         console.error('Recommendations fetch failed:', err);
+        setRecommendations([]);
       } finally {
         setLoading(false);
         setStatsAnimating(true);
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const fetchCategoryJobs = async () => {
@@ -272,7 +290,34 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recommendations section removed for public home page */}
+      {/* Personalized Recommendations for logged-in users */}
+      {user && recommendations.length > 0 && (
+        <section className="rec-section">
+          <div className="container">
+            <div className="section-header">
+              <h2>Personalized Recommendations</h2>
+            </div>
+            <div className="jobs-grid">
+              {recommendations.slice(0, 4).map((job, i) => (
+                <motion.div 
+                  key={job.id}
+                  className="job-home-card rec-card"
+                  whileHover={{ y: -4 }}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
+                >
+
+                  <h3>{job.title}</h3>
+                  <p>{job.company_name}</p>
+                  <div className="job-foot">
+                    <span><MapPin size={14} /> {job.location}</span>
+                    <span>{job.job_type}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Testimonials */}
       <section className="testimonials-section">
