@@ -104,8 +104,11 @@ const response = await api.get('/messages/count');
                     Dashboard
                   </Link>
                   <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} title={`${unreadCount} unread`}>
-                    <Bell size={18} />
-                    Messages {unreadCount > 0 && <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    <div className="icon-container">
+                      <Bell size={18} />
+                      {unreadCount > 0 && <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                    </div>
+                    Messages
                   </Link>
                   <Link to="/resume-builder" className={`nav-link ${location.pathname === '/resume-builder' ? 'active' : ''}`} title="Resume Builder">
                     <FileText size={18} />
@@ -127,12 +130,9 @@ const response = await api.get('/messages/count');
                     <Users size={18} />
                     Applicants
                   </Link>
-                  <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} title={`${unreadCount} unread`}>
-                    <Bell size={18} />
-                    Messages {unreadCount > 0 && <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
-                  </Link>
                 </>
               )}
+
 
               <Link to="/profile" className="nav-link profile-pill">
                 <User size={18} /> My Profile

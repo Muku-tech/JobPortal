@@ -153,31 +153,31 @@ const EmployerApplications = ({ jobId }) => {
                   disabled={updatingAppId === app.id || app.status !== 'applied'}
                   className="action-btn shortlist"
                 >
-                  ⭐ Shortlist
+Shortlist
                 </button>
                 <button 
                   onClick={() => openInterviewModal(app.id)}
                   disabled={updatingAppId === app.id || ['final'].includes(app.status)}
                   className="action-btn interview"
                 >
-                  📅 Interview
+Interview
                 </button>
                 <button 
                   onClick={() => handleAction(app.id, 'hire')}
                   disabled={updatingAppId === app.id || app.status !== 'considering'}
                   className="action-btn hire"
                 >
-                  🎉 Hire
+Hire
                 </button>
                 <button 
                   onClick={() => handleAction(app.id, 'reject')}
                   disabled={updatingAppId === app.id}
                   className="action-btn reject"
                 >
-                  ❌ Reject
+Reject
                 </button>
                 <Link to={`/applications/${app.id}/messages`} className="action-btn messages">
-                  💬 Messages
+Messages
                 </Link>
               </div>
 

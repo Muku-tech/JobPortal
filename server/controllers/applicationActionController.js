@@ -1,4 +1,4 @@
-const { Application, Message, User } = require("../models");
+const { Application, Message, User, Job } = require("../models");
 const { generateMessage } = require("../utils/messageGenerator");
 
 exports.performAction = async (req, res) => {
@@ -15,7 +15,7 @@ exports.performAction = async (req, res) => {
     const application = await Application.findByPk(id, {
       include: [
         { model: User, as: "applicant" },
-        { model: User, as: "job", include: [{ model: User, as: "employer" }] },
+        { model: Job, as: "job", include: [{ model: User, as: "employer" }] },
       ],
     });
 

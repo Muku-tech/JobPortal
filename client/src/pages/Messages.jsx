@@ -110,7 +110,7 @@ function Messages() {
           filteredNotifs.map(notif => (
             <div key={notif.id} className={`message-card ${notif.read ? 'read' : 'unread'}`}>
               <div className="message-header">
-                <h4>{notif.title}</h4>
+<h4>{notif.type === 'system' ? 'Status Update' : notif.sender?.name || 'Message'}</h4>
                 <div className="actions">
                   {!notif.read && (
                     <button onClick={() => markAsRead(notif.id)} className="read-btn">
@@ -119,7 +119,7 @@ function Messages() {
                   )}
                 </div>
               </div>
-<p className="message-body">{notif.content}</p>
+<p className="message-body">{notif.message}</p>
               <div className="message-meta">
                 <span>{new Date(notif.createdAt).toLocaleString()}</span>
                 {notif.type === 'status_update' && <span className="type-badge">Application Update</span>}
