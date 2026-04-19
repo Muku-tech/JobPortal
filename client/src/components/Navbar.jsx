@@ -18,7 +18,7 @@ function Navbar() {
   const fetchUnreadCount = useCallback(async () => {
     if (!user) return;
     try {
-      const response = await api.get('/api/messages/count');
+const response = await api.get('/messages/count');
       setUnreadCount(response.data.unreadCount || 0);
     } catch (error) {
       console.log('Unread count fetch failed:', error);

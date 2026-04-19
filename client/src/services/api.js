@@ -26,8 +26,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+      // Skip redirect on public routes
+      const publicPaths = ["/", "/jobs", "/jobs/", "/login", "/register"];
+      const isPublic = publicPaths.some((path) =>
+        window.location.pathname.startsWith(path),
+      );
+      if (!isPublic) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(error);
   },

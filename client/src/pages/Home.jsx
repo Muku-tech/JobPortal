@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MapPin, Search, Heart, Star } from "lucide-react";
 import api from "../services/api";
+import axios from "axios";
+
+const publicApi = axios.create({
+  baseURL: "http://localhost:5001/api",
+});
+
 import "../styles/Home.css";
 
 export default function Home() {
@@ -43,14 +49,15 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const recRes = await api.get('/recommendations/smart').catch(() => ({ data: { jobs: [] } }));
-        setRecommendations(recRes.data.jobs || []);
+        setRecommendations([]);
       } catch (err) {
-        console.error(err);
+        console.error('Recommendations fetch failed:', err);
       } finally {
         setLoading(false);
         setStatsAnimating(true);
@@ -67,17 +74,19 @@ export default function Home() {
           type: activeCategory,
           limit: 8
         });
-        const res = await api.get(`/jobs/category?${params.toString()}`);
+        console.log("Fetching category jobs:", { type: activeCategory, params: params.toString() });
+        const res = await publicApi.get(`/jobs/category?${params.toString()}`);
+        console.log("Category jobs response:", res.data.jobs?.length || 0, "jobs");
         setCategoryJobs(res.data.jobs || []);
       } catch (err) {
-        console.error(err);
+        console.error('Category jobs fetch failed:', err.response?.data || err.message);
         setCategoryJobs([]);
       } finally {
         setLoadingCategory(false);
       }
     };
     fetchCategoryJobs();
-  }, [activeCategory]);
+    }, [activeCategory]);
 
   useEffect(() => {
     if (!statsAnimating) return;
@@ -263,34 +272,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recommendations */}
-      {recommendations.length > 0 && (
-        <section className="rec-section">
-          <div className="container">
-            <div className="section-header">
-              <h2>Recommended for you</h2>
-            </div>
-            <div className="jobs-grid">
-              {recommendations.slice(0, 4).map((job, i) => (
-                <motion.div 
-                  key={job.id}
-                  className="job-home-card rec-card"
-                  whileHover={{ y: -4 }}
-                  onClick={() => navigate(`/jobs/${job.id}`)}
-                >
-
-                  <h3>{job.title}</h3>
-                  <p>{job.company_name}</p>
-                  <div className="job-foot">
-                    <span><MapPin size={14} /> {job.location}</span>
-                    <span>{job.job_type}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Recommendations section removed for public home page */}
 
       {/* Testimonials */}
       <section className="testimonials-section">

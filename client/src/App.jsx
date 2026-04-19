@@ -38,7 +38,7 @@ function ProtectedRoute({ children, allowedRole }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace state={{ from: window.location.pathname }} />
   }
 
   if (allowedRole && user.role !== allowedRole) {
@@ -59,12 +59,6 @@ function ProfileRedirect() {
 }
 
 function App() {
-  const { loading } = useAuth()
-
-  if (loading) {
-    return <div className="loading-spinner">Loading...</div>
-  }
-
   return (
     <div className="app-container">
       <Navbar />
@@ -75,88 +69,19 @@ function App() {
           <AnimatePresence mode="wait">
             <Routes key={window.location.pathname}>
 
-              {/* PUBLIC */}
+              {/* PUBLIC - No auth required */}
               <Route path="/" element={<Home />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/jobs/:id" element={<JobDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* JOB SEEKER */}
-              <Route path="/jobs" element={<Jobs />} />
-
-              <Route path="/jobs/:id" element={<JobDetails />} />
-
+              {/* JOB SEEKER PROTECTED */}
               <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute allowedRole="jobseeker">
                     <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* EMPLOYER */}
-              <Route
-                path="/employer"
-                element={
-                  <ProtectedRoute allowedRole="employer">
-                    <EmployerDashboard />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/employer/manage-jobs"
-                element={
-                  <ProtectedRoute allowedRole="employer">
-                    <ManageJobs />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* FIXED ROUTE */}
-              <Route
-                path="/employer/applications/:jobId"
-                element={
-                  <ProtectedRoute allowedRole="employer">
-                    <EmployerApplicationsWrapper />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* ALL APPLICATIONS */}
-              <Route
-                path="/employer/applications"
-                element={
-                  <ProtectedRoute allowedRole="employer">
-                    <EmployerApplications />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/employer/jobs/:id/applicants"
-                element={
-                  <ProtectedRoute allowedRole="employer">
-                    <EmployerJobApplicants />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/post-job"
-                element={
-                  <ProtectedRoute allowedRole="employer">
-                    <PostJob />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* PROFILE */}
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfileRedirect />
                   </ProtectedRoute>
                 }
               />
@@ -177,6 +102,66 @@ function App() {
                 }
               />
 
+              {/* EMPLOYER PROTECTED */}
+              <Route
+                path="/employer"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employer/manage-jobs"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <ManageJobs />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employer/applications/:jobId"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerApplicationsWrapper />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employer/applications"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerApplications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/employer/jobs/:id/applicants"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <EmployerJobApplicants />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/post-job"
+                element={
+                  <ProtectedRoute allowedRole="employer">
+                    <PostJob />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* PROFILE */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfileRedirect />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* FALLBACK */}
               <Route path="*" element={<Navigate to="/" replace />} />
 
@@ -190,4 +175,3 @@ function App() {
 }
 
 export default App
-

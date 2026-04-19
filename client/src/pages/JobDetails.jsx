@@ -94,13 +94,8 @@ export default function JobDetails() {
   }
 
   const fetchRelatedJobs = async () => {
-    if (!job?.category) return;
-    try {
-      const response = await api.get(`/jobs?category=${job.category}&limit=3`)
-      setRelatedJobs(response.data.jobs?.filter(j => j.id !== Number(id)) || [])
-    } catch (error) {
-      console.error('Related jobs error:', error)
-    }
+    // Similar jobs disabled for public users
+    setRelatedJobs([]);
   }
 
   const handleApply = async (e) => {
@@ -345,20 +340,7 @@ export default function JobDetails() {
         </aside>
       </div>
 
-      {/* RELATED JOBS BOTTOM */}
-      {relatedJobs.length > 0 && (
-        <motion.section className="related-section" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <h2>Similar Jobs</h2>
-          <div className="related-grid">
-            {relatedJobs.map(job => (
-              <Link key={job.id} to={`/jobs/${job.id}`} className="related-card">
-                <h4>{job.title}</h4>
-                <p>{job.company_name} • {job.location}</p>
-              </Link>
-            ))}
-          </div>
-        </motion.section>
-      )}
+      {/* RELATED JOBS BOTTOM - Disabled for public users */}
 
       {/* Skill Gap Modal */}
       {showSkillGap && skillGap && (

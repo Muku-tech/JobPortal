@@ -189,6 +189,61 @@ exports.trackJobView = async (req, res) => {
   }
 };
 
+// Guest recommendations - top jobs for non-logged in users
+exports.getGuestRecommendations = async (req, res) => {
+  try {
+    const { Job, JobView, Application, sequelize } = require("../models");
+    const limit = parseInt(req.query.limit) || 8;
+
+    // Get top jobs by views + applications (popularity score)
+    const topJobs = await Job.findAll({
+      attributes: [
+        "id",
+        "title",
+        "company_name",
+        "location",
+        "job_type",
+        "salary_min",
+        "salary_max",
+        [
+          sequelize.literal(
+            "(SELECT COUNT(*) FROM job_views WHERE job_views.job_id = Job.id)",
+          ),
+          "view_count",
+        ],
+        [
+          sequelize.literal(
+            "(SELECT COUNT(*) FROM applications WHERE applications.job_id = Job.id)",
+          ),
+          "application_count",
+        ],
+      ],
+      order: [
+        sequelize.literal("view_count + COALESCE(application_count, 0) DESC"),
+        ["createdAt", "DESC"],
+      ],
+      limit,
+      raw: true,
+    });
+
+    res.json({
+      jobs: topJobs,
+      algorithm: "popularity",
+      stage: "guest",
+      message: "Top popular jobs for guests",
+    });
+  } catch (error) {
+    console.error("Error in guest recommendations:", error);
+    // Fallback to recent jobs
+    const { Job } = require("../models");
+    const fallback = await Job.findAll({
+      limit: 8,
+      order: [["createdAt", "DESC"]],
+    });
+    res.json({ jobs: fallback, algorithm: "recent", stage: "guest" });
+  }
+};
+
 // Get recommendation system status
 exports.getRecommendationStats = async (req, res) => {
   try {

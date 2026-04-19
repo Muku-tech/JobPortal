@@ -3,7 +3,10 @@ const router = express.Router();
 const recommendationController = require("../controllers/recommendationController");
 const auth = require("../middleware/auth");
 
-// All recommendation routes require authentication
+// Guest recommendations (public)
+router.get("/guest", recommendationController.getGuestRecommendations);
+
+// All other recommendation routes require authentication
 router.use(auth.verifyToken);
 
 // Default route - redirects to smart recommendations

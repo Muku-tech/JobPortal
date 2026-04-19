@@ -20,6 +20,7 @@ export function AuthProvider({ children }) {
         setUser(response.data)
       }
     } catch (error) {
+      console.error('Auth check failed - clearing token:', error.response?.status || error.message);
       localStorage.removeItem('token')
       delete api.defaults.headers.common['Authorization']
     } finally {

@@ -55,6 +55,50 @@ const connectDB = async () => {
       console.log("✅ job_views table exists");
     }
 
+    // Check and create messages table if missing
+    const [messageTables] = await sequelize.query(
+      `
+      SELECT TABLE_NAME 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'messages'
+    `,
+      { replacements: [sequelize.config.database] },
+    );
+
+    if (messageTables.length === 0) {
+      console.log("⚠️ messages table missing, creating...");
+      await sequelize.query(`
+        CREATE TABLE messages (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          application_id INT NULL,
+          sender_id INT NOT NULL,
+          recipient_id INT NOT NULL,
+          message TEXT NOT NULL,
+          \`type\` ENUM('system', 'user') DEFAULT 'system',
+          \`read\` BOOLEAN DEFAULT false,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_recipient (recipient_id),
+          INDEX idx_app_read (application_id, \`read\`, createdAt),
+          FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE SET NULL,
+          FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      // Seed test messages for user 1
+      await sequelize.query(`
+        INSERT IGNORE INTO messages (sender_id, recipient_id, message, \`type\`, \`read\`)
+        VALUES 
+          (1, 1, 'Welcome! This is a test system message.', 'system', false),
+          (1, 1, 'Your application has been received.', 'system', false),
+          (2, 1, 'Direct message from employer.', 'user', false)
+      `);
+      console.log("✅ messages table created + test data seeded");
+    } else {
+      console.log("✅ messages table exists");
+    }
+
     console.log(
       "✅ Database authenticated (sync skipped to avoid FK drop issues - tables exist)",
     );
