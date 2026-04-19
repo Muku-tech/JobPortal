@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard, Bell } from 'lucide-react';
+import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard, Bell, FileText, Users } from 'lucide-react';
 import '../styles/Navbar.css';
 
 function Navbar() {
@@ -95,17 +95,20 @@ const response = await api.get('/messages/count');
             <div className="user-group">
               {user.role === "jobseeker" && (
                 <>
-                  <Link to="/jobs" className={`nav-link ${location.pathname === '/jobs' ? 'active' : ''}`}>
+                  <Link to="/jobs" className={`nav-link ${location.pathname === '/jobs' ? 'active' : ''}`} title="Browse Jobs">
+                    <Briefcase size={18} />
                     Browse Jobs
                   </Link>
-                  <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
+                  <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} title="Dashboard">
+                    <LayoutDashboard size={18} />
                     Dashboard
                   </Link>
                   <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} title={`${unreadCount} unread`}>
                     <Bell size={18} />
                     Messages {unreadCount > 0 && <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
                   </Link>
-                  <Link to="/resume-builder" className={`nav-link ${location.pathname === '/resume-builder' ? 'active' : ''}`}>
+                  <Link to="/resume-builder" className={`nav-link ${location.pathname === '/resume-builder' ? 'active' : ''}`} title="Resume Builder">
+                    <FileText size={18} />
                     Resume Builder
                   </Link>
                 </>
@@ -120,7 +123,8 @@ const response = await api.get('/messages/count');
                     <Briefcase size={18} />
                     Post Job
                   </Link>
-                  <Link to="/employer/applications" className={`nav-link ${location.pathname === '/employer/applications' ? 'active' : ''}`}>
+                  <Link to="/employer/applications" className={`nav-link ${location.pathname === '/employer/applications' ? 'active' : ''}`} title="Applicants">
+                    <Users size={18} />
                     Applicants
                   </Link>
                   <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} title={`${unreadCount} unread`}>
