@@ -41,13 +41,17 @@ const Message = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    applicant_read: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     tableName: "messages",
     timestamps: true,
     indexes: [
       {
-        fields: ["application_id", "read", "createdAt"],
+        fields: ["application_id", "read", "applicant_read", "createdAt"],
       },
       {
         fields: ["recipient_id"],

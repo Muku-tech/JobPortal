@@ -37,4 +37,18 @@ router.get(
   require("../controllers/applicationActionController").getApplicationMessages,
 );
 
+// Get unread message count for application (for employer)
+router.get(
+  "/:id/messages-count",
+  auth.verifyToken,
+  require("../controllers/messageController").getUnreadPerApp,
+);
+
+// Mark all messages for application as read
+router.put(
+  "/:id/messages/read-all",
+  auth.verifyToken,
+  require("../controllers/messageController").markAppAllRead,
+);
+
 module.exports = router;

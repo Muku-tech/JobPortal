@@ -11,12 +11,27 @@ const EmployerApplications = ({ jobId }) => {
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState(null)
   const [interviewModal, setInterviewModal] = useState({ open: false, appId: null })
+  const [unreadCounts, setUnreadCounts] = useState({})
 
   const newStages = ['applied', 'considering', 'final']
 
   useEffect(() => {
     fetchApplications(jobId)
   }, [jobId])
+
+  const fetchUnreadCounts = async (appIds) => {
+    const counts = {}
+    try {
+      const promises = appIds.map(async (appId) => {
+        const response = await api.get(`/applications/${appId}/messages-count`)
+        counts[appId] = response.data.unreadCount || 0
+      })
+      await Promise.all(promises)
+      setUnreadCounts(counts)
+    } catch (error) {
+      console.error('Error fetching unread counts:', error)
+    }
+  }
 
   const fetchApplications = async (currentJobId) => {
     try {
@@ -28,6 +43,12 @@ const EmployerApplications = ({ jobId }) => {
       const response = await api.get(endpoint)
       const data = response.data?.applications || response.data || []
       setApplications(Array.isArray(data) ? data : [])
+      
+      // Fetch unread counts for all apps
+      const appIds = data.map(app => app.id)
+      if (appIds.length > 0) {
+        fetchUnreadCounts(appIds)
+      }
     } catch (error) {
       console.error('Error fetching applications:', error)
       setError(error.response?.data?.message || 'Failed to load applications')
@@ -48,6 +69,11 @@ const EmployerApplications = ({ jobId }) => {
             : app
         )
       )
+      // Optimistic unread count +1 for new status message
+      setUnreadCounts(prev => ({
+        ...prev,
+        [appId]: (prev[appId] || 0) + 1
+      }))
     } catch (error) {
       console.error(error)
       alert('Failed to perform action')
@@ -144,6 +170,11 @@ const EmployerApplications = ({ jobId }) => {
                 <div className={`status-badge status-${app.status}`}>
                   {app.status}
                 </div>
+                {unreadCounts[app.id] !== undefined && (
+                  <div className={`message-badge ${unreadCounts[app.id] > 0 ? 'unread' : 'read'}`}>
+                    {unreadCounts[app.id] > 0 ? unreadCounts[app.id] : '✓'}
+                  </div>
+                )}
               </div>
 
               {/* ACTION BUTTONS */}

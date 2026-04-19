@@ -62,6 +62,7 @@ exports.performAction = async (req, res) => {
       recipient_id: application.user_id,
       message: messageContent,
       type: "system",
+      applicant_read: false,
     });
 
     res.json({

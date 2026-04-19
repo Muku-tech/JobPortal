@@ -11,6 +11,15 @@ const ApplicationMessages = () => {
   const [sendingMessage, setSendingMessage] = useState(false)
 
   useEffect(() => {
+    const markMessagesRead = async () => {
+      try {
+        await api.put(`/applications/${id}/messages/read-all`)
+        console.log('✅ Messages auto-marked as read for employer notification')
+      } catch (error) {
+        console.error('Mark read error:', error)
+      }
+    }
+    markMessagesRead()
     fetchMessages()
   }, [id])
 

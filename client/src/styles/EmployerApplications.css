@@ -272,6 +272,40 @@
   color: #1e40af;
 }
 
+/* Message Read Badges */
+.message-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 2px 6px;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  font-size: 0.65rem;
+}
+
+.message-badge.unread {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #f87171;
+  animation: pulse 2s infinite;
+}
+
+.message-badge.read {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+
 /* Notes Section */
 .notes-section {
   border-top: 1px dashed var(--ats-border);
