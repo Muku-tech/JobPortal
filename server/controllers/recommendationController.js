@@ -6,12 +6,30 @@ const kMeansClustering = require("../services/algorithms/kMeansClustering");
 // Helper function to get system stats
 const getSystemStats = async (userId) => {
   const totalUsers = await User.count();
-  const totalJobViews = await JobView.count();
-  const totalApplications = await Application.count();
-  const userJobViews = await JobView.count({ where: { user_id: userId } });
-  const userApplications = await Application.count({
-    where: { user_id: userId },
-  });
+  let totalJobViews = 0;
+  try {
+    totalJobViews = await JobView.count();
+  } catch (e) {
+    console.warn("JobView.count failed:", e.message);
+  }
+  let totalApplications = 0;
+  try {
+    totalApplications = await Application.count();
+  } catch (e) {
+    console.warn("Application.count failed:", e.message);
+  }
+  let userJobViews = 0;
+  try {
+    userJobViews = await JobView.count({ where: { user_id: userId } });
+  } catch (e) {
+    console.warn("userJobViews.count failed:", e.message);
+  }
+  let userApplications = 0;
+  try {
+    userApplications = await Application.count({ where: { user_id: userId } });
+  } catch (e) {
+    console.warn("userApplications.count failed:", e.message);
+  }
 
   return {
     totalUsers,

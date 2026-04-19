@@ -7,31 +7,34 @@ const auth = require("../middleware/auth");
 router.post("/", auth.verifyToken, applicationController.applyForJob);
 
 // FIXED: Changed from /my-applications to /user to match frontend api.get("/applications/user")
-router.get(
-  "/user",
-  auth.verifyToken,
-  applicationController.getMyApplications
-);
+router.get("/user", auth.verifyToken, applicationController.getMyApplications);
 
 // Get all applications for current employer
 router.get(
   "/employer-all",
   auth.verifyToken,
-  applicationController.getEmployerApplications
+  applicationController.getEmployerApplications,
 );
 
 // Get applications for a specific job (employer)
 router.get(
   "/job/:jobId",
   auth.verifyToken,
-  applicationController.getJobApplications
+  applicationController.getJobApplications,
 );
 
-// Update application status (employer)
-router.put(
-  "/:id/status",
+// Action-based updates (employer)
+router.post(
+  "/:id/action",
   auth.verifyToken,
-  applicationController.updateApplicationStatus
+  require("../controllers/applicationActionController").performAction,
+);
+
+// Get messages for application
+router.get(
+  "/:id/messages",
+  auth.verifyToken,
+  require("../controllers/applicationActionController").getApplicationMessages,
 );
 
 module.exports = router;

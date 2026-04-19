@@ -74,7 +74,7 @@ const markAllRead = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    const { recipientId, title, content } = req.body;
+    const { recipientId, message: content } = req.body; // Accept 'message' field
 
     const recipient = await User.findByPk(recipientId);
     if (!recipient) {
@@ -85,8 +85,7 @@ const sendMessage = async (req, res) => {
     const messageToRecipient = await Message.create({
       sender_id: req.user.id,
       recipient_id: recipientId,
-      title: title || "New Message",
-      content,
+      message: content,
       type: "message",
     });
 
@@ -94,8 +93,7 @@ const sendMessage = async (req, res) => {
     const messageToSender = await Message.create({
       sender_id: recipientId,
       recipient_id: req.user.id,
-      title: "Message Sent",
-      content: `You sent a message to ${recipient.name}`,
+      message: `Message sent to ${recipient.name}`,
       type: "message",
     });
 

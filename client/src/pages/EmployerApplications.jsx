@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
+import ApplicationMessages from './ApplicationMessages'
 import '../styles/EmployerApplications.css'
 
 const EmployerApplications = ({ jobId }) => {
@@ -8,8 +10,9 @@ const EmployerApplications = ({ jobId }) => {
   const [updatingAppId, setUpdatingAppId] = useState(null)
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState(null)
+  const [interviewModal, setInterviewModal] = useState({ open: false, appId: null })
 
-  const atsStages = ['applied', 'under_review', 'shortlisted', 'interview_scheduled', 'hired', 'rejected']
+  const newStages = ['applied', 'considering', 'final']
 
   useEffect(() => {
     fetchApplications(jobId)
@@ -19,19 +22,12 @@ const EmployerApplications = ({ jobId }) => {
     try {
       setLoading(true)
       setError(null)
-
       const endpoint = currentJobId
         ? `/applications/job/${currentJobId}`
         : `/applications/employer-all`
-
-      console.log("Fetching from:", endpoint)
-
       const response = await api.get(endpoint)
-
       const data = response.data?.applications || response.data || []
-
       setApplications(Array.isArray(data) ? data : [])
-
     } catch (error) {
       console.error('Error fetching applications:', error)
       setError(error.response?.data?.message || 'Failed to load applications')
@@ -40,25 +36,43 @@ const EmployerApplications = ({ jobId }) => {
     }
   }
 
-  const updateStatus = async (applicationId, status, notes, interviewDate) => {
+  const handleAction = async (appId, action, extraData = {}) => {
     try {
-      setUpdatingAppId(applicationId)
-      await api.put(`/applications/${applicationId}/status`, { status, notes, interviewDate })
-
+      setUpdatingAppId(appId)
+      await api.post(`/applications/${appId}/action`, { action, ...extraData })
+      // Optimistic update
       setApplications(prev =>
         prev.map(app =>
-          app.id === applicationId
-            ? { ...app, status, employer_notes: notes, interview_date: interviewDate }
+          app.id === appId
+            ? { ...app, ...getActionUpdate(action, extraData) }
             : app
         )
       )
-
     } catch (error) {
       console.error(error)
-      alert('Failed to update status')
+      alert('Failed to perform action')
     } finally {
       setUpdatingAppId(null)
     }
+  }
+
+  const getActionUpdate = (action, data) => {
+    switch (action) {
+      case 'shortlist':
+        return { status: 'considering', is_shortlisted: true }
+      case 'interview':
+        return { status: 'considering', interview_date: data.interview_date }
+      case 'hire':
+        return { status: 'final', decision: 'hired' }
+      case 'reject':
+        return { status: 'final', decision: 'rejected' }
+      default:
+        return {}
+    }
+  }
+
+  const openInterviewModal = (appId) => {
+    setInterviewModal({ open: true, appId })
   }
 
   const filteredApps =
@@ -66,13 +80,11 @@ const EmployerApplications = ({ jobId }) => {
       ? applications
       : applications.filter(app => app.status === filter)
 
-
-
   if (loading) {
     return (
       <div className="loading-state">
         <div className="spinner"></div>
-        <p>Loading applicant data...</p>
+        <p>Loading applicants...</p>
       </div>
     )
   }
@@ -80,7 +92,7 @@ const EmployerApplications = ({ jobId }) => {
   if (error) {
     return (
       <div className="error-state">
-        <h3>Error loading applications</h3>
+        <h3>Error</h3>
         <p>{error}</p>
         <button onClick={() => fetchApplications(jobId)}>Retry</button>
       </div>
@@ -88,125 +100,127 @@ const EmployerApplications = ({ jobId }) => {
   }
 
   return (
-    <>
-      <div className="employer-ats-container">
-        {/* HEADER */}
-        <header className="ats-header">
-          <div className="header-content">
-            <h1>Applicant Tracking System</h1>
-            <p>Manage and move candidates through your recruitment pipeline.</p>
-          </div>
-        </header>
+    <div className="employer-ats-container">
+      {/* HEADER */}
+      <header className="ats-header">
+        <div className="header-content">
+          <h1>Applicant Management</h1>
+          <p>Take action on candidates with one click</p>
+        </div>
+      </header>
 
-        {/* FILTER BAR */}
-        <div className="ats-filter-bar">
+      {/* FILTER BAR */}
+      <div className="ats-filter-bar">
+        {['all', ...newStages].map(stage => (
           <button
-            onClick={() => setFilter('all')}
-            className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
+            key={stage}
+            onClick={() => setFilter(stage)}
+            className={`filter-tab ${filter === stage ? 'active' : ''}`}
           >
-            All Candidates ({applications.length})
+            {stage === 'all' ? `All (${applications.length})` : stage.replace('_', ' ')}
           </button>
-
-          {atsStages.map(stage => (
-            <button
-              key={stage}
-              onClick={() => setFilter(stage)}
-              className={`filter-tab ${filter === stage ? 'active' : ''}`}
-            >
-              {stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-            </button>
-          ))}
-        </div>
-
-        {/* APPLICATION LIST */}
-        <div className="applications-feed">
-          {filteredApps.length === 0 ? (
-            <div className="empty-ats-state">
-              <p>No candidates found in the <strong>{filter.replace('_', ' ')}</strong> stage.</p>
-            </div>
-          ) : (
-            filteredApps.map(app => (
-              <div key={app.id} className="candidate-card">
-                {/* TOP */}
-                <div className="card-top">
-                  <div className="candidate-info">
-                    <h3 className="job-title-tag">
-                      {app.job?.title || 'Job Title'}
-                    </h3>
-                    <h2 className="applicant-name">
-                      {app.applicant?.name || 'Unknown Applicant'}
-                    </h2>
-                    <p className="applicant-email">
-                      {app.applicant?.email || 'No Email'}
-                    </p>
-                  </div>
-                  <div className={`status-pill pill-${app.status}`}>
-                    {app.status?.replace('_', ' ')}
-                  </div>
-                </div>
-
-                {/* COVER LETTER */}
-                <div className="cover-letter-preview">
-                  <label>Cover Letter</label>
-                  <p>{app.cover_letter || 'No cover letter provided.'}</p>
-                </div>
-
-                {/* ACTIONS */}
-                <div className="ats-actions-row">
-                  <div className="action-group">
-                    <label>Status</label>
-                    <div className="status-buttons">
-                      {atsStages.map(stage => (
-                        <button
-                          key={stage}
-                          className={`status-btn ${app.status === stage ? 'active' : ''} ${updatingAppId === app.id ? 'loading' : ''}`}
-                          onClick={() => {
-                            const applicantName = app.applicant?.name || 'applicant';
-                            const jobTitle = app.job?.title || 'this position';
-                            const stageName = stage.replace('_', ' ');
-                            if (confirm(`Send "${stageName}" notification to ${applicantName} for ${jobTitle}?`)) {
-                              if (stage === 'interview_scheduled') {
-                                const interviewDate = prompt('Enter interview date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-                                if (interviewDate) {
-                                  updateStatus(app.id, stage, app.employer_notes, interviewDate);
-                                  return;
-                                }
-                              }
-                              updateStatus(app.id, stage, app.employer_notes);
-                            }
-                          }}
-
-                          disabled={updatingAppId === app.id}
-                        >
-                          {updatingAppId === app.id ? '...' : stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="action-group flex-grow">
-                    <label>Internal Hiring Notes</label>
-                    <input
-                      type="text"
-                      placeholder="Add feedback or interview notes..."
-                      defaultValue={app.employer_notes}
-                      className="ats-input"
-                      onBlur={(e) => {
-                        if (e.target.value !== app.employer_notes) {
-                          updateStatus(app.id, app.status, e.target.value)
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        ))}
       </div>
 
-    </>
+      {/* APPLICATIONS */}
+      <div className="applications-feed">
+        {filteredApps.length === 0 ? (
+          <div className="empty-state">
+            No candidates in "{filter.replace('_', ' ')}" stage
+          </div>
+        ) : (
+          filteredApps.map(app => (
+            <div key={app.id} className="candidate-card">
+              {/* HEADER */}
+              <div className="card-top">
+                <div className="candidate-info">
+                  <h3 className="job-title">{app.job?.title}</h3>
+                  <h2>{app.applicant?.name}</h2>
+                  <p>{app.applicant?.email}</p>
+                  {app.cover_letter && (
+                    <p className="cover-preview">" {app.cover_letter.substring(0, 100)}... "</p>
+                  )}
+                </div>
+                <div className={`status-badge status-${app.status}`}>
+                  {app.status}
+                </div>
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="action-buttons">
+                <button 
+                  onClick={() => handleAction(app.id, 'shortlist')}
+                  disabled={updatingAppId === app.id || app.status !== 'applied'}
+                  className="action-btn shortlist"
+                >
+                  ⭐ Shortlist
+                </button>
+                <button 
+                  onClick={() => openInterviewModal(app.id)}
+                  disabled={updatingAppId === app.id || ['final'].includes(app.status)}
+                  className="action-btn interview"
+                >
+                  📅 Interview
+                </button>
+                <button 
+                  onClick={() => handleAction(app.id, 'hire')}
+                  disabled={updatingAppId === app.id || app.status !== 'considering'}
+                  className="action-btn hire"
+                >
+                  🎉 Hire
+                </button>
+                <button 
+                  onClick={() => handleAction(app.id, 'reject')}
+                  disabled={updatingAppId === app.id}
+                  className="action-btn reject"
+                >
+                  ❌ Reject
+                </button>
+                <Link to={`/applications/${app.id}/messages`} className="action-btn messages">
+                  💬 Messages
+                </Link>
+              </div>
+
+              {/* NOTES */}
+              <div className="notes-section">
+                <label>Notes</label>
+                <input
+                  type="text"
+                  defaultValue={app.employer_notes}
+                  placeholder="Optional notes..."
+                  className="notes-input"
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* INTERVIEW MODAL */}
+      {interviewModal.open && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Schedule Interview</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const date = e.target.date.value
+              handleAction(interviewModal.appId, 'interview', { interview_date: date })
+              setInterviewModal({ open: false, appId: null })
+            }}>
+              <input name="date" type="date" required className="date-input" />
+              <div className="modal-buttons">
+                <button type="button" onClick={() => setInterviewModal({ open: false, appId: null })}>
+                  Cancel
+                </button>
+                <button type="submit">Schedule</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
 export default EmployerApplications
+

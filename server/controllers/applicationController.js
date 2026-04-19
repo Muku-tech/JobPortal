@@ -249,14 +249,13 @@ exports.updateApplicationStatus = async (req, res) => {
           };
           const template = statusTemplates[status];
           await Message.create({
+            application_id: parseInt(id),
             sender_id: req.user.id,
             recipient_id: applicant.id,
-            title: template.title,
-            content: template.message,
+            message: `${template.title}\n\n${template.message}`,
             type: "status_update",
           });
           console.log("✅ Status message sent to", applicant.name);
-          console.log("✅ Internal notification sent to", applicant.name);
         } catch (notifError) {
           console.error(
             "⚠️ Notification failed but status saved:",

@@ -1,7 +1,8 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
-import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
+import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard, Bell } from 'lucide-react';
 import '../styles/Navbar.css';
 
 function Navbar() {
@@ -9,14 +10,37 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [menuOpen, setMenuOpen ] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const response = await api.get('/api/messages/count');
+      setUnreadCount(response.data.unreadCount || 0);
+    } catch (error) {
+      console.log('Unread count fetch failed:', error);
+    }
+  }, [user]);
 
   // Close menu on route change
   useEffect(() => {
     setMenuOpen(false);
     setOpenDropdown(null);
   }, [location]);
+
+  // Poll unread count every 30s when logged in
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    } else {
+      setUnreadCount(0);
+    }
+  }, [user, fetchUnreadCount]);
 
   const handleLogout = () => {
     logout();
@@ -69,7 +93,7 @@ function Navbar() {
             </div>
           ) : (
             <div className="user-group">
-{user.role === "jobseeker" && (
+              {user.role === "jobseeker" && (
                 <>
                   <Link to="/jobs" className={`nav-link ${location.pathname === '/jobs' ? 'active' : ''}`}>
                     Browse Jobs
@@ -77,8 +101,9 @@ function Navbar() {
                   <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
                     Dashboard
                   </Link>
-                  <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`}>
-                    Messages
+                  <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} title={`${unreadCount} unread`}>
+                    <Bell size={18} />
+                    Messages {unreadCount > 0 && <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
                   </Link>
                   <Link to="/resume-builder" className={`nav-link ${location.pathname === '/resume-builder' ? 'active' : ''}`}>
                     Resume Builder
@@ -87,9 +112,21 @@ function Navbar() {
               )}
               {user.role === "employer" && (
                 <>
-                  <Link to="/employer" className="nav-link">Overview</Link>
-                  <Link to="/post-job" className="nav-link">Post Job</Link>
-                  <Link to="/employer/applications" className="nav-link">Applicants</Link>
+                  <Link to="/employer" className={`nav-link ${location.pathname === '/employer' ? 'active' : ''}`}>
+                    <LayoutDashboard size={18} />
+                    Dashboard
+                  </Link>
+                  <Link to="/post-job" className={`nav-link ${location.pathname === '/post-job' ? 'active' : ''}`}>
+                    <Briefcase size={18} />
+                    Post Job
+                  </Link>
+                  <Link to="/employer/applications" className={`nav-link ${location.pathname === '/employer/applications' ? 'active' : ''}`}>
+                    Applicants
+                  </Link>
+                  <Link to="/messages" className={`nav-link ${location.pathname === '/messages' ? 'active' : ''}`} title={`${unreadCount} unread`}>
+                    <Bell size={18} />
+                    Messages {unreadCount > 0 && <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+                  </Link>
                 </>
               )}
 

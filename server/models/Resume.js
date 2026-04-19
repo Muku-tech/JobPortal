@@ -113,8 +113,8 @@ const Resume = sequelize.define(
   },
 );
 
-Resume.associate = ({ sequelize, User }) => {
-  Resume.belongsTo(User, { foreignKey: "user_id" });
+Resume.associate = (models) => {
+  Resume.belongsTo(models.User, { foreignKey: "user_id" });
 };
 
 module.exports = Resume;

@@ -7,54 +7,23 @@ const Notification = require("./Notification");
 const Message = require("./Message");
 const Resume = require("./Resume");
 
-// Associations
-require("./User").associate({
+// Create models map
+const models = {
   sequelize,
   User,
   Job,
   Application,
   JobView,
   Notification,
-});
-require("./Job").associate({
-  sequelize,
-  User,
-  Job,
-  Application,
-  JobView,
-  Notification,
-});
-require("./Application").associate({
-  sequelize,
-  User,
-  Job,
-  Application,
-  JobView,
-  Notification,
-});
-require("./JobView").associate({
-  sequelize,
-  User,
-  Job,
-  Application,
-  JobView,
-  Notification,
-});
-require("./Notification").associate({
-  sequelize,
-  User,
-  Job,
-  Application,
-  JobView,
-  Notification,
-});
-require("./Message").associate({
-  sequelize,
-  User,
-});
-require("./Resume").associate({
-  sequelize,
-  User,
+  Message,
+  Resume,
+};
+
+// Associate models after all are loaded
+Object.keys(models).forEach((modelName) => {
+  if (models[modelName] && typeof models[modelName].associate === "function") {
+    models[modelName].associate(models);
+  }
 });
 
 module.exports = {

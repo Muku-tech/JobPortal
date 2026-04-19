@@ -9,6 +9,14 @@ const Message = sequelize.define(
       primaryKey: true,
       autoIncrement: true,
     },
+    application_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "applications",
+        key: "id",
+      },
+    },
     sender_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -21,26 +29,17 @@ const Message = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
     },
-    title: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
-    content: {
+    message: {
       type: DataTypes.TEXT,
       allowNull: false,
+    },
+    type: {
+      type: DataTypes.ENUM("system", "user"),
+      defaultValue: "system",
     },
     read: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-    },
-    type: {
-      type: DataTypes.ENUM(
-        "message",
-        "application_update",
-        "interview_request",
-        "sent",
-      ),
-      defaultValue: "message",
     },
   },
   {
@@ -48,16 +47,19 @@ const Message = sequelize.define(
     timestamps: true,
     indexes: [
       {
-        fields: ["recipient_id", "read", "createdAt"],
+        fields: ["application_id", "read", "createdAt"],
       },
       {
-        fields: ["sender_id"],
+        fields: ["recipient_id"],
       },
     ],
   },
 );
 
 Message.associate = (models) => {
+  Message.belongsTo(models.Application, {
+    foreignKey: "application_id",
+  });
   Message.belongsTo(models.User, {
     foreignKey: "sender_id",
     as: "sender",
