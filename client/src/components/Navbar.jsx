@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard, Bell, FileText, Users } from 'lucide-react';
 import '../styles/Navbar.css';
@@ -25,11 +25,16 @@ const response = await api.get('/messages/count');
     }
   }, [user]);
 
-  // Close menu on route change
+  const locationRef = useRef(location.pathname);
+
+  // Close menu only on actual path change
   useEffect(() => {
-    setMenuOpen(false);
-    setOpenDropdown(null);
-  }, [location]);
+    if (location.pathname !== locationRef.current) {
+      setMenuOpen(false);
+      setOpenDropdown(null);
+      locationRef.current = location.pathname;
+    }
+  }, [location.pathname]);
 
   // Poll unread count every 30s when logged in
   useEffect(() => {
@@ -47,9 +52,21 @@ const response = await api.get('/messages/count');
     navigate('/');
   };
 
-  const toggleDropdown = (name) => {
-    setOpenDropdown(openDropdown === name ? null : name);
-  };
+const toggleDropdown = useCallback((name) => {
+  setOpenDropdown(openDropdown === name ? null : name);
+}, [openDropdown]);
+
+  // Disabled click-outside temporarily - interferes with dropdown hover/show
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (openDropdown && !event.target.closest('.nav-dropdown')) {
+  //       setOpenDropdown(null);
+  //     }
+  //   };
+  //
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => document.removeEventListener('mousedown', handleClickOutside);
+  // }, [openDropdown]);
 
   return (
     <nav className="navbar-root">

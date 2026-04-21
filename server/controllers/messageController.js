@@ -6,10 +6,12 @@ const getMessages = async (req, res) => {
 
     const messages = await Message.findAll({
       where: { recipient_id: req.user.id },
+      attributes: { exclude: ["applicant_read"] },
       include: [
         {
           model: User,
           as: "sender",
+          required: false,
           attributes: ["id", "name", "email", "role"],
         },
       ],
@@ -34,6 +36,7 @@ const getUnreadCount = async (req, res) => {
         read: false,
       },
     });
+    console.log(`📊 Unread count: ${count}`);
     res.json({ unreadCount: count });
   } catch (error) {
     console.error("Error fetching unread count:", error);
@@ -43,14 +46,26 @@ const getUnreadCount = async (req, res) => {
 
 const getUnreadPerApp = async (req, res) => {
   try {
-    const { appId } = req.params;
+    const { id } = req.params;
+    if (!id || id === "undefined") {
+      return res.status(400).json({ unreadCount: 0 });
+    }
+    const appId = parseInt(id);
+    if (isNaN(appId)) {
+      return res.status(400).json({ unreadCount: 0 });
+    }
+
     const count = await Message.count({
       where: {
         application_id: appId,
-        sender_id: req.user.id, // Employer's sent messages to this app
-        applicant_read: false,
+        sender_id: req.user.id,
+        read: false,
       },
     });
+
+    console.log(
+      `📊 App ${appId} unread count for employer ${req.user.id}: ${count}`,
+    );
     res.json({ unreadCount: count });
   } catch (error) {
     console.error("Error fetching app unread count:", error);
@@ -68,19 +83,7 @@ const markRead = async (req, res) => {
       return res.status(404).json({ message: "Message not found" });
     }
 
-    // If employer reading applicant-sent message, use read
-    // If applicant reading employer-sent, use applicant_read
-    if (req.user.role === "employer" && message.recipient_id === req.user.id) {
-      await message.update({ read: true });
-    } else if (
-      req.user.role === "applicant" &&
-      message.sender_id === req.user.id
-    ) {
-      // Wait, logic needs employer/applicant roles - assume for now
-      await message.update({ applicant_read: true });
-    } else {
-      await message.update({ read: true });
-    }
+    await message.update({ read: true });
     res.json({ message: "Message marked as read", message });
   } catch (error) {
     console.error("Error updating message:", error);
@@ -135,14 +138,13 @@ const markAppAllRead = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    const { recipientId, message: content } = req.body; // Accept 'message' field
+    const { recipientId, message: content } = req.body;
 
     const recipient = await User.findByPk(recipientId);
     if (!recipient) {
       return res.status(404).json({ message: "Recipient not found" });
     }
 
-    // Create message to recipient
     const messageToRecipient = await Message.create({
       sender_id: req.user.id,
       recipient_id: recipientId,
@@ -150,7 +152,6 @@ const sendMessage = async (req, res) => {
       type: "message",
     });
 
-    // Optional: Create copy for sender (sent messages)
     const messageToSender = await Message.create({
       sender_id: recipientId,
       recipient_id: req.user.id,
@@ -172,19 +173,16 @@ const sendMessage = async (req, res) => {
   }
 };
 
-// Test seed for user 1 (notifications table not exist, create direct)
 const seedTestMessages = async (req, res) => {
   try {
-    console.log(
-      "🌱 Creating test messages for user 1 (notifications table missing)...",
-    );
+    console.log("🌱 Creating test messages for user 1...");
 
     const testData = [
       {
         sender_id: 1,
         recipient_id: 1,
         title: "Application Shortlisted",
-        content: "Your job application has been shortlisted! Check details.",
+        message: "Your job application has been shortlisted! Check details.",
         type: "application_update",
         read: false,
       },
@@ -192,7 +190,7 @@ const seedTestMessages = async (req, res) => {
         sender_id: 1,
         recipient_id: 1,
         title: "Interview Request",
-        content: "Interview scheduled for tomorrow. Please confirm.",
+        message: "Interview scheduled for tomorrow. Please confirm.",
         type: "interview_request",
         read: false,
       },
@@ -200,7 +198,7 @@ const seedTestMessages = async (req, res) => {
         sender_id: 1,
         recipient_id: 1,
         title: "New Job Match",
-        content: "New React Developer job matched your profile.",
+        message: "New React Developer job matched your profile.",
         type: "message",
         read: false,
       },

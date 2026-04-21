@@ -90,138 +90,84 @@
   margin-bottom: 1.25rem;
 }
 
-.job-title-tag {
-  font-size: 0.75rem;
-  color: var(--ats-blue);
-  text-transform: uppercase;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.applicant-name {
-  font-size: 1.25rem;
-  color: var(--ats-navy);
-  margin: 0 0 4px 0;
-}
-
-.applicant-email {
+.job-title {
   font-size: 0.85rem;
   color: var(--ats-muted);
+  margin-bottom: 0.25rem;
 }
 
-/* Status Pills */
-.status-pill {
-  font-size: 0.7rem;
-  font-weight: 800;
+.candidate-info h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  color: var(--ats-navy);
+}
+
+.candidate-info p {
+  color: var(--ats-muted);
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.cover-preview {
+  font-style: italic;
+  color: var(--ats-muted);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0 0;
+}
+
+/* Status Badges */
+.status-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
   text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 4px;
   letter-spacing: 0.5px;
 }
 
-.pill-pending { background: #f1f5f9; color: #475569; }
-.pill-shortlisted { background: #ecfdf5; color: #065f46; }
-.pill-interviewed { background: #eff6ff; color: #1e40af; }
-.pill-hired { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
-.pill-rejected { background: #fef2f2; color: #b91c1c; }
+.status-applied { background: #fef3c7; color: #d97706; }
+.status-considering { background: #d1fae5; color: #065f46; }
+.status-final { background: #dbeafe; color: #1e40af; }
 
-/* Content Sections */
-.cover-letter-preview {
-  background: #f8fafc;
-  padding: 1.25rem;
-  border-radius: 4px;
-  margin-bottom: 1.5rem;
-  border-left: 3px solid var(--ats-border);
-}
-
-.cover-letter-preview label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--ats-muted);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.cover-letter-preview p {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--ats-text);
-}
-
-/* Action Inputs */
-.ats-actions-row {
-  display: flex;
-  gap: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px dashed var(--ats-border);
-}
-
-.action-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.flex-grow { flex: 1; }
-
-.action-group label {
-  font-size: 0.75rem;
+/* Message Badges */
+.message-badge {
+  font-size: 0.7rem;
   font-weight: 700;
-  color: var(--ats-navy);
+  border-radius: 10px;
+  padding: 2px 6px;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
 }
 
-.ats-select, .ats-input {
-  padding: 10px;
-  border: 1px solid var(--ats-border);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  outline: none;
+.message-badge.unread {
+  background: #fee2e2;
+  color: #dc2626;
+  animation: pulse 2s infinite;
 }
 
-.ats-select:focus, .ats-input:focus {
-  border-color: var(--ats-blue);
+.message-badge.read {
+  background: #dcfce7;
+  color: #16a34a;
 }
 
-.ats-input {
-  background: #fff;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .ats-actions-row {
-    flex-direction: column;
-  }
-
-  .employer-ats-container {
-    padding: 1.5rem 1rem;
-  }
-
-  .candidate-card {
-    padding: 1rem;
-  }
-
-  .card-top {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Action Buttons */
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
 .action-btn {
-  padding: 10px 16px;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--ats-border);
   border-radius: 6px;
   background: var(--ats-white);
@@ -237,119 +183,59 @@
 }
 
 .action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   border-color: var(--ats-blue);
-  background: var(--ats-blue);
-  color: var(--ats-white);
 }
+
+.action-btn.shortlist { border-left: 4px solid #10b981; }
+.action-btn.interview { border-left: 4px solid #3b82f6; }
+.action-btn.hire { border-left: 4px solid #059669; }
+.action-btn.reject { border-left: 4px solid #ef4444; }
+.action-btn.messages { border-left: 4px solid #8b5cf6; }
 
 .action-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-/* Status Badges */
-.status-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+.action-btn:disabled:hover {
+  background: var(--ats-white);
+  border-color: var(--ats-border);
 }
 
-.status-applied {
-  background: #fffbeb;
-  color: #d97706;
-}
-
-.status-considering {
-  background: #ecfdf5;
-  color: #065f46;
-}
-
-.status-final {
-  background: #eff6ff;
-  color: #1e40af;
-}
-
-/* Message Read Badges */
-.message-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  border-radius: 10px;
-  padding: 2px 6px;
-  min-width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px;
-  font-size: 0.65rem;
-}
-
-.message-badge.unread {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #f87171;
-  animation: pulse 2s infinite;
-}
-
-.message-badge.read {
-  background: #dcfce7;
-  color: #16a34a;
-  border: 1px solid #86efac;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-
-/* Notes Section */
 .notes-section {
   border-top: 1px dashed var(--ats-border);
   padding-top: 1rem;
-  margin-top: 1rem;
 }
 
 .notes-section label {
-  display: block;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: var(--ats-navy);
+  color: var(--ats-muted);
   margin-bottom: 0.5rem;
-  text-transform: uppercase;
+  display: block;
 }
 
 .notes-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 0.75rem;
   border: 1px solid var(--ats-border);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.9rem;
 }
 
 .notes-input:focus {
   outline: none;
   border-color: var(--ats-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Cover Preview */
-.cover-preview {
-  font-style: italic;
-  color: var(--ats-muted);
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-/* Loading, Error, Empty States */
-.loading-state,
-.error-state,
-.empty-state {
+.loading-state, .error-state, .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: var(--ats-text);
 }
 
 .loading-state .spinner {
@@ -359,7 +245,7 @@
   border-top: 4px solid var(--ats-blue);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
+  margin: 0 auto 1rem auto;
 }
 
 @keyframes spin {
@@ -367,70 +253,57 @@
   100% { transform: rotate(360deg); }
 }
 
-.empty-state {
-  color: var(--ats-muted);
-}
-
-.error-state h3 {
-  color: #ef4444;
-  margin-bottom: 1rem;
-}
-
-.error-state button {
-  background: var(--ats-blue);
-  color: var(--ats-white);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 1rem;
-  transition: background 0.2s;
-}
-
-.error-state button:hover {
-  background: #1e40af;
-}
-
-/* Modal */
 .modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 1000;
 }
 
 .modal {
-  background: var(--ats-white);
+  background: white;
   padding: 2rem;
-  border-radius: 8px;
-  max-width: 400px;
-  width: 90%;
-  max-height: 80vh;
+  border-radius: 12px;
+  max-width: 450px;
+  width: 90vw;
+  max-height: 90vh;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 .modal h3 {
-  color: var(--ats-navy);
   margin: 0 0 1rem 0;
-  font-size: 1.25rem;
+  color: var(--ats-navy);
+}
+
+.modal-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-weight: 500;
 }
 
 .date-input {
   width: 100%;
-  padding: 12px;
+  padding: 1rem;
   border: 1px solid var(--ats-border);
   border-radius: 6px;
   font-size: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .date-input:focus {
   border-color: var(--ats-blue);
   outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .modal-buttons {
@@ -440,71 +313,44 @@
 }
 
 .modal-buttons button {
-  padding: 10px 20px;
+  padding: 0.75rem 1.5rem;
   border-radius: 6px;
   border: none;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  flex: 1;
+  max-width: 120px;
 }
 
-.modal-buttons button[type="submit"] {
+.modal-buttons button[type='submit'] {
   background: var(--ats-blue);
-  color: var(--ats-white);
+  color: white;
 }
 
-.modal-buttons button[type="button"] {
-  background: #f8fafc;
+.modal-buttons button[type='submit']:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-buttons button[type='button'] {
+  background: #f1f5f9;
   color: var(--ats-text);
 }
 
-.modal-buttons button:hover {
-  opacity: 0.9;
+@media (max-width: 768px) {
+  .employer-ats-container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .card-top {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
 }
-
-/* Job Header for Job Applicants Page */
-.employer-job-applicants-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.job-header {
-  background: var(--ats-white);
-  padding: 2rem;
-  border-radius: 8px;
-  border: 1px solid var(--ats-border);
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.job-header h1 {
-  font-size: 1.75rem;
-  color: var(--ats-navy);
-  margin: 0 0 0.5rem 0;
-  font-weight: 800;
-}
-
-.job-meta {
-  color: var(--ats-blue);
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-}
-
-.job-description-preview {
-  color: var(--ats-text);
-  line-height: 1.6;
-}
-
-/* Applications Feed */
-.applications-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.header-content {
-  max-width: 600px;
-}
-

@@ -4,6 +4,7 @@ import { useAuth } from "./context/AuthContext"
 import { ToastProvider } from "./context/ToastContext"
 
 import Navbar from "./components/Navbar"
+import { useLocation } from "react-router-dom"
 import Home from "./pages/Home"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
@@ -59,6 +60,8 @@ function ProfileRedirect() {
 }
 
 function App() {
+
+
   return (
     <div className="app-container">
       <Navbar />

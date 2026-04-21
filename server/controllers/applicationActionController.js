@@ -15,7 +15,7 @@ exports.performAction = async (req, res) => {
     const application = await Application.findByPk(id, {
       include: [
         { model: User, as: "applicant" },
-        { model: Job, as: "job", include: [{ model: User, as: "employer" }] },
+        { model: Job, as: "job" },
       ],
     });
 
@@ -24,7 +24,7 @@ exports.performAction = async (req, res) => {
     }
 
     // Authorization check
-    if (application.job.employer_id !== userId) {
+    if (!application.job || application.job.employer_id !== userId) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
@@ -50,19 +50,22 @@ exports.performAction = async (req, res) => {
 
     await application.save();
 
+    if (!application.applicant || !application.job) {
+      return res.status(400).json({ message: "Invalid application data" });
+    }
+
     // Generate and save system message
     const messageContent = generateMessage(action, {
       interviewDate: interview_date,
-      jobTitle: application.job.title,
-      applicantName: application.applicant.name,
+      jobTitle: application.job?.title || "a job",
+      applicantName: application.applicant?.name || "Candidate",
     });
     await Message.create({
       application_id: id,
       sender_id: userId, // Employer (system)
-      recipient_id: application.user_id,
+      recipient_id: application.applicant.id,
       message: messageContent,
       type: "system",
-      applicant_read: false,
     });
 
     res.json({

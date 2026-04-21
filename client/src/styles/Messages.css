@@ -1,5 +1,20 @@
+/* --- 1. Root & Variables --- */
+:root {
+  --primary: #0f172a;       /* Navy - matches JobSathi brand */
+  --accent: #f97316;        /* Orange - matches logo */
+  --primary-light: #e2e8f0;
+  --bg: #ffffff;
+  --bg-hover: #f8fafc;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --radius: 12px;
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* --- 2. Layout & Page Header --- */
 .messages-page {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -9,64 +24,45 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  gap: 1rem;
-}
-
-.header-left {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .header-left h1 {
   margin: 0;
   font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
 }
 
-.header-left p {
-  margin: 0;
-  color: var(--text-muted);
-}
-
-.mark-all-btn {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.mark-all-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+/* --- 3. Filter Tabs --- */
 .filter-tabs {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 1rem;
+  background: var(--bg-hover);
+  padding: 0.5rem;
+  border-radius: var(--radius);
 }
 
 .tab {
-  background: none;
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px 8px 0 0;
-  cursor: pointer;
-  font-weight: 500;
+  background: transparent;
   color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .tab.active {
-  background: var(--bg);
-  color: var(--text);
-  border-bottom: 2px solid var(--primary);
+  background: var(--primary);
+  color: white;
 }
 
+/* --- 4. The Message Card (Fixes Hidden Content) --- */
 .messages-list {
   display: flex;
   flex-direction: column;
@@ -75,112 +71,90 @@
 
 .message-card {
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: var(--radius);
+  padding: 1.25rem;
   background: var(--bg);
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.message-card.unread {
-  border-left: 4px solid var(--primary);
-  background: var(--bg-hover);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  /* CRITICAL: overflow visible allows the description to be seen */
+  overflow: visible; 
+  height: auto;
 }
 
 .message-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
 }
 
-.message-header {
+.message-card.unread {
+  border-left: 4px solid var(--accent);
+  background: #fffaf5; /* Subtle orange tint for unread */
+}
+
+/* --- 5. Preview & Header (High-Density) --- */
+.message-preview {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.5rem;
+  align-items: center;
 }
 
-.message-header h4 {
+.message-preview h4 {
   margin: 0;
   font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
 }
 
-.actions {
-  display: flex;
-  gap: 0.5rem;
+.preview-time {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
-.read-btn {
-  background: var(--success);
-  color: white;
-  border: none;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+/* --- 6. Content Expansion (Fixes image_be174b) --- */
+.message-content {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  /* Uses a large max-height to ensure nothing is clipped */
+  max-height: 2000px; 
+  opacity: 1;
+  display: none; /* Hidden until .expanded class is added */
+}
+
+.message-card.expanded .message-content {
+  display: block;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .message-body {
-  margin: 0 0 1rem 0;
-  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
   color: var(--text);
+  font-size: 1rem;
+  white-space: pre-wrap; /* Maintains formatting/paragraphs */
+  padding: 1rem;
+  background: var(--bg-hover);
+  border-radius: 8px;
 }
 
 .message-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
-  color: var(--text-muted);
 }
 
 .type-badge {
-  background: var(--primary-light);
-  color: var(--primary);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  background: var(--primary);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 4rem 2rem;
-  color: var(--text-muted);
-}
-
-.empty-state svg {
-  opacity: 0.5;
-  margin-bottom: 1rem;
-}
-
-.messages-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 400px;
-}
-
-.spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-  .messages-page {
-    padding: 1rem;
-  }
-  
-  .messages-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-  }
+  font-weight: 600;
 }

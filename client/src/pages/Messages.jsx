@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 
 import { Bell, Check, Trash2, RefreshCw } from 'lucide-react';
 import api from '../services/api';
-import '../styles/Messages.css';  // Create this CSS next
+import '../styles/Messages.css';
 
 function Messages() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [filter, setFilter] = useState('all');  // all, unread, read
+  const [filter, setFilter] = useState('all');  
+  const [expandedMessageId, setExpandedMessageId] = useState(null);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -19,13 +20,14 @@ function Messages() {
       console.log(`📊 Received ${data.length} messages`);
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.read).length);
+      // Close all expanded on refresh
+      setExpandedMessageId(null);
     } catch (error) {
       console.error('❌ Error fetching messages:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
   }, []);
-
 
   useEffect(() => {
     fetchMessages();
@@ -48,9 +50,23 @@ function Messages() {
       await api.put('/messages/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
+      setExpandedMessageId(null);
     } catch (error) {
       console.error('Error:', error);
     }
+  };
+
+  const toggleMessage = async (id, isRead) => {
+    if (!isRead) {
+      await markAsRead(id);
+      setExpandedMessageId(id);
+    } else {
+      setExpandedMessageId(prev => prev === id ? null : id);
+    }
+  };
+
+  const getTopic = (notif) => {
+    return notif.sender?.name || 'System';
   };
 
   const filteredNotifs = notifications.filter(n => {
@@ -75,7 +91,6 @@ function Messages() {
           <button onClick={fetchMessages} className="refresh-btn" title="Refresh" disabled={loading}>
             <RefreshCw size={20} />
           </button>
-
           <button onClick={markAllRead} className="mark-all-btn" disabled={unreadCount === 0}>
             Mark All Read
           </button>
@@ -108,22 +123,28 @@ function Messages() {
           </div>
         ) : (
           filteredNotifs.map(notif => (
-            <div key={notif.id} className={`message-card ${notif.read ? 'read' : 'unread'}`}>
-              <div className="message-header">
-<h4>{notif.type === 'system' ? 'Status Update' : notif.sender?.name || 'Message'}</h4>
-                <div className="actions">
-                  {!notif.read && (
-                    <button onClick={() => markAsRead(notif.id)} className="read-btn">
-                      <Check size={16} /> Read
-                    </button>
-                  )}
+            <div 
+              key={notif.id} 
+              className={`message-card ${notif.read ? 'read' : 'unread'} ${expandedMessageId === notif.id ? 'expanded' : ''}`}
+              onClick={() => toggleMessage(notif.id, notif.read)}
+            >
+              <div className="message-preview">
+                <h4>{getTopic(notif)}</h4>
+                <span className="preview-time">{new Date(notif.createdAt).toLocaleDateString()}</span>
+              </div>
+              
+              {expandedMessageId === notif.id && (
+                <div className="message-content">
+                  <div className="message-header">
+                    <h4>{getTopic(notif)}</h4>
+                  </div>
+                  <p className="message-body">{notif.message}</p>
+                  <div className="message-meta">
+                    <span>{new Date(notif.createdAt).toLocaleString()}</span>
+                    {notif.type === 'status_update' && <span className="type-badge">Application Update</span>}
+                  </div>
                 </div>
-              </div>
-<p className="message-body">{notif.message}</p>
-              <div className="message-meta">
-                <span>{new Date(notif.createdAt).toLocaleString()}</span>
-                {notif.type === 'status_update' && <span className="type-badge">Application Update</span>}
-              </div>
+              )}
             </div>
           ))
         )}

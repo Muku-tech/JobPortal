@@ -12,8 +12,32 @@ const EmployerApplications = ({ jobId }) => {
   const [error, setError] = useState(null)
   const [interviewModal, setInterviewModal] = useState({ open: false, appId: null })
   const [unreadCounts, setUnreadCounts] = useState({})
+  const [interviewAppStatus, setInterviewAppStatus] = useState(null)
 
   const newStages = ['applied', 'considering', 'final']
+
+  // Status-based action validation
+  const isActionAllowed = (status, action) => {
+    const allowed = {
+      shortlist: ['applied'],
+      interview: ['applied'],
+      hire: ['considering'],
+      reject: ['applied', 'considering']
+    }
+    return allowed[action]?.includes(status) || false
+  }
+
+  // Action tooltips
+  const getActionTooltip = (status, action) => {
+    if (isActionAllowed(status, action)) return `Click to ${action}`
+    const allowedStatuses = {
+      shortlist: 'applied',
+      interview: 'applied',
+      hire: 'considering',
+      reject: 'applied or considering'
+    }
+    return `Only for ${allowedStatuses[action] || 'earlier stages'} (current: ${status})`
+  }
 
   useEffect(() => {
     fetchApplications(jobId)
@@ -22,7 +46,8 @@ const EmployerApplications = ({ jobId }) => {
   const fetchUnreadCounts = async (appIds) => {
     const counts = {}
     try {
-      const promises = appIds.map(async (appId) => {
+      const validAppIds = appIds.filter(id => id != null && id !== 'undefined')
+      const promises = validAppIds.map(async (appId) => {
         const response = await api.get(`/applications/${appId}/messages-count`)
         counts[appId] = response.data.unreadCount || 0
       })
@@ -44,8 +69,8 @@ const EmployerApplications = ({ jobId }) => {
       const data = response.data?.applications || response.data || []
       setApplications(Array.isArray(data) ? data : [])
       
-      // Fetch unread counts for all apps
-      const appIds = data.map(app => app.id)
+      // Fetch unread counts for valid app IDs only
+      const appIds = data.map(app => app.id).filter(id => id)
       if (appIds.length > 0) {
         fetchUnreadCounts(appIds)
       }
@@ -74,9 +99,13 @@ const EmployerApplications = ({ jobId }) => {
         ...prev,
         [appId]: (prev[appId] || 0) + 1
       }))
+      // Refetch to sync with server
+      await fetchApplications(jobId)
     } catch (error) {
       console.error(error)
       alert('Failed to perform action')
+      // Revert optimistic on error
+      await fetchApplications(jobId)
     } finally {
       setUpdatingAppId(null)
     }
@@ -98,6 +127,8 @@ const EmployerApplications = ({ jobId }) => {
   }
 
   const openInterviewModal = (appId) => {
+    const app = applications.find(a => a.id === appId)
+    setInterviewAppStatus(app?.status)
     setInterviewModal({ open: true, appId })
   }
 
@@ -181,34 +212,38 @@ const EmployerApplications = ({ jobId }) => {
               <div className="action-buttons">
                 <button 
                   onClick={() => handleAction(app.id, 'shortlist')}
-                  disabled={updatingAppId === app.id || app.status !== 'applied'}
+                  disabled={!isActionAllowed(app.status, 'shortlist') || updatingAppId === app.id}
                   className="action-btn shortlist"
+                  title={getActionTooltip(app.status, 'shortlist')}
                 >
-Shortlist
+                  Shortlist
                 </button>
                 <button 
                   onClick={() => openInterviewModal(app.id)}
-                  disabled={updatingAppId === app.id || ['final'].includes(app.status)}
+                  disabled={!isActionAllowed(app.status, 'interview') || updatingAppId === app.id}
                   className="action-btn interview"
+                  title={getActionTooltip(app.status, 'interview')}
                 >
-Interview
+                  Interview
                 </button>
                 <button 
                   onClick={() => handleAction(app.id, 'hire')}
-                  disabled={updatingAppId === app.id || app.status !== 'considering'}
+                  disabled={!isActionAllowed(app.status, 'hire') || updatingAppId === app.id}
                   className="action-btn hire"
+                  title={getActionTooltip(app.status, 'hire')}
                 >
-Hire
+                  Hire
                 </button>
                 <button 
                   onClick={() => handleAction(app.id, 'reject')}
-                  disabled={updatingAppId === app.id}
+                  disabled={!isActionAllowed(app.status, 'reject') || updatingAppId === app.id}
                   className="action-btn reject"
+                  title={getActionTooltip(app.status, 'reject')}
                 >
-Reject
+                  Reject
                 </button>
                 <Link to={`/applications/${app.id}/messages`} className="action-btn messages">
-Messages
+                  Messages
                 </Link>
               </div>
 
@@ -232,20 +267,28 @@ Messages
         <div className="modal-overlay">
           <div className="modal">
             <h3>Schedule Interview</h3>
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              const date = e.target.date.value
-              handleAction(interviewModal.appId, 'interview', { interview_date: date })
-              setInterviewModal({ open: false, appId: null })
-            }}>
-              <input name="date" type="date" required className="date-input" />
-              <div className="modal-buttons">
-                <button type="button" onClick={() => setInterviewModal({ open: false, appId: null })}>
-                  Cancel
-                </button>
-                <button type="submit">Schedule</button>
+            {!isActionAllowed(interviewAppStatus, 'interview') ? (
+              <div className="modal-error">
+                Interview not available for current status: <strong>{interviewAppStatus}</strong>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const date = e.target.date.value
+                handleAction(interviewModal.appId, 'interview', { interview_date: date })
+                setInterviewModal({ open: false, appId: null })
+              }}>
+                <input name="date" type="date" required className="date-input" />
+                <div className="modal-buttons">
+                  <button type="button" onClick={() => setInterviewModal({ open: false, appId: null })}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={updatingAppId === interviewModal.appId}>
+                    Schedule
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -1,10 +1,13 @@
-# Applicant Management CSS Fixes
+# UX Polish for EmployerApplications actions (approved)
 
-## Steps:
+Status: In progress
 
-- [x] Step 1: Update `client/src/styles/EmployerApplications.css` with missing styles and enhancements
-- [x] Step 2: Update `client/src/pages/EmployerApplications.jsx` to remove all emojis from buttons
-- [ ] Step 3: Verify responsiveness and functionality
-- [x] Complete
+**500 Error FIXED ✅** (message sends)
 
-**Progress:** CSS fixes and emoji removal completed. Added comprehensive styles for action buttons, modals, status badges, notes, loading/error/empty states, job header, and enhanced mobile responsiveness. All emojis removed from buttons. Ready to test.
+**UX Issue:** Interview button clickable after action (status 'considering' allows it)
+
+**Steps:**
+
+1. [ ] Edit EmployerApplications.jsx: isActionAllowed 'interview': ['applied']
+2. [ ] Add refetch after handleAction success
+3. [ ] Test button disables post-action

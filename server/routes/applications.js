@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const applicationController = require("../controllers/applicationController");
 const auth = require("../middleware/auth");
+const messageController = require("../controllers/messageController");
 
 // Apply for a job
 router.post("/", auth.verifyToken, applicationController.applyForJob);
@@ -41,14 +42,14 @@ router.get(
 router.get(
   "/:id/messages-count",
   auth.verifyToken,
-  require("../controllers/messageController").getUnreadPerApp,
+  messageController.getUnreadPerApp,
 );
 
-// Mark all messages for application as read
-router.put(
-  "/:id/messages/read-all",
-  auth.verifyToken,
-  require("../controllers/messageController").markAppAllRead,
-);
+// Mark all messages for application as read (TEMPORARILY DISABLED due to undefined callback)
+// router.put(
+//   "/:id/messages/read-all",
+//   auth.verifyToken,
+//   messageController.markAppAllRead,
+// );
 
 module.exports = router;
