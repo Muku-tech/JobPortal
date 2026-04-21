@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 import { 
   Briefcase, Heart, CheckCircle, MapPin, Calendar, User, Mail, Phone, ChevronRight,
-  Upload, GraduationCap, Languages, Code, Filter 
+  Upload, GraduationCap, Languages, Code, Filter, RefreshCw 
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -19,36 +19,85 @@ export default function Dashboard() {
   const [applicationsTab, setApplicationsTab] = useState("all");
   const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [pollInterval, setPollInterval] = useState(null);
 
   const [stats, setStats] = useState({ applied: 0, interviews: 0, saved: 0 });
 
+  // Initial load
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
+  // Auto refresh applications on refreshKey change
+  useEffect(() => {
+    if (refreshKey > 0) {
+      fetchApplications();
+    }
+  }, [refreshKey]);
+
+  // Polling for updates (only when viewing filtered tabs)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (applicationsTab !== 'all' && !loading && !isRefreshing) {
+        fetchApplications();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [applicationsTab, loading, isRefreshing]);
+
+  // Update stats when applications change (reactive)
+  useEffect(() => {
+    if (applications.length > 0) {
+      setStats({
+        applied: applications.length,
+        interviews: applications.filter(a => a.status === 'considering' && a.interview_date).length
+      });
+    }
+  }, [applications]);
+
+  const fetchApplications = async () => {
+    try {
+      setIsRefreshing(true);
+      const appsRes = await api.get('/applications/user');
+      const appsData = appsRes.data || [];
+      setApplications(appsData);
+      setLastUpdated(new Date());
+      setStats({
+        applied: appsData.length,
+        interviews: appsData.filter(a => a.status === 'considering' && a.interview_date).length
+      });
+      toast.success('Applications updated!');
+    } catch (err) {
+      console.error("Applications fetch error:", err);
+      toast.error('Failed to refresh applications');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [recRes, appsRes] = await Promise.all([
+      const [recRes] = await Promise.all([
         api.get('/recommendations/smart').catch(() => ({ data: [] })),
-        api.get('/applications/user')
+        fetchApplications()
       ]);
 
       const recData = recRes.data.jobs || recRes.data || [];
-      const appsData = appsRes.data || [];
-
-      setRecommendedJobs(recData.slice(0, 3)); // Compact: max 3
-      setApplications(appsData);
-      
-      setStats({
-        applied: appsData.length,
-        interviews: appsData.filter(a => a.status === 'interview').length
-      });
+      setRecommendedJobs(recData.slice(0, 3));
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   const profilePercentage = Math.min(100, Math.round(
@@ -69,10 +118,11 @@ export default function Dashboard() {
   // Filter applications by status
   const getFilteredApps = () => {
     switch (applicationsTab) {
-      case "pending": return applications.filter(a => a.status === 'pending');
-      case "shortlisted": return applications.filter(a => a.status === 'shortlisted');
-      case "rejected": return applications.filter(a => a.status === 'rejected');
-      case "interview": return applications.filter(a => a.status === 'interview');
+      case "pending": return applications.filter(a => a.status === 'applied');
+      case "shortlisted": return applications.filter(a => a.status === 'considering');
+      case "rejected": return applications.filter(a => a.status === 'final' && a.decision === 'rejected');
+      case "interview": return applications.filter(a => a.status === 'considering' && a.interview_date);
+      case "all": return applications;
       default: return applications;
     }
   };
@@ -231,37 +281,56 @@ export default function Dashboard() {
           >
             <div className="apps-header">
               <h3>Your Applications</h3>
-              <div className="apps-tabs">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button 
-                  className={`tab-btn ${applicationsTab === 'all' ? 'active' : ''}`}
-                  onClick={() => setApplicationsTab('all')}
+                  className="refresh-btn"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  title="Refresh applications (R)"
                 >
-                  All
+                  {isRefreshing ? (
+                    <RefreshCw className="spin" size={16} />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )}
                 </button>
-                <button 
-                  className={`tab-btn ${applicationsTab === 'pending' ? 'active' : ''}`}
-                  onClick={() => setApplicationsTab('pending')}
-                >
-                  Pending
-                </button>
-                <button 
-                  className={`tab-btn ${applicationsTab === 'shortlisted' ? 'active' : ''}`}
-                  onClick={() => setApplicationsTab('shortlisted')}
-                >
-                  Shortlisted
-                </button>
-                <button 
-                  className={`tab-btn ${applicationsTab === 'rejected' ? 'active' : ''}`}
-                  onClick={() => setApplicationsTab('rejected')}
-                >
-                  Rejected
-                </button>
-                <button 
-                  className={`tab-btn ${applicationsTab === 'interview' ? 'active' : ''}`}
-                  onClick={() => setApplicationsTab('interview')}
-                >
-                  Interview
-                </button>
+                {lastUpdated && (
+                  <span className="last-updated" title={lastUpdated.toLocaleString()}>
+                    Updated {Math.floor((Date.now() - lastUpdated) / 1000 / 60)}m ago
+                  </span>
+                )}
+                <div className="apps-tabs">
+                  <button 
+                    className={`tab-btn ${applicationsTab === 'all' ? 'active' : ''}`}
+                    onClick={() => setApplicationsTab('all')}
+                  >
+                    All
+                  </button>
+                  <button 
+                    className={`tab-btn ${applicationsTab === 'pending' ? 'active' : ''}`}
+                    onClick={() => setApplicationsTab('pending')}
+                  >
+                    Pending
+                  </button>
+                  <button 
+                    className={`tab-btn ${applicationsTab === 'shortlisted' ? 'active' : ''}`}
+                    onClick={() => setApplicationsTab('shortlisted')}
+                  >
+                    Shortlisted
+                  </button>
+                  <button 
+                    className={`tab-btn ${applicationsTab === 'rejected' ? 'active' : ''}`}
+                    onClick={() => setApplicationsTab('rejected')}
+                  >
+                    Rejected
+                  </button>
+                  <button 
+                    className={`tab-btn ${applicationsTab === 'interview' ? 'active' : ''}`}
+                    onClick={() => setApplicationsTab('interview')}
+                  >
+                    Interview
+                  </button>
+                </div>
               </div>
             </div>
 
