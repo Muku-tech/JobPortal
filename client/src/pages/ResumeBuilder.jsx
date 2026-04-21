@@ -16,37 +16,37 @@ const ResumeBuilder = () => {
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(true);
   
-  // Expanded Universal State
+// State aligned with backend model - uniform {title, organization, dates, description} for arrays
   const [resumeData, setResumeData] = useState({
-    personal_info: { 
-      name: '', 
-      professional_title: '', 
-      email: '', 
-      phone: '', 
-      address: '', 
-      linkedin: '', 
-      portfolio: '' 
+    personal_info: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      linkedin: '',
+      portfolio: ''
     },
     summary: '',
+    skills: [],
+    technical_skills: [],
     experiences: [],
     educations: [],
     projects: [],
-    skills: [], 
     certifications: [],
     achievements: [],
     internships: [],
     publications: [],
     volunteer_experience: [],
     leadership_experience: [],
-    extracurricular: [],
+    extracurricular_activities: [],
     languages: [],
     interests: [],
     affiliations: [],
     conferences: [],
     template: 'modern',
-    font_family: "'Inter', sans-serif",
-    primary_color: '#2563eb',
-    secondary_color: '#64748b'
+    font_family: 'Arial, sans-serif',
+    primary_color: '#2c3e50',
+    secondary_color: '#3498db'
   });
   
   const resumeRef = useRef(null);
@@ -79,13 +79,12 @@ const ResumeBuilder = () => {
     }
   };
 
-  const addEntry = (sectionKey) => {
+const addEntry = (sectionKey) => {
     const newEntry = { 
-      title: '', // Works for Job Title, Degree Name, or Project Name
-      company: '', // Works for Company, School, or Organization
-      description: '', 
+      title: '', 
+      organization: '', 
       dates: '', 
-      location: ''
+      description: '' 
     };
     setResumeData(prev => ({
       ...prev,
@@ -172,22 +171,30 @@ const ResumeBuilder = () => {
           {/* 1. Contact Information */}
           <section className="form-section">
             <div className="section-title"><User size={20} /> <h3>Contact Details</h3></div>
-            <div className="form-grid">
+<div className="form-grid">
               <div className="input-group">
                 <label>Full Name</label>
                 <input value={resumeData.personal_info.name} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, name: e.target.value })} />
               </div>
               <div className="input-group">
-                <label>Professional Title</label>
-                <input placeholder="e.g. Dental Surgeon / Home Baker / MERN Developer" value={resumeData.personal_info.professional_title} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, professional_title: e.target.value })} />
-              </div>
-              <div className="input-group">
                 <label>Email</label>
-                <input value={resumeData.personal_info.email} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, email: e.target.value })} />
+                <input type="email" value={resumeData.personal_info.email} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, email: e.target.value })} />
               </div>
               <div className="input-group">
                 <label>Phone</label>
-                <input value={resumeData.personal_info.phone} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, phone: e.target.value })} />
+                <input type="tel" value={resumeData.personal_info.phone} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, phone: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label>Location</label>
+                <input value={resumeData.personal_info.address} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, address: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label>LinkedIn</label>
+                <input type="url" placeholder="https://linkedin.com/in/yourprofile" value={resumeData.personal_info.linkedin} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, linkedin: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label>Portfolio / GitHub</label>
+                <input type="url" placeholder="https://github.com/yourusername" value={resumeData.personal_info.portfolio} onChange={(e) => handleDataChange('personal_info', { ...resumeData.personal_info, portfolio: e.target.value })} />
               </div>
             </div>
           </section>
@@ -205,6 +212,8 @@ const ResumeBuilder = () => {
 
           {/* 3. ALL SECTIONS - Dynamic Form Builder */}
           {[
+            { key: 'skills', title: 'Skills', icon: <Star size={20} /> },
+            { key: 'technical_skills', title: 'Technical Skills', icon: <Star size={20} /> },
             { key: 'experiences', title: 'Work Experience', icon: <FileText size={20} /> },
             { key: 'internships', title: 'Internships', icon: <FileText size={20} /> },
             { key: 'educations', title: 'Education', icon: <FileText size={20} /> },
@@ -214,7 +223,7 @@ const ResumeBuilder = () => {
             { key: 'publications', title: 'Publications/Research', icon: <FileText size={20} /> },
             { key: 'volunteer_experience', title: 'Volunteer Experience', icon: <FileText size={20} /> },
             { key: 'leadership_experience', title: 'Leadership Experience', icon: <FileText size={20} /> },
-            { key: 'extracurricular', title: 'Extracurricular Activities', icon: <FileText size={20} /> },
+            { key: 'extracurricular_activities', title: 'Extracurricular Activities', icon: <FileText size={20} /> },
             { key: 'languages', title: 'Languages', icon: <FileText size={20} /> },
             { key: 'interests', title: 'Interests/Hobbies', icon: <FileText size={20} /> },
             { key: 'affiliations', title: 'Professional Affiliations', icon: <FileText size={20} /> },
@@ -232,9 +241,9 @@ const ResumeBuilder = () => {
                     <button className="btn-delete" onClick={() => removeEntry(key, i)}><Trash2 size={16} /></button>
                   </div>
                   <div className="form-grid">
-                    <input placeholder="Title / Role / Degree" value={entry.title} onChange={(e) => handleDataChange(key, { title: e.target.value }, i)} />
-                    <input placeholder="Company / Institution" value={entry.company} onChange={(e) => handleDataChange(key, { company: e.target.value }, i)} />
-                    <input placeholder="Duration (e.g. 2022 - Present)" value={entry.dates} onChange={(e) => handleDataChange(key, { dates: e.target.value }, i)} />
+<input placeholder="Title / Role / Degree / Skill Name / Cert Name" value={entry.title} onChange={(e) => handleDataChange(key, { title: e.target.value }, i)} />
+  <input placeholder="Company / School / Issuer / Org (optional)" value={entry.organization || entry.company || ''} onChange={(e) => handleDataChange(key, { organization: e.target.value, company: e.target.value }, i)} />
+                    <input placeholder="Dates (e.g. 2022 - Present) or Level (optional)" value={entry.dates} onChange={(e) => handleDataChange(key, { dates: e.target.value }, i)} />
                   </div>
                   <textarea 
                     placeholder="Key responsibilities or achievements (Tip: Use '•' for bullets)" 

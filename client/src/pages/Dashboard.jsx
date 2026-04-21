@@ -82,13 +82,15 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [recRes] = await Promise.all([
-        api.get('/recommendations/smart').catch(() => ({ data: [] })),
-        fetchApplications()
-      ]);
-
-      const recData = recRes.data.jobs || recRes.data || [];
+      
+      // Fetch recommendations
+      const recRes = await api.get('/recommendations/smart').catch(() => ({ data: [] }));
+      const recData = recRes?.data?.jobs || recRes?.data || [];
       setRecommendedJobs(recData.slice(0, 3));
+      
+      // Fetch applications separately (already handles its own loading/error)
+      await fetchApplications();
+      
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {

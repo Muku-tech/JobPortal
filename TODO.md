@@ -1,11 +1,13 @@
-# Dashboard Pipelining Fix (approved)
+# Resume Builder Fields Fix - Make fields relevant for each topic
 
-Status: In progress
-
-**Issue:** Frontend tabs (pending/shortlisted/rejected/interview) filter mismatch backend statuses ('applied'/'considering'/'final' + decision/interview_date)
-
-**Steps:**
-
-1. [ ] Edit Dashboard.jsx getFilteredApps, stats, statusConfig to match backend
-2. [ ] Test tabs/counts reflect employer actions
-3. [ ] Complete
+1. [x] Created TODO.md with steps
+2. [x] ✅ Edited client/src/pages/ResumeBuilder.jsx:
+   - Standardized array entries: { title, organization, dates, description }
+   - Updated placeholders for topic relevance (title/organization adapt per section)
+   - Aligned state/personal_info with backend model (added technical_skills, expanded personal_info)
+   - Improved input types/labels
+   - Note: Sections/icons minor (templates handle rendering)
+3. [ ] Test: cd client && npm run dev, fill forms for different sections, preview, download PDF
+4. [ ] Check if ResumeTemplates.jsx needs field name updates
+5. [ ] Update TODO progress
+6. [ ] Complete task
