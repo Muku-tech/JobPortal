@@ -64,7 +64,7 @@
   text-decoration: none;
   color: #1e293b !important;
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 1.25rem;
   transition: all 0.2s ease;
   white-space: nowrap;
   position: relative;
@@ -146,7 +146,7 @@
   border: none;
   color: #1e293b;
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
