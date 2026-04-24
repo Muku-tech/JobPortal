@@ -471,15 +471,8 @@
     border-color: rgba(59, 130, 246, 0.25);
   }
 
-  .btn-nav-logout {
-    background: rgba(239, 68, 68, 0.12);
-    color: #f87171;
-  }
-
-  .btn-nav-logout:hover {
-    background: #ef4444;
-    color: white;
-  }
+  .btn-nav-logout { background: #ec0505; color: #e3dbdb; } 
+  .btn-nav-logout:hover { background: #820202; color: white; }
 
   @media (max-width: 1024px) {
     .navbar-menu {
