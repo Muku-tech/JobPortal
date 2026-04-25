@@ -71,7 +71,7 @@ function Register() {
     <div className="auth-page">
       <div className="auth-card register-card">
         <div className="auth-header">
-          <div className="auth-logo">JS</div>
+          <div className="auth-logo"></div>
           <h1>Create Account</h1>
           <p className="auth-subtitle">Join the JobSathi community today</p>
         </div>
@@ -137,7 +137,7 @@ function Register() {
         </form>
 
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Sign In</Link>
+          Already have an account? <Link to="/login" className="auth-footer-signin">Sign In</Link>
         </p>
       </div>
     </div>

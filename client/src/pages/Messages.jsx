@@ -91,7 +91,7 @@ function Messages() {
           <button onClick={fetchMessages} className="refresh-btn" title="Refresh" disabled={loading}>
             <RefreshCw size={20} />
           </button>
-          <button onClick={markAllRead} className="mark-all-btn" disabled={unreadCount === 0}>
+          <button onClick={markAllRead} className="mark-all-btn markallread" disabled={unreadCount === 0}>
             Mark All Read
           </button>
         </div>
