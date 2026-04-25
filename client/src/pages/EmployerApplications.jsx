@@ -13,6 +13,7 @@ const EmployerApplications = ({ jobId }) => {
   const [interviewModal, setInterviewModal] = useState({ open: false, appId: null })
   const [unreadCounts, setUnreadCounts] = useState({})
   const [interviewAppStatus, setInterviewAppStatus] = useState(null)
+  const [sortMode, setSortMode] = useState('default') // 'default' | 'top-candidates'
 
   const newStages = ['applied', 'considering', 'final']
 
@@ -20,7 +21,7 @@ const EmployerApplications = ({ jobId }) => {
   const isActionAllowed = (status, action) => {
     const allowed = {
       shortlist: ['applied'],
-      interview: ['applied'],
+      interview: ['applied', 'considering'],
       hire: ['considering'],
       reject: ['applied', 'considering']
     }
@@ -32,7 +33,7 @@ const EmployerApplications = ({ jobId }) => {
     if (isActionAllowed(status, action)) return `Click to ${action}`
     const allowedStatuses = {
       shortlist: 'applied',
-      interview: 'applied',
+      interview: 'applied or considering',
       hire: 'considering',
       reject: 'applied or considering'
     }
@@ -132,10 +133,15 @@ const EmployerApplications = ({ jobId }) => {
     setInterviewModal({ open: true, appId })
   }
 
-  const filteredApps =
+  let displayApps =
     filter === 'all'
       ? applications
       : applications.filter(app => app.status === filter)
+
+  // Sort by match score when Top Candidates mode is active
+  if (sortMode === 'top-candidates') {
+    displayApps = [...displayApps].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+  }
 
   if (loading) {
     return (
@@ -177,16 +183,23 @@ const EmployerApplications = ({ jobId }) => {
             {stage === 'all' ? `All (${applications.length})` : stage.replace('_', ' ')}
           </button>
         ))}
+        <button
+          onClick={() => setSortMode(prev => prev === 'top-candidates' ? 'default' : 'top-candidates')}
+          className={`filter-tab ${sortMode === 'top-candidates' ? 'active' : ''}`}
+          style={{ marginLeft: 'auto', background: sortMode === 'top-candidates' ? '#dbeafe' : undefined }}
+        >
+          Top Candidates
+        </button>
       </div>
 
       {/* APPLICATIONS */}
       <div className="applications-feed">
-        {filteredApps.length === 0 ? (
+        {displayApps.length === 0 ? (
           <div className="empty-state">
             No candidates in "{filter.replace('_', ' ')}" stage
           </div>
         ) : (
-          filteredApps.map(app => (
+          displayApps.map(app => (
             <div key={app.id} className="candidate-card">
               {/* HEADER */}
               <div className="card-top">
@@ -201,6 +214,16 @@ const EmployerApplications = ({ jobId }) => {
                 <div className={`status-badge status-${app.status}`}>
                   {app.status}
                 </div>
+                {app.matchScore !== undefined && (
+                  <div className="match-badge" title={`Skill match: ${app.matchScore}%`}>
+                    {app.matchScore}%
+                  </div>
+                )}
+                {app.clusterMatch !== undefined && (
+                  <div className="cluster-badge" title={`Cluster ${app.clusterMatch}`}>
+                    C{app.clusterMatch}
+                  </div>
+                )}
                 {unreadCounts[app.id] !== undefined && (
                   <div className={`message-badge ${unreadCounts[app.id] > 0 ? 'unread' : 'read'}`}>
                     {unreadCounts[app.id] > 0 ? unreadCounts[app.id] : '✓'}

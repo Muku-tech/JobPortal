@@ -121,19 +121,20 @@ export default function JobDetails() {
   // Skills parser
   const renderSkills = () => {
     if (!job?.required_skills) return <span className="no-skills">No specific skills listed</span>
-    
+
     let skills = []
-    try {
-      skills = JSON.parse(job.required_skills)
-    } catch {
-      if (typeof job.required_skills === 'string') {
+    if (Array.isArray(job.required_skills)) {
+      skills = job.required_skills
+    } else if (typeof job.required_skills === 'string') {
+      try {
+        skills = JSON.parse(job.required_skills)
+      } catch {
         skills = job.required_skills.split(',')
-      } else {
-        skills = []
       }
     }
+    if (!skills.length) return <span className="no-skills">No specific skills listed</span>
     return skills.map((skill, i) => (
-      <span key={i} className="skill-tag">{skill.trim()}</span>
+      <span key={i} className="skill-tag">{typeof skill === 'string' ? skill.trim() : String(skill)}</span>
     ))
   }
 

@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MapPin, Search, Heart, Star } from "lucide-react";
-import api from "../services/api";
+import { MapPin, Search, Briefcase, ArrowLeft } from "lucide-react";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
 
 const publicApi = axios.create({
   baseURL: "http://localhost:5001/api",
@@ -14,13 +12,15 @@ import "../styles/Home.css";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  const [categoryJobs, setCategoryJobs] = useState([]);
+  // ─── Two-level category state ───
   const [activeCategory, setActiveCategory] = useState('location');
+  const [viewMode, setViewMode] = useState('subcategories'); // 'subcategories' | 'jobs'
+  const [subCategories, setSubCategories] = useState([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [subCategoryJobs, setSubCategoryJobs] = useState([]);
   const [loadingCategory, setLoadingCategory] = useState(false);
 
-  const [recommendations, setRecommendations] = useState([]);
   const [statsAnimating, setStatsAnimating] = useState(false);
   const [animatedStats, setAnimatedStats] = useState({ jobs: 0, companies: 0, users: 0 });
   const [loading, setLoading] = useState(true);
@@ -29,12 +29,12 @@ export default function Home() {
   const [location, setLocation] = useState("");
 
   const quickTags = [
-    { name: 'IT Jobs', param: 'category=IT & Software' },
+    { name: 'Technology', param: 'category=Information Technology' },
     { name: 'Remote', param: 'jobType=remote' },
     { name: 'Internship', param: 'jobType=internship' },
     { name: 'Full Time', param: 'jobType=full-time' },
-    { name: 'React', param: 'search=React' },
-    { name: 'Backend', param: 'search=Node' }
+    { name: 'Marketing', param: 'category=Marketing & Sales' },
+    { name: 'Healthcare', param: 'category=Healthcare & Medical' }
   ];
 
   const testimonials = [
@@ -51,60 +51,67 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-
-
+  // ─── Trigger stats animation on mount ───
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        if (user) {
-          // Authenticated user - fetch personalized recs using two algorithms
-          const [contentRes, collabRes] = await Promise.all([
-            publicApi.get('/recommendations/content-based?limit=4'),
-            publicApi.get('/recommendations/collaborative?limit=4')
-          ]);
-          const contentJobs = contentRes.data.jobs || [];
-          const collabJobs = collabRes.data.jobs || [];
-          // Combine and dedupe
-          const combined = [...contentJobs, ...collabJobs].filter((job, index, self) => 
-            index === self.findIndex(j => j.id === job.id)
-          ).slice(0, 8);
-          setRecommendations(combined);
-        } else {
-          setRecommendations([]);
-        }
-      } catch (err) {
-        console.error('Recommendations fetch failed:', err);
-        setRecommendations([]);
-      } finally {
-        setLoading(false);
-        setStatsAnimating(true);
-      }
-    };
-    fetchData();
-  }, [user]);
+    setLoading(false);
+    setStatsAnimating(true);
+  }, []);
 
+  // ─── Fetch sub-categories when tab changes ───
   useEffect(() => {
-    const fetchCategoryJobs = async () => {
+    const fetchSubCategories = async () => {
       setLoadingCategory(true);
+      setViewMode('subcategories');
+      setSelectedSubCategory(null);
       try {
-        const params = new URLSearchParams({
-          type: activeCategory,
-          limit: 8
-        });
-        console.log("Fetching category jobs:", { type: activeCategory, params: params.toString() });
-        const res = await publicApi.get(`/jobs/category?${params.toString()}`);
-        console.log("Category jobs response:", res.data.jobs?.length || 0, "jobs");
-        setCategoryJobs(res.data.jobs || []);
+        const res = await publicApi.get(`/jobs/grouped?type=${activeCategory}&limit=0`);
+        setSubCategories(res.data.groups || []);
       } catch (err) {
-        console.error('Category jobs fetch failed:', err.response?.data || err.message);
-        setCategoryJobs([]);
+        console.error('Grouped jobs fetch failed:', err.response?.data || err.message);
+        setSubCategories([]);
       } finally {
         setLoadingCategory(false);
       }
     };
-    fetchCategoryJobs();
-    }, [activeCategory]);
+    fetchSubCategories();
+  }, [activeCategory]);
+
+  // ─── Fetch jobs for selected sub-category ───
+  const handleSubCategoryClick = async (sub) => {
+    setSelectedSubCategory(sub);
+    setLoadingCategory(true);
+    setViewMode('jobs');
+    try {
+      let params;
+      if (activeCategory === 'location') {
+        params = new URLSearchParams({ location: sub.name, limit: 8 });
+      } else if (activeCategory === 'industry') {
+        params = new URLSearchParams({ category: sub.name, limit: 8 });
+      } else if (activeCategory === 'experience') {
+        params = new URLSearchParams({ experienceLevel: sub.name, limit: 8 });
+      }
+      const res = await publicApi.get(`/jobs?${params.toString()}`);
+      setSubCategoryJobs(res.data.jobs || []);
+    } catch (err) {
+      console.error('Filtered jobs fetch failed:', err.response?.data || err.message);
+      setSubCategoryJobs([]);
+    } finally {
+      setLoadingCategory(false);
+    }
+  };
+
+  const handleBackToSubCategories = () => {
+    setViewMode('subcategories');
+    setSelectedSubCategory(null);
+    setSubCategoryJobs([]);
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveCategory(tab);
+    setViewMode('subcategories');
+    setSelectedSubCategory(null);
+    setSubCategoryJobs([]);
+  };
 
   useEffect(() => {
     if (!statsAnimating) return;
@@ -161,6 +168,13 @@ export default function Home() {
 
   const handleQuickTag = (param) => {
     navigate(`/jobs?${param}`);
+  };
+
+  // ─── Sub-category icon helper ───
+  const getSubCategoryIcon = (name) => {
+    if (activeCategory === 'location') return <MapPin size={28} />;
+    if (activeCategory === 'experience') return <Briefcase size={28} />;
+    return <Search size={28} />;
   };
 
   return (
@@ -232,7 +246,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Jobs by Category */}
+      {/* Jobs by Category — Two Level Navigation */}
       <section className="jobs-category-section">
         <div className="container">
           <div className="section-header">
@@ -240,84 +254,98 @@ export default function Home() {
             <a href="/jobs" className="view-all">View all →</a>
           </div>
 
+          {/* Category Tabs */}
           <div className="category-tabs">
-            <button className={`tab-btn ${activeCategory === 'location' ? 'active' : ''}`} onClick={() => setActiveCategory('location')}>
+            <button className={`tab-btn ${activeCategory === 'location' ? 'active' : ''}`} onClick={() => handleTabChange('location')}>
               Location
             </button>
-            <button className={`tab-btn ${activeCategory === 'industry' ? 'active' : ''}`} onClick={() => setActiveCategory('industry')}>
+            <button className={`tab-btn ${activeCategory === 'industry' ? 'active' : ''}`} onClick={() => handleTabChange('industry')}>
               Industry
             </button>
-            <button className={`tab-btn ${activeCategory === 'experience' ? 'active' : ''}`} onClick={() => setActiveCategory('experience')}>
+            <button className={`tab-btn ${activeCategory === 'experience' ? 'active' : ''}`} onClick={() => handleTabChange('experience')}>
               Experience
             </button>
           </div>
 
+          {/* Back button when viewing jobs */}
+          {viewMode === 'jobs' && (
+            <button className="back-btn" onClick={handleBackToSubCategories}>
+              <ArrowLeft size={18} /> Back to {activeCategory === 'location' ? 'Cities' : activeCategory === 'industry' ? 'Industries' : 'Experience Levels'}
+            </button>
+          )}
+
+          {/* Selected sub-category label */}
+          {viewMode === 'jobs' && selectedSubCategory && (
+            <div className="selected-category-label">
+              <h3>{selectedSubCategory.name} <span className="count-badge">{selectedSubCategory.count} jobs</span></h3>
+            </div>
+          )}
+
+          {/* Content Area */}
           <div className="jobs-grid">
             {loadingCategory ? (
-              <div className="loading-jobs">Loading jobs...</div>
-            ) : categoryJobs.length === 0 ? (
-              <div className="empty-state">
-                <p>No jobs found for this category</p>
-              </div>
-            ) : categoryJobs.map((job, i) => (
-              <motion.div 
-                key={job.id}
-                className="job-home-card"
-                whileHover={{ y: -4 }}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.03 }}
-                onClick={() => navigate(`/jobs/${job.id}`)}
-              >
-
-                <h3 className="job-title-small">{job.title}</h3>
-                <p className="job-company-small">{job.company_name || job.employer?.name}</p>
-                <div className="job-foot">
-                  <span className="location-small">
-                    <MapPin size={14} /> {job.location}
-                  </span>
-                  <span className="type-small">{job.job_type}</span>
-                  {job.salary_min && (
-                    <span className="salary-small">
-                      NPR {job.salary_min.toLocaleString()}
-                    </span>
-                  )}
+              <div className="loading-jobs">Loading...</div>
+            ) : viewMode === 'subcategories' ? (
+              // ─── Level 1: Sub-category cards ───
+              subCategories.length === 0 ? (
+                <div className="empty-state">
+                  <p>No categories found</p>
                 </div>
-              </motion.div>
-            ))}
+              ) : (
+                subCategories.map((sub, i) => (
+                  <motion.div
+                    key={sub.name}
+                    className="sub-category-card"
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => handleSubCategoryClick(sub)}
+                  >
+                    <div className="sub-cat-icon">{getSubCategoryIcon(sub.name)}</div>
+                    <h4 className="sub-cat-name">{sub.name}</h4>
+                    <span className="sub-cat-count">{sub.count} {sub.count === 1 ? 'job' : 'jobs'}</span>
+                  </motion.div>
+                ))
+              )
+            ) : (
+              // ─── Level 2: Job cards ───
+              subCategoryJobs.length === 0 ? (
+                <div className="empty-state">
+                  <p>No jobs found in this category</p>
+                </div>
+              ) : (
+                subCategoryJobs.map((job, i) => (
+                  <motion.div
+                    key={job.id}
+                    className="job-home-card"
+                    whileHover={{ y: -4 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    onClick={() => navigate(`/jobs/${job.id}`)}
+                  >
+                    <h3 className="job-title-small">{job.title}</h3>
+                    <p className="job-company-small">{job.company_name || job.employer?.name || 'Hiring Company'}</p>
+                    <div className="job-foot">
+                      <span className="location-small">
+                        <MapPin size={14} /> {job.location}
+                      </span>
+                      <span className="type-small">{job.job_type}</span>
+                      {job.salary_min && (
+                        <span className="salary-small">
+                          NPR {Number(job.salary_min).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))
+              )
+            )}
           </div>
         </div>
       </section>
-
-      {/* Personalized Recommendations for logged-in users */}
-      {user && recommendations.length > 0 && (
-        <section className="rec-section">
-          <div className="container">
-            <div className="section-header">
-              <h2>Personalized Recommendations</h2>
-            </div>
-            <div className="jobs-grid">
-              {recommendations.slice(0, 4).map((job, i) => (
-                <motion.div 
-                  key={job.id}
-                  className="job-home-card rec-card"
-                  whileHover={{ y: -4 }}
-                  onClick={() => navigate(`/jobs/${job.id}`)}
-                >
-
-                  <h3>{job.title}</h3>
-                  <p>{job.company_name}</p>
-                  <div className="job-foot">
-                    <span><MapPin size={14} /> {job.location}</span>
-                    <span>{job.job_type}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Testimonials */}
       <section className="testimonials-section">
@@ -372,3 +400,4 @@ export default function Home() {
     </div>
   );
 }
+

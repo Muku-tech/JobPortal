@@ -85,16 +85,7 @@ const connectDB = async () => {
           FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
-
-      // Seed test messages for user 1
-      await sequelize.query(`
-        INSERT IGNORE INTO messages (sender_id, recipient_id, message, \`type\`, \`read\`)
-        VALUES 
-          (1, 1, 'Welcome! This is a test system message.', 'system', false),
-          (1, 1, 'Your application has been received.', 'system', false),
-          (2, 1, 'Direct message from employer.', 'user', false)
-      `);
-      console.log("✅ messages table created + test data seeded");
+      console.log("✅ messages table created");
     } else {
       console.log("✅ messages table exists");
     }

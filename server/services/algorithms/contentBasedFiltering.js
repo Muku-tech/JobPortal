@@ -112,11 +112,31 @@ class ContentBasedFiltering {
       // Sort by score and return top recommendations
       recommendations.sort((a, b) => b.score - a.score);
 
-      return recommendations.slice(0, limit).map((rec) => ({
-        ...rec.job.toJSON(),
-        recommendationScore: rec.score,
-        matchDetails: rec.details,
-      }));
+      return recommendations.slice(0, limit).map((rec) => {
+        const reasons = [];
+        if (rec.details.skillsSimilarity > 0.3) {
+          reasons.push(
+            `${Math.round(rec.details.skillsSimilarity * 100)}% skills match`,
+          );
+        }
+        if (rec.details.typeScore === 1) {
+          reasons.push("Job type matches your preference");
+        }
+        if (rec.details.locationMatch === 1) {
+          reasons.push("Location matches your preference");
+        }
+        if (reasons.length === 0) {
+          reasons.push("Recommended based on profile");
+        }
+
+        return {
+          ...rec.job.toJSON(),
+          recommendationScore: rec.score,
+          matchDetails: rec.details,
+          matchReasons: reasons,
+          recommendationType: "content-based",
+        };
+      });
     } catch (error) {
       console.error("Content-Based Filtering Error:", error);
       throw error;

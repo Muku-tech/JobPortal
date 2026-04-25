@@ -59,7 +59,7 @@
 
 /* --- Container & Grid Fix --- */
 .jobs-container {
-  max-width: 1100px; /* Crucial: Keeps the layout from spreading too wide */
+  max-width: 1400px;
   margin: 0 auto;
   padding: 40px 20px;
 }
@@ -92,10 +92,8 @@
 
 .jobs-grid {
   display: grid;
-  /* Limits card size to a professional range */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 340px)); 
-  gap: 25px;
-  justify-content: center; /* Centers the whole grid */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
 }
 
 /* --- Compact Job Card --- */
@@ -179,18 +177,326 @@
   color: white;
 }
 
-.load-more-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 40px;
+.jobs-loading {
+  text-align: center;
+  padding: 60px;
+  color: #64748b;
+  font-size: 1.1rem;
 }
 
-.load-more-btn {
-  background: var(--js-navy);
-  color: white;
-  padding: 12px 30px;
-  border-radius: 50px;
-  border: none;
+/* --- Pagination --- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--js-navy);
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--js-orange);
+  color: white;
+  border-color: var(--js-orange);
+}
+
+.pagination-btn.active {
+  background: var(--js-orange);
+  color: white;
+  border-color: var(--js-orange);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.results-info {
+  text-align: center;
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* ─── Recommendations Section ─── */
+.recommendations-section {
+  background: linear-gradient(135deg, #ffffff 0%, #fff7f2 100%);
+  border: 1px solid #ffe4d6;
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 20px rgba(243, 112, 33, 0.06);
+}
+
+.rec-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rec-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--js-navy);
+  margin: 0;
+}
+
+.rec-header h2 svg {
+  color: var(--js-orange);
+}
+
+/* Algorithm Tabs */
+.rec-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rec-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rec-tab:hover {
+  border-color: var(--js-orange);
+  color: var(--js-orange);
+}
+
+.rec-tab.active {
+  background: var(--js-orange);
+  color: white;
+  border-color: var(--js-orange);
+  box-shadow: 0 4px 12px rgba(243, 112, 33, 0.3);
+}
+
+/* Loading & Empty */
+.rec-loading {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.rec-empty {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+  background: white;
+  border-radius: 16px;
+  font-weight: 500;
+}
+
+/* Recommendation Grid */
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* Recommendation Card */
+.rec-card {
+  background: white;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rec-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--js-orange), #ff9f70);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.rec-card:hover::before {
+  opacity: 1;
+}
+
+.rec-card:hover {
+  border-color: rgba(243, 112, 33, 0.3);
+  box-shadow: 0 10px 25px rgba(243, 112, 33, 0.1);
+}
+
+.rec-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.match-score-badge {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.algorithm-badge {
+  padding: 3px 8px;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.algorithm-badge.content-based {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.algorithm-badge.collaborative {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+
+.algorithm-badge.kmeans {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.algorithm-badge.popular {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.rec-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--js-navy);
+  margin: 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rec-company {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rec-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.rec-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rec-type {
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--js-navy);
+}
+
+/* Match Reasons */
+.match-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.reason-pill {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  color: #c2410c;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid #fed7aa;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .recommendations-section {
+    padding: 20px;
+  }
+
+  .rec-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rec-tabs {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .rec-tab span {
+    display: none;
+  }
+
+  .rec-tab {
+    padding: 8px;
+  }
+
+  .rec-grid {
+    grid-template-columns: 1fr;
+  }
 }
