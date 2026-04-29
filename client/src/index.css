@@ -14,6 +14,15 @@
   --radius: 8px;
 }
 
+.dark {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --text: #f1f5f9;
+  --text-light: #94a3b8;
+  --border: #334155;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
 /* Full original index.css content restored - globals removed per user request */
 * {
   margin: 0;
@@ -26,6 +35,7 @@ body {
   background: var(--background);
   color: var(--text);
   line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ... [truncated for brevity - full original code here, no globals import] */

@@ -1,12 +1,14 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
-import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard, Bell, FileText, Users } from 'lucide-react';
+import { Menu, X, ChevronDown, LogOut, User, Briefcase, LayoutDashboard, Bell, FileText, Users, Sun, Moon } from 'lucide-react';
 import '../styles/Navbar.css';
 
 function Navbar() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -150,6 +152,10 @@ const toggleDropdown = useCallback((name) => {
                 </>
               )}
 
+
+              <button onClick={toggleTheme} className="theme-toggle-btn" title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
 
               <Link to="/profile" className="nav-link profile-pill">
                 <User size={18} /> My Profile
