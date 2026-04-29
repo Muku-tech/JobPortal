@@ -10,7 +10,7 @@ const { Op } = require("sequelize");
 // 1. GET GROUPED JOBS (For Homepage Tabs)
 exports.getGroupedJobs = async (req, res) => {
   try {
-    const { type = "company", limit = 2 } = req.query; // Default 2 jobs per card
+    const { type = "company", limit = 2 } = req.query;
 
     const where = { status: { [Op.in]: ["active", "draft"] } };
     const groupField =
@@ -18,17 +18,27 @@ exports.getGroupedJobs = async (req, res) => {
         ? "category"
         : type === "location"
           ? "location"
-          : "company_name";
+          : type === "experience"
+            ? "experience_level"
+            : "company_name";
+
+    const isCompany = type === "company";
+    const attributes = [
+      [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      groupField,
+    ];
+    const group = [groupField];
+
+    if (isCompany) {
+      attributes.push("company_logo");
+      group.push("company_logo");
+    }
 
     const groups = await Job.findAll({
       where,
-      attributes: [
-        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
-        groupField,
-        "company_logo", // Include logo in the initial group fetch
-      ],
-      group: [groupField, "company_logo"],
-      having: sequelize.fn("COUNT", sequelize.col("id")) > 0,
+      attributes,
+      group,
+      having: sequelize.literal("COUNT(id) > 0"),
       order: [[sequelize.fn("COUNT", sequelize.col("id")), "DESC"]],
       limit: 12,
     });
@@ -38,17 +48,20 @@ exports.getGroupedJobs = async (req, res) => {
     for (const group of groups) {
       const groupValue = group.dataValues[groupField];
       const count = group.dataValues.count;
-      const logo = group.dataValues.company_logo;
+      const logo = isCompany ? group.dataValues.company_logo : null;
 
-      const sampleJobs = await Job.findAll({
-        where: {
-          status: { [Op.in]: ["active", "draft"] },
-          [groupField]: groupValue,
-        },
-        attributes: ["id", "title"],
-        order: [["createdAt", "DESC"]],
-        limit: parseInt(limit),
-      });
+      const sampleJobs =
+        limit > 0
+          ? await Job.findAll({
+              where: {
+                status: { [Op.in]: ["active", "draft"] },
+                [groupField]: groupValue,
+              },
+              attributes: ["id", "title"],
+              order: [["createdAt", "DESC"]],
+              limit: parseInt(limit),
+            })
+          : [];
 
       groupsWithJobs.push({
         name: groupValue,
@@ -104,17 +117,17 @@ exports.getAllJobs = async (req, res) => {
       const searchLower = `%${search.toLowerCase()}%`;
       where[Op.or] = [
         sequelize.where(
-          sequelize.fn("LOWER", sequelize.col("title")),
+          sequelize.fn("LOWER", sequelize.col("Job.title")),
           Op.like,
           searchLower,
         ),
         sequelize.where(
-          sequelize.fn("LOWER", sequelize.col("company_name")),
+          sequelize.fn("LOWER", sequelize.col("Job.company_name")),
           Op.like,
           searchLower,
         ),
         sequelize.where(
-          sequelize.fn("LOWER", sequelize.col("required_skills")),
+          sequelize.fn("LOWER", sequelize.col("Job.required_skills")),
           Op.like,
           searchLower,
         ),
@@ -132,6 +145,35 @@ exports.getAllJobs = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
+    // Relevance sort: if user is authenticated, compute content-based scores
+    let relevanceScores = null;
+    if (sort === "relevance" && req.user) {
+      const { User } = require("../models");
+      const user = await User.findByPk(req.user.id);
+      if (user) {
+        const userSkills = (user.skills || []).map((s) => s.toLowerCase());
+        // We need to fetch all matching jobs first, then score them
+        const allMatchingJobs = await Job.findAll({ where });
+        relevanceScores = new Map();
+        allMatchingJobs.forEach((job) => {
+          const jobSkills = (job.required_skills || []).map((s) =>
+            s.toLowerCase(),
+          );
+          const matched = jobSkills.filter((s) =>
+            userSkills.includes(s),
+          ).length;
+          const total = jobSkills.length || 1;
+          const score = matched / total;
+          relevanceScores.set(job.id, score);
+        });
+      }
+    }
+
+    let order = [[sort, "DESC"]];
+    if (sort === "relevance") {
+      order = [["createdAt", "DESC"]]; // fallback if no scores
+    }
+
     const { count, rows } = await Job.findAndCountAll({
       where,
       include: [
@@ -141,13 +183,23 @@ exports.getAllJobs = async (req, res) => {
           attributes: ["id", "name", "email"],
         },
       ],
-      order: [[sort, "DESC"]],
+      order,
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
 
+    let finalJobs = rows;
+    if (sort === "relevance" && relevanceScores) {
+      finalJobs = rows
+        .map((job) => ({
+          ...job.toJSON(),
+          relevanceScore: relevanceScores.get(job.id) || 0,
+        }))
+        .sort((a, b) => b.relevanceScore - a.relevanceScore);
+    }
+
     res.json({
-      jobs: rows,
+      jobs: finalJobs,
       total: count,
       page: parseInt(page),
       totalPages: Math.ceil(count / limit),

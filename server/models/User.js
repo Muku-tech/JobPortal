@@ -105,6 +105,19 @@ const User = sequelize.define(
       type: DataTypes.STRING(500),
       allowNull: true,
     },
+    experience_level: {
+      type: DataTypes.ENUM("entry", "mid", "senior", "lead", "executive"),
+      allowNull: true,
+    },
+    cluster_id: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: true,
+    },
+    company_name: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
   },
 
   {

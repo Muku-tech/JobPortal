@@ -70,26 +70,6 @@ exports.getMyApplications = async (req, res) => {
   }
 };
 
-exports.getJobApplications = async (req, res) => {
-  try {
-    const { jobId } = req.params;
-    const applications = await Application.findAll({
-      where: { job_id: jobId },
-      include: [
-        {
-          model: User,
-          as: "applicant",
-          attributes: ["id", "name", "email", "skills"],
-        },
-        { model: Job, as: "job", attributes: ["title", "company_name"] },
-      ],
-    });
-    res.json(applications);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching job applications" });
-  }
-};
-
 exports.getEmployerApplications = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -128,18 +108,46 @@ exports.getJobApplications = async (req, res) => {
         .status(403)
         .json({ message: "Not authorized to view these applications" });
     }
+
     const applications = await Application.findAll({
       where: { job_id: jobId },
       include: [
         {
           model: User,
           as: "applicant",
-          attributes: ["id", "name", "email", "skills", "resume_url"],
+          attributes: [
+            "id",
+            "name",
+            "email",
+            "skills",
+            "resume_url",
+            "cluster_id",
+            "experience_level",
+          ],
         },
       ],
       order: [["createdAt", "DESC"]],
     });
-    res.json(applications);
+
+    // Compute matchScore for each applicant based on skill overlap
+    const jobSkills = (job.required_skills || []).map((s) =>
+      s.toLowerCase().trim(),
+    );
+    const enrichedApplications = applications.map((app) => {
+      const appJson = app.toJSON();
+      const applicantSkills = (appJson.applicant?.skills || []).map((s) =>
+        s.toLowerCase().trim(),
+      );
+      const matched = jobSkills.filter((s) =>
+        applicantSkills.includes(s),
+      ).length;
+      const total = jobSkills.length || 1;
+      appJson.matchScore = Math.round((matched / total) * 100);
+      appJson.clusterMatch = appJson.applicant?.cluster_id;
+      return appJson;
+    });
+
+    res.json(enrichedApplications);
   } catch (error) {
     console.error("Error in getJobApplications:", error);
     res.status(500).json({ message: "Error fetching applications" });
@@ -193,14 +201,8 @@ exports.updateApplicationStatus = async (req, res) => {
         .json({ message: "Not authorized to update this application" });
     }
 
-    const validStatuses = [
-      "applied",
-      "under_review",
-      "shortlisted",
-      "interview_scheduled",
-      "hired",
-      "rejected",
-    ];
+    // DB ENUM: applied | considering | final
+    const validStatuses = ["applied", "considering", "final"];
 
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: "Invalid status" });
@@ -218,33 +220,19 @@ exports.updateApplicationStatus = async (req, res) => {
 
     console.log("Save successful!");
 
-    // Send internal notification to applicant if trigger status
-    if (
-      ["shortlisted", "interview_scheduled", "hired", "rejected"].includes(
-        status,
-      )
-    ) {
+    // Send internal notification to applicant on meaningful status changes
+    if (["considering", "final"].includes(status)) {
       const applicant = await User.findByPk(application.user_id);
       if (applicant) {
         try {
           const statusTemplates = {
-            shortlisted: {
-              title: "🎉 Shortlisted for Job!",
-              message: `Congratulations ${applicant.name}! You have been shortlisted for "${application.job.title}". Next steps coming soon!`,
+            considering: {
+              title: "🎉 Application Update",
+              message: `Hello ${applicant.name}, your application for "${application.job.title}" is now under consideration.`,
             },
-            interview_scheduled: {
-              title: "📅 Interview Scheduled",
-              message: interviewDate
-                ? `Hello ${applicant.name}, an interview has been scheduled for "${application.job.title}" on **${interviewDate}**. Please confirm availability or reply to reschedule.`
-                : `Hello ${applicant.name}, an interview has been scheduled for "${application.job.title}". Check details or reply to confirm.`,
-            },
-            hired: {
-              title: "🎊 You're Hired!",
-              message: `Congratulations ${applicant.name}! You have been hired for "${application.job.title}". Welcome aboard!`,
-            },
-            rejected: {
-              title: "Application Update",
-              message: `Thank you ${applicant.name} for applying to "${application.job.title}". We will keep your profile for future opportunities.`,
+            final: {
+              title: "📋 Final Decision",
+              message: `Hello ${applicant.name}, a final decision has been made on your application for "${application.job.title}".`,
             },
           };
           const template = statusTemplates[status];

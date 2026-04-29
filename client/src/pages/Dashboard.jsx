@@ -63,7 +63,7 @@ export default function Dashboard() {
     try {
       setIsRefreshing(true);
       const appsRes = await api.get('/applications/user');
-      const appsData = appsRes.data || [];
+      const appsData = appsRes?.data || [];
       setApplications(appsData);
       setLastUpdated(new Date());
       setStats({
@@ -72,7 +72,7 @@ export default function Dashboard() {
       });
       toast.success('Applications updated!');
     } catch (err) {
-      console.error("Applications fetch error:", err);
+      console.error("Applications fetch error:", err.response?.data?.message || err.message);
       toast.error('Failed to refresh applications');
     } finally {
       setIsRefreshing(false);
@@ -84,7 +84,7 @@ export default function Dashboard() {
       setLoading(true);
       
       // Fetch recommendations
-      const recRes = await api.get('/recommendations/smart').catch(() => ({ data: [] }));
+      const recRes = await api.get('/recommendations/smart');
       const recData = recRes?.data?.jobs || recRes?.data || [];
       setRecommendedJobs(recData.slice(0, 3));
       
@@ -92,7 +92,7 @@ export default function Dashboard() {
       await fetchApplications();
       
     } catch (err) {
-      console.error("Dashboard fetch error:", err);
+      console.error("Dashboard fetch error:", err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
     }

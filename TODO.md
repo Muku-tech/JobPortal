@@ -1,13 +1,12 @@
-# Resume Builder Fields Fix - Make fields relevant for each topic
+# Recommendation System Refactor - TODO
 
-1. [x] Created TODO.md with steps
-2. [x] ✅ Edited client/src/pages/ResumeBuilder.jsx:
-   - Standardized array entries: { title, organization, dates, description }
-   - Updated placeholders for topic relevance (title/organization adapt per section)
-   - Aligned state/personal_info with backend model (added technical_skills, expanded personal_info)
-   - Improved input types/labels
-   - Note: Sections/icons minor (templates handle rendering)
-3. [ ] Test: cd client && npm run dev, fill forms for different sections, preview, download PDF
-4. [ ] Check if ResumeTemplates.jsx needs field name updates
-5. [ ] Update TODO progress
-6. [ ] Complete task
+## Steps
+
+- [x] 1. Create TODO.md and plan
+- [x] 2. Remove recommendation section from Home.jsx
+- [x] 3. Add `getAllAlgorithmRecommendations` endpoint in recommendationController.js
+- [x] 4. Add `/all` route in recommendations.js
+- [x] 5. Enhance algorithms with `matchReasons` (contentBased, collaborative, kMeans)
+- [x] 6. Update Jobs.jsx with powerful recommendation section + algorithm tabs
+- [x] 7. Update Jobs.css with recommendation section styles
+- [x] 8. Verify and test

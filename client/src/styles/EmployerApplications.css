@@ -338,6 +338,29 @@
   color: var(--ats-text);
 }
 
+/* Match & Cluster Badges */
+.match-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+  border-radius: 20px;
+  background: #dbeafe;
+  color: #1e40af;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.cluster-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background: #f3e8ff;
+  color: #7e22ce;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .employer-ats-container {
     padding: 1.5rem 1rem;

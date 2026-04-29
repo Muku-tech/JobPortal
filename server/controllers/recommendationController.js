@@ -39,8 +39,96 @@ const getSystemStats = async (userId) => {
   };
 };
 
+// Calculate skill overlap ratio (0-1)
+function calcSkillOverlap(userSkills, jobSkills) {
+  if (!userSkills || userSkills.length === 0) return 0.3;
+  if (!jobSkills || jobSkills.length === 0) return 0.3;
+  const lowerUser = userSkills.map((s) => s.toLowerCase());
+  const matched = jobSkills.filter((s) =>
+    lowerUser.includes(s.toLowerCase()),
+  ).length;
+  return Math.min(1, matched / Math.max(1, jobSkills.length));
+}
+
+// Enforce diversity: round-robin pick from different categories
+function enforceDiversity(jobs, limit) {
+  const categoryGroups = new Map();
+  jobs.forEach((job) => {
+    const cat = job.category || "Uncategorized";
+    if (!categoryGroups.has(cat)) categoryGroups.set(cat, []);
+    categoryGroups.get(cat).push(job);
+  });
+
+  const result = [];
+  const cats = Array.from(categoryGroups.keys());
+  let idx = 0;
+
+  while (result.length < limit && categoryGroups.size > 0) {
+    const cat = cats[idx % cats.length];
+    const group = categoryGroups.get(cat);
+    if (group && group.length > 0) {
+      result.push(group.shift());
+    }
+    if (group.length === 0) {
+      categoryGroups.delete(cat);
+      cats.splice(cats.indexOf(cat), 1);
+    }
+    idx++;
+  }
+  return result;
+}
+
+// Blend recommendations from multiple algorithms
+// sources = [{ jobs: [...], weight: 0.5 }, ...]
+function blendRecommendations(sources, limit, userSkills = []) {
+  const scoreMap = new Map();
+
+  sources.forEach(({ jobs, weight }) => {
+    if (!Array.isArray(jobs)) return;
+    jobs.forEach((job, idx) => {
+      const id = job.id;
+      const rankScore = (limit - idx) / limit; // 1.0 for first, decreasing
+      const algoScore = job.recommendationScore || 0;
+      const baseScore = (algoScore * 0.5 + rankScore * 0.5) * weight;
+
+      // Continuous skill bonus: more overlapping skills = higher score
+      const skillOverlap = calcSkillOverlap(
+        userSkills,
+        job.required_skills || [],
+      );
+      // Blend base score with skill overlap (max 30% boost for full overlap)
+      const combined = baseScore * (1 + skillOverlap * 0.3);
+
+      if (!scoreMap.has(id)) {
+        scoreMap.set(id, { job, score: combined });
+      } else {
+        scoreMap.get(id).score += combined;
+      }
+    });
+  });
+
+  // Sort by score
+  const sorted = Array.from(scoreMap.values()).sort(
+    (a, b) => b.score - a.score,
+  );
+
+  // Enforce diversity so jobs from multiple categories appear
+  const diverse = enforceDiversity(
+    sorted.map((s) => s.job),
+    limit,
+  );
+
+  // Re-attach scores
+  const scoreLookup = new Map(sorted.map((s) => [s.job.id, s.score]));
+
+  return diverse.slice(0, limit).map((job) => ({
+    ...job,
+    recommendationScore: Math.round((scoreLookup.get(job.id) || 0) * 100) / 100,
+  }));
+}
+
 // Smart hybrid recommendation system
-// Automatically selects the best algorithm based on data availability
+// Blends algorithms based on data availability with fallback enrichment
 exports.getSmartRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -58,36 +146,62 @@ exports.getSmartRecommendations = async (req, res) => {
     let stage = 0;
 
     // STAGE 1: Cold Start - No user interactions yet
-    // Use Content-Based Filtering (matches user skills to job requirements)
     if (stats.userInteractions === 0) {
       stage = 1;
       algorithmUsed = "content-based";
-      console.log("Stage 1: Using Content-Based Filtering (Cold Start)");
+      console.log("Stage 1: Content-Based (Cold Start)");
       recommendations = await contentBasedFiltering.getRecommendations(
         userId,
         limit,
       );
     }
-    // STAGE 2: Some Users Available - Not enough for collaborative
-    // Use K-Means Clustering (groups similar jobs and users)
+    // STAGE 2: Few interactions - blend K-Means + Content-Based
     else if (stats.totalUsers < 10 || stats.userInteractions < 5) {
       stage = 2;
-      algorithmUsed = "kmeans";
-      console.log("Stage 2: Using K-Means Clustering");
-      recommendations = await kMeansClustering.getRecommendations(
+      algorithmUsed = "kmeans+content";
+      console.log("Stage 2: K-Means + Content-Based");
+      const kmeansJobs = await kMeansClustering.getRecommendations(
         userId,
         limit,
       );
-    }
-    // STAGE 3: Enough Data - Use Collaborative Filtering
-    // (recommends jobs that similar users have applied to)
-    else {
-      stage = 3;
-      algorithmUsed = "collaborative";
-      console.log("Stage 3: Using Collaborative Filtering");
-      recommendations = await collaborativeFiltering.getRecommendations(
+      const contentJobs = await contentBasedFiltering.getRecommendations(
         userId,
         limit,
+      );
+      recommendations = blendRecommendations(
+        [
+          { jobs: kmeansJobs, weight: 0.6 },
+          { jobs: contentJobs, weight: 0.4 },
+        ],
+        limit,
+        user.skills || [],
+      );
+    }
+    // STAGE 3: Enough data - blend Collaborative + K-Means + Content-Based
+    else {
+      stage = 3;
+      algorithmUsed = "hybrid";
+      console.log("Stage 3: Hybrid (Collaborative + K-Means + Content-Based)");
+      const collabJobs = await collaborativeFiltering.getRecommendations(
+        userId,
+        limit,
+      );
+      const kmeansJobs = await kMeansClustering.getRecommendations(
+        userId,
+        limit,
+      );
+      const contentJobs = await contentBasedFiltering.getRecommendations(
+        userId,
+        limit,
+      );
+      recommendations = blendRecommendations(
+        [
+          { jobs: collabJobs, weight: 0.5 },
+          { jobs: kmeansJobs, weight: 0.3 },
+          { jobs: contentJobs, weight: 0.2 },
+        ],
+        limit,
+        user.skills || [],
       );
     }
 
@@ -269,5 +383,91 @@ exports.getRecommendationStats = async (req, res) => {
   } catch (error) {
     console.error("Error getting recommendation stats:", error);
     res.status(500).json({ message: "Error getting stats" });
+  }
+};
+
+// Get recommendations from ALL algorithms at once
+exports.getAllAlgorithmRecommendations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const limit = parseInt(req.query.limit) || 8;
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const stats = await getSystemStats(userId);
+
+    // Run all algorithms in parallel for speed
+    const [contentJobs, kmeansJobs, collabJobs] = await Promise.all([
+      contentBasedFiltering.getRecommendations(userId, limit),
+      kMeansClustering.getRecommendations(userId, limit),
+      collaborativeFiltering.getRecommendations(userId, limit).catch(() => []),
+    ]);
+
+    // Build smart blend based on data availability
+    let smartJobs = [];
+    let algorithmUsed = "";
+    let stage = 0;
+
+    if (stats.userInteractions === 0) {
+      stage = 1;
+      algorithmUsed = "content-based";
+      smartJobs = contentJobs;
+    } else if (stats.totalUsers < 10 || stats.userInteractions < 5) {
+      stage = 2;
+      algorithmUsed = "kmeans+content";
+      smartJobs = blendRecommendations(
+        [
+          { jobs: kmeansJobs, weight: 0.6 },
+          { jobs: contentJobs, weight: 0.4 },
+        ],
+        limit,
+        user.skills || [],
+      );
+    } else {
+      stage = 3;
+      algorithmUsed = "hybrid";
+      smartJobs = blendRecommendations(
+        [
+          { jobs: collabJobs, weight: 0.5 },
+          { jobs: kmeansJobs, weight: 0.3 },
+          { jobs: contentJobs, weight: 0.2 },
+        ],
+        limit,
+        user.skills || [],
+      );
+    }
+
+    res.json({
+      smart: {
+        jobs: smartJobs,
+        algorithm: algorithmUsed,
+        stage,
+      },
+      contentBased: {
+        jobs: contentJobs,
+        algorithm: "content-based",
+        stage: 1,
+      },
+      collaborative: {
+        jobs: collabJobs,
+        algorithm: "collaborative",
+        stage: 3,
+      },
+      kmeans: {
+        jobs: kmeansJobs,
+        algorithm: "kmeans",
+        stage: 2,
+      },
+      stats: {
+        totalUsers: stats.totalUsers,
+        userInteractions: stats.userInteractions,
+      },
+    });
+  } catch (error) {
+    console.error("Error in all-algorithm recommendations:", error);
+    res.status(500).json({ message: "Error generating recommendations" });
   }
 };

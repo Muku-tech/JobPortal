@@ -26,6 +26,9 @@ router.get(
 );
 router.get("/kmeans", recommendationController.getKMeansRecommendations);
 
+// All algorithms at once
+router.get("/all", recommendationController.getAllAlgorithmRecommendations);
+
 // Track job views for collaborative filtering
 router.post("/track-view", recommendationController.trackJobView);
 
