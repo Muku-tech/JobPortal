@@ -148,7 +148,7 @@ function PostJob() {
                 <h3 className="section-title"><Info size={20} /> Basic Information</h3>
                 <div className="input-group">
                   <label>Job Title*</label>
-                  <input type="text" name="title" placeholder="e.g. Senior React Developer" value={formData.title} onChange={handleChange} required />
+                  <input type="text" name="title" placeholder="E.g. Senior React Developer" value={formData.title} onChange={handleChange} required />
                 </div>
                 
                 <div className="input-grid">
