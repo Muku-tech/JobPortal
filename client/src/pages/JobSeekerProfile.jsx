@@ -48,7 +48,7 @@ function JobSeekerProfile() {
       notification.textContent = 'Profile updated successfully! 🎉';
       notification.style.cssText = `
         position: fixed;
-        top: 19px;
+        top: 20px;
         right: 20px;
         background: linear-gradient(135deg, #10b981, #059669);
         color: white;
