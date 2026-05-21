@@ -287,11 +287,6 @@ const EmployerApplications = ({ jobId }) => {
                 <div className={`status-badge status-${app.status}`}>
                   {app.status}
                 </div>
-                {app.matchScore !== undefined && (
-                  <div className="match-badge" title={`Skill match: ${app.matchScore}%`}>
-                    {app.matchScore}%
-                  </div>
-                )}
                 {app.clusterMatch !== undefined && (
                   <div className="cluster-badge" title={`Cluster ${app.clusterMatch}`}>
                     C{app.clusterMatch}

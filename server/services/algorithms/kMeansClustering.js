@@ -59,11 +59,12 @@ class KMeansClustering {
   }
 
   userToVector(user, categories) {
-    const skillsCount = (user.skills || []).length;
+    // User Vector based on: Skills, Experience, Job Type, Location
+    const skillsScore = (user.skills || []).length / 20; // Normalized
+    
     return [
-      skillsCount / 50,
-      this.encodeCategory(user.preferred_location ? "IT" : "", categories),
-      this.encodeExperience(user.experience || "mid"),
+      skillsScore,
+      this.encodeExperience(user.experience_level || "mid"),
       this.encodeJobType(user.preferred_job_type),
       user.preferred_location ? 1 : 0,
     ];

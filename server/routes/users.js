@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { User, Job, Application } = require("../models");
+const { User, Job, Application, Resume } = require("../models");
 const auth = require("../middleware/auth");
 const userController = require("../controllers/userController");
+const recommendationController = require("../controllers/recommendationController");
 const multer = require("multer");
 const path = require("path");
 
@@ -111,6 +112,39 @@ router.put("/profile", auth, async (req, res) => {
 
     try {
       await user.update(updateData);
+
+      // BI-DIRECTIONAL SYNC: If user is a jobseeker, update their default resume too
+      if (user.role === "jobseeker") {
+        const defaultResume = await Resume.findOne({
+          where: { user_id: user.id, is_default: true },
+        });
+        if (defaultResume) {
+          await defaultResume.update({
+            personal_info: {
+              ...defaultResume.personal_info,
+              name: updateData.name,
+              phone: updateData.phone,
+              address: updateData.address,
+              linkedin: updateData.linkedin,
+              portfolio: updateData.portfolio || updateData.github,
+            },
+            summary: updateData.summary,
+            // Map skills back to the structured format used by the builder
+            skills: (updateData.skills || []).map((s) => ({ title: s })),
+          });
+        }
+      }
+      
+      // Trigger fresh recommendations based on the new profile data
+      // Improved mock response to prevent background crashes
+      const mockRes = { 
+        status: function() { return this; }, 
+        json: function() { return this; } 
+      };
+      
+      recommendationController.sendRecommendationAsMessage({ user: { id: req.user.id }, query: { limit: 5 } }, mockRes)
+        .catch(err => console.error("Profile-update rec error:", err.message));
+
       const updatedUser = await User.findByPk(req.user.id, {
         attributes: { exclude: ["password"] },
       });

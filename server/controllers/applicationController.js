@@ -1,4 +1,5 @@
 const { Application, Job, User, Message, Resume } = require("../models");
+const recommendationController = require("./recommendationController");
 
 exports.applyForJob = async (req, res) => {
   try {
@@ -58,6 +59,16 @@ exports.applyForJob = async (req, res) => {
       message: "Application submitted successfully",
       application,
     });
+
+    // Trigger fresh recommendations based on the new application
+    // Use a mock response object as this is a fire-and-forget background task
+    const mockRes = {
+      status: function() { return this; },
+      json: function() { return this; }
+    };
+    recommendationController.sendRecommendationAsMessage({ user: { id: userId }, query: { limit: 5 } }, mockRes)
+      .catch(err => console.error("Application-based rec error:", err.message));
+
   } catch (error) {
     console.error("Error in applyForJob:", error);
     res.status(500).json({ message: "Error submitting application" });

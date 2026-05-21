@@ -11,8 +11,7 @@ function Register() {
     confirmPassword: '',
     role: 'jobseeker',
     phone: '',
-    address: '',
-    skills: ''
+    address: ''
   })
 
   const [error, setError] = useState('')
@@ -50,10 +49,7 @@ function Register() {
         password: formData.password,
         role: formData.role,
         phone: formData.phone,
-        address: formData.address,
-        skills: formData.skills
-          ? formData.skills.split(',').map(s => s.trim()).filter(s => s)
-          : []
+        address: formData.address
       }
 
       await register(userData)
@@ -117,19 +113,6 @@ function Register() {
               <input type="password" name="confirmPassword" placeholder="Confirm password" value={formData.confirmPassword} onChange={handleChange} required />
             </div>
           </div>
-
-          {formData.role === "jobseeker" && (
-            <div className="form-group skill-input-group">
-              <label>Professional Skills (comma separated)</label>
-              <input 
-                type="text" 
-                name="skills" 
-                placeholder="React, Node.js, Graphic Design" 
-                value={formData.skills} 
-                onChange={handleChange} 
-              />
-            </div>
-          )}
 
           <button type="submit" className="register-btn" disabled={loading}>
             {loading ? "Creating your account..." : "Get Started"}

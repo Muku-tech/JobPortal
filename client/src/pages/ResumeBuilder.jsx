@@ -12,7 +12,7 @@ import {
 } from './ResumeTemplates';
 
 const ResumeBuilder = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const toastContext = useToast();
   const toast = toastContext?.toast || toastContext; // Handle both {toast} and direct object
   const [loading, setLoading] = useState(false);
@@ -171,14 +171,27 @@ const addEntry = (sectionKey) => {
         projects: resumeData.projects || []
       };
 
-      let response;
+      let resumeResponse;
       if (resumeData.id) {
-        response = await api.put(`/resumes/${resumeData.id}`, dataToSave);
+        resumeResponse = await api.put(`/resumes/${resumeData.id}`, dataToSave);
       } else {
-        response = await api.post('/resumes', dataToSave);
+        resumeResponse = await api.post('/resumes', dataToSave);
       }
       
-      const savedId = response.data?.id || response.data?.resume?.id;
+      // SYNC TO CORE PROFILE: Update the main user object so recommendations stay accurate
+      const profileSyncData = {
+        name: resumeData.personal_info.name,
+        phone: resumeData.personal_info.phone,
+        address: resumeData.personal_info.address,
+        summary: resumeData.summary,
+        skills: resumeData.skills.map(s => s.title || s),
+        experience: resumeData.experiences.map(e => `${e.title} at ${e.organization || e.company}`).join('\n'),
+        education: resumeData.educations.map(e => `${e.title} from ${e.organization || e.company}`).join('\n')
+      };
+      const userResponse = await api.put('/users/profile', profileSyncData);
+      updateUser(userResponse.data.user);
+
+      const savedId = resumeResponse.data?.id || resumeResponse.data?.resume?.id;
       if (savedId) {
         setResumeData(prev => ({ ...prev, id: savedId }));
       }

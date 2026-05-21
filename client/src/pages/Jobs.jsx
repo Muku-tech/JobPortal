@@ -64,22 +64,6 @@ export default function Jobs() {
           const res = await api.get("/recommendations/all?limit=8");
           setAllRecData(res.data);
           setRecommendations(res.data.smart?.jobs || []);
-
-          // Only send for Job Seekers once per session
-          if (!hasSentMessage.current && user.role === 'jobseeker') {
-            try {
-              await api.post("/recommendations/send-as-message?limit=5"); // This is the call that sends the message
-              hasSentMessage.current = true;
-            } catch (msgErr) {
-              console.error("Failed to send recommendations to messages:", msgErr);
-              // Safely extract error message to prevent UI crash
-              const serverData = msgErr?.response?.data || {};
-              const errorMessage = serverData?.message || serverData?.error || msgErr?.message || "Failed to send job recommendations.";
-              if (toast && typeof toast.error === 'function') {
-                toast.error(errorMessage);
-              }
-            }
-          }
         } else {
           const res = await publicApi.get("/recommendations/guest?limit=8");
           setRecommendations(res.data.jobs || []);
@@ -107,8 +91,7 @@ export default function Jobs() {
       return user ? "Recommended" : "Popular";
     }
     const scores = allJobs.map((j) => j.recommendationScore || 0);
-    const maxScore = Math.max(...scores, 1);
-    const normalized = Math.min(99, Math.round((job.recommendationScore / maxScore) * 100));
+    const normalized = Math.min(99, Math.round((job.recommendationScore / 1.0) * 100));
     return `${normalized}% Match`;
   };
 
@@ -276,9 +259,6 @@ export default function Jobs() {
                   onClick={() => handleRecCardClick(job)}
                 >
                   <div className="rec-card-top">
-                    <span className="match-score-badge">
-                      {getMatchDisplay(job, recommendations)}
-                    </span>
                     {job.recommendationType && (
                       <span
                         className={`algorithm-badge ${job.recommendationType}`}

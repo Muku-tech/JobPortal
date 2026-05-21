@@ -9,6 +9,9 @@ router.get("/guest", recommendationController.getGuestRecommendations);
 // All other recommendation routes require authentication
 router.use(auth.verifyToken);
 
+// Get all unique skills from jobs for autocomplete
+router.get("/unique-skills", recommendationController.getUniqueSkills);
+
 // Default route - redirects to smart recommendations
 router.get("/", recommendationController.getSmartRecommendations);
 
@@ -30,7 +33,10 @@ router.get("/kmeans", recommendationController.getKMeansRecommendations);
 router.get("/all", recommendationController.getAllAlgorithmRecommendations);
 
 // Send recommendations as a message to the user
-router.post("/send-as-message", recommendationController.sendRecommendationAsMessage);
+router.post(
+  "/send-as-message",
+  recommendationController.sendRecommendationAsMessage,
+);
 
 // Track job views for collaborative filtering
 router.post("/track-view", recommendationController.trackJobView);

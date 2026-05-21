@@ -48,8 +48,8 @@ const getSystemStats = async (userId) => {
 
 // Calculate skill overlap ratio (0-1)
 function calcSkillOverlap(userSkills, jobSkills) {
-  if (!userSkills || userSkills.length === 0) return 0.3;
-  if (!jobSkills || jobSkills.length === 0) return 0.3;
+  if (!userSkills || userSkills.length === 0) return 0;
+  if (!jobSkills || jobSkills.length === 0) return 0;
   const lowerUser = userSkills.map((s) => s.toLowerCase());
   const matched = jobSkills.filter((s) =>
     lowerUser.includes(s.toLowerCase()),
@@ -119,6 +119,12 @@ function blendRecommendations(sources, limit, userSkills = []) {
     (a, b) => b.score - a.score,
   );
 
+  // Normalize scores to a 0-1 scale so top results feel like "High Matches"
+  // We use 1.0 as a minimum baseline to prevent very low scores (like 0.1)
+  // from being scaled up to 100% when the profile is empty.
+  const rawMax = sorted.length > 0 ? sorted[0].score : 0;
+  const maxBlendedScore = Math.max(rawMax, 0.8);
+
   // Enforce diversity so jobs from multiple categories appear
   const diverse = enforceDiversity(
     sorted.map((s) => s.job),
@@ -126,7 +132,10 @@ function blendRecommendations(sources, limit, userSkills = []) {
   );
 
   // Re-attach scores
-  const scoreLookup = new Map(sorted.map((s) => [s.job.id, s.score]));
+  // We divide by maxBlendedScore and apply a slight boost for top rank
+  const scoreLookup = new Map(
+    sorted.map((s) => [s.job.id, s.score / maxBlendedScore]),
+  );
 
   return diverse.slice(0, limit).map((job) => {
     // Ensure we are working with a plain object, not a Sequelize instance
@@ -145,6 +154,16 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
   if (!user) {
     throw new Error("User not found for recommendations");
   }
+
+  // Data Sanitization: Ensure skills is an array even if DB returns a string
+  if (typeof user.skills === 'string') {
+    try {
+      user.skills = JSON.parse(user.skills);
+    } catch (e) {
+      user.skills = user.skills.split(',').map(s => s.trim()).filter(Boolean);
+    }
+  }
+  if (!Array.isArray(user.skills)) user.skills = [];
 
   const stats = await getSystemStats(userId);
 
@@ -323,6 +342,22 @@ exports.trackJobView = async (req, res) => {
       action_type: action || "view",
     });
 
+    // Trigger automated recommendation message on significant interaction
+    // Throttled to once every 15 minutes to avoid spamming the user
+    if (action === 'click' || action === 'save' || action === 'apply') {
+      const lastMessage = await Message.findOne({
+        where: { recipient_id: userId, type: 'system' },
+        order: [['createdAt', 'DESC']]
+      });
+
+      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+      if (!lastMessage || lastMessage.createdAt < fifteenMinsAgo) {
+        // Fire and forget internal call to send message
+        exports.sendRecommendationAsMessage({ user: { id: userId }, query: { limit: 5 } }, { json: () => {} })
+          .catch(err => console.error("Auto-recommendation error:", err.message));
+      }
+    }
+
     res.json({ success: true, message: "Job view tracked" });
   } catch (error) {
     console.error("Error tracking job view:", error);
@@ -419,8 +454,17 @@ exports.sendRecommendationAsMessage = async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 5;
 
-    const { recommendations, user, algorithmUsed, stage } =
+    const { recommendations, user, stats, algorithmUsed, stage } =
       await _getSmartRecommendationsInternal(userId, limit);
+
+    // Check for empty profile (Cold Start + No Skills)
+    const hasNoSkills = !Array.isArray(user.skills) || user.skills.length === 0;
+    if (stage === 1 && hasNoSkills && stats.userInteractions === 0) {
+      return res.json({
+        message: "Profile too empty to send meaningful recommendations.",
+        jobs: [],
+      });
+    }
 
     if (recommendations.length === 0) {
       // If no recommendations are found, return a 200 with a message, not 404,
@@ -449,15 +493,10 @@ exports.sendRecommendationAsMessage = async (req, res) => {
       footer: `Generated using the ${algorithmUsed} matching system.`,
     };
 
-    // Use the dedicated system user (ID 1) as the sender
-    // We ensure this user exists via seed.js
-    // NOTE: UI displays sender name by joining User.sender_id.
-    // Keep sender name stable as "System".
-    const senderId = 1;
-
-    console.log(
-      `Attempting to create message: senderId=${senderId}, recipient_id=${userId}`,
-    );
+    // Automated recommendations use the system persona (Nabin Gautam)
+    // We default to ID 1 (System Admin) if the persona user isn't found
+    const nabinUser = await User.findOne({ where: { name: "Nabin Gautam" } });
+    const senderId = nabinUser ? nabinUser.id : 1;
 
     // Send as a system message to the user
     // NOTE: Message.type in your DB is ENUM('system','user')
@@ -596,5 +635,38 @@ exports.getAllAlgorithmRecommendations = async (req, res) => {
   } catch (error) {
     console.error("Error in all-algorithm recommendations:", error);
     res.status(500).json({ message: "Error generating recommendations" });
+  }
+};
+
+// Get all unique skills present in the Jobs table for autocomplete
+exports.getUniqueSkills = async (req, res) => {
+  try {
+    // Fetch all active jobs but only the required_skills column
+    const jobs = await Job.findAll({
+      attributes: ["required_skills"],
+      where: { status: ["active", "draft"] }, // Include drafts to populate more skills
+    });
+
+    const skillsSet = new Set();
+    jobs.forEach((job) => {
+      let skills = job.required_skills;
+      // Handle potential string vs array storage in DB
+      if (typeof skills === 'string') {
+        try { skills = JSON.parse(skills); } catch { skills = skills.split(','); }
+      }
+      
+      if (Array.isArray(skills)) {
+        skills.forEach((s) => { 
+          const skillName = typeof s === 'string' ? s : s?.title;
+          if (skillName) skillsSet.add(skillName.trim()); 
+        });
+      }
+    });
+
+    // Return sorted array for better UX in dropdowns
+    res.json(Array.from(skillsSet).sort());
+  } catch (error) {
+    console.error("Error fetching unique skills from DB:", error);
+    res.status(500).json({ message: "Error fetching skills" });
   }
 };

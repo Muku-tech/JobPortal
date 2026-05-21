@@ -67,7 +67,12 @@ function Messages() {
   };
 
   const getTopic = (notif) => {
-    return notif.sender?.name || 'System';
+    // If the message content is a JSON recommendation, show a generic title instead of a name
+    const isRecommendation = typeof notif.message === 'string' && notif.message.trim().startsWith('{');
+    if (isRecommendation) return 'Personalized Job Recommendations';
+    
+    // For employer messages and others, show the actual sender name
+    return notif.sender?.name || 'System Notification';
   };
 
   const renderMessageContent = (notif) => {
@@ -80,37 +85,26 @@ function Messages() {
         
         return (
           <div className="recommendation-content">
-            <p style={{ marginBottom: '1rem', color: '#475569' }}>{data.text}</p>
-            <div className="jobs-recommendation-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <p className="rec-intro-text">{data.text}</p>
+            <div className="jobs-recommendation-list">
               {data.jobs?.map(job => (
                 <div 
                   key={job.id} 
                   className="job-recommendation-card"
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    backgroundColor: '#fff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
                   onClick={(e) => {
                     e.stopPropagation(); // Prevent toggling the message collapse
                     navigate(`/jobs/${job.id}`);
                   }}
                 >
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>{job.title}</span>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{job.company} • {job.location}</span>
+                  <div className="job-rec-info">
+                    <span className="job-rec-title">{job.title}</span>
+                    <span className="job-rec-meta">{job.company} • {job.location}</span>
                   </div>
                   <ExternalLink size={16} color="#f97316" />
                 </div>
               ))}
             </div>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '1rem', fontStyle: 'italic' }}>{data.footer}</p>
+            <p className="rec-footer-text">{data.footer}</p>
           </div>
         );
       } catch (err) { 

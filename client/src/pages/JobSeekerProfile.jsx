@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import api from '../services/api'
+import api, { resumeApi } from '../services/api'
+import { RefreshCw, FileEdit } from 'lucide-react'
 import '../styles/JobSeekerProfile.css'
 
 function JobSeekerProfile() {
   const { user, updateUser } = useAuth()
   const [editing, setEditing] = useState(false)
+  const [skillSuggestions, setSkillSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [dbSkills, setDbSkills] = useState([])
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -16,18 +21,83 @@ function JobSeekerProfile() {
     salary_expectation: user?.salary_expectation || '',
     current_company: user?.current_company || '',
     availability_date: user?.availability_date || '',
-    skills: user?.skills?.join(', ') || '',
+    skills: user?.skills?.map(s => typeof s === 'object' ? s.title : s).join(', ') || '',
     education: user?.education || '',
     experience: user?.experience || '',
-    languages: user?.languages?.join(', ') || '',
+    languages: user?.languages?.map(l => typeof l === 'object' ? l.title : l).join(', ') || '',
     preferred_job_type: user?.preferred_job_type || '',
     preferred_location: user?.preferred_location || ''
   })
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Fetch unique skills from database on mount
+  useEffect(() => {
+    const fetchDbSkills = async () => {
+      try {
+        const res = await api.get('/recommendations/unique-skills');
+        setDbSkills(res.data || []);
+      } catch (err) {
+        console.error('Failed to fetch skills from database', err);
+      }
+    };
+    fetchDbSkills();
+  }, []);
+
+  const handleSyncFromResume = async () => {
+    setLoading(true);
+    try {
+      const response = await resumeApi.getResumes();
+      if (response.data && response.data.length > 0) {
+        const resume = response.data.find(r => r.is_default) || response.data[0];
+        setFormData({
+          ...formData,
+          name: resume.personal_info?.name || formData.name,
+          phone: resume.personal_info?.phone || formData.phone,
+          address: resume.personal_info?.address || formData.address,
+          skills: Array.isArray(resume.skills) ? resume.skills.map(s => s.title || s).join(', ') : formData.skills,
+          experience: Array.isArray(resume.experiences) ? resume.experiences.map(e => `${e.title} at ${e.organization || e.company}`).join('\n') : formData.experience,
+          education: Array.isArray(resume.educations) ? resume.educations.map(e => `${e.title} from ${e.organization || e.company}`).join('\n') : formData.education
+        });
+        setErrorMsg('Data loaded from your resume. Don\'t forget to save!');
+      } else {
+        setErrorMsg('No resume found to sync from. Create one in the Resume Builder first.');
+      }
+    } catch (err) {
+      console.error('Sync error:', err);
+    } finally { setLoading(false); }
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleSkillsChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, skills: value });
+
+    // Get the part currently being typed (after the last comma)
+    const parts = value.split(',');
+    const currentPart = parts[parts.length - 1].trim();
+
+    if (currentPart.length >= 2) {
+      const matches = dbSkills.filter(skill => 
+        skill.toLowerCase().includes(currentPart.toLowerCase()) &&
+        !parts.some(p => p.trim().toLowerCase() === skill.toLowerCase())
+      ).slice(0, 5); // Limit to top 5 matches
+
+      setSkillSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
+      setShowSuggestions(false);
+    }
+  }
+
+  const selectSkill = (skill) => {
+    const parts = formData.skills.split(',');
+    parts[parts.length - 1] = ` ${skill}`; // Replace partial with full skill
+    setFormData({ ...formData, skills: parts.join(',').trim() + ', ' });
+    setShowSuggestions(false);
   }
 
   const handleSubmit = async (e) => {
@@ -82,9 +152,16 @@ function JobSeekerProfile() {
               <p>{user?.email} • <span className="role-badge">Job Seeker</span></p>
             </div>
           </div>
-          <button onClick={() => setEditing(!editing)} className={`btn-edit-toggle ${editing ? 'cancel' : ''}`}>
-            {editing ? 'Cancel' : 'Edit Profile'}
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {editing && (
+              <button type="button" onClick={handleSyncFromResume} className="btn-edit-toggle" style={{ backgroundColor: '#f97316' }}>
+                <RefreshCw size={16} /> Sync from Resume
+              </button>
+            )}
+            <button onClick={() => setEditing(!editing)} className={`btn-edit-toggle ${editing ? 'cancel' : ''}`}>
+              {editing ? 'Cancel' : 'Edit Profile'}
+            </button>
+          </div>
         </header>
 
         {errorMsg && <div className="profile-error">{errorMsg}</div>}
@@ -161,9 +238,31 @@ function JobSeekerProfile() {
                 </div>
               </div>
               <div className="form-grid">
-                <div className="form-group">
+                <div className="form-group" style={{ position: 'relative' }}>
                   <label>Skills (comma separated)</label>
-                  <input type="text" name="skills" value={formData.skills} onChange={handleChange} placeholder="React, SQL, Marketing" />
+                  <input 
+                    type="text" 
+                    name="skills" 
+                    value={formData.skills} 
+                    onChange={handleSkillsChange} 
+                    placeholder="React, SQL, Marketing"
+                    autoComplete="off"
+                  />
+                  {showSuggestions && (
+                    <div className="skill-autocomplete-dropdown" style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, 
+                      backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, marginTop: '4px', overflow: 'hidden'
+                    }}>
+                      {skillSuggestions.map((skill, index) => (
+                        <div key={index} onClick={() => selectSkill(skill)} style={{
+                          padding: '10px 15px', cursor: 'pointer', borderBottom: index !== skillSuggestions.length - 1 ? '1px solid #f1f5f9' : 'none'
+                        }} onMouseOver={(e) => e.target.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}>
+                          {skill}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -185,12 +284,32 @@ function JobSeekerProfile() {
             <main className="profile-main-content">
               <section className="display-section">
                 <h3>Professional Experience</h3>
-                <p>{user?.experience || 'No experience listed.'}</p>
+                <div className="text-display">
+                  {user?.experience ? (
+                    typeof user.experience === 'string' ? (
+                      user.experience.split('\n').map((line, i) => <p key={i}>{line}</p>)
+                    ) : Array.isArray(user.experience) ? (
+                      user.experience.map((e, i) => <p key={i}><strong>{e.title}</strong> at {e.organization || e.company}</p>)
+                    ) : <p>{user.experience}</p>
+                  ) : <p>No experience listed.</p>}
+                </div>
+              </section>
+              <section className="display-section">
+                <h3>Education</h3>
+                <div className="text-display">
+                  {typeof user?.education === 'string' 
+                    ? user.education.split('\n').map((line, i) => <p key={i}>{line}</p>) 
+                    : <p>{user?.education || 'No education listed.'}</p>}
+                </div>
               </section>
               <section className="display-section">
                 <h3>Skills</h3>
                 <div className="tag-container">
-                  {user?.skills?.map((s, i) => <span key={i} className="skill-tag">{s}</span>)}
+                  {user?.skills?.map((s, i) => (
+                    <span key={i} className="skill-tag">
+                      {typeof s === 'object' ? s.title : s}
+                    </span>
+                  ))}
                 </div>
               </section>
             </main>

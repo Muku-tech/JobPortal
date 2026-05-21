@@ -31,15 +31,24 @@ class ContentBasedFiltering {
    * Calculate job type match score
    */
   jobTypeScore(userPreferredType, jobType) {
-    if (!userPreferredType || !jobType) return 0.5;
+    if (!userPreferredType || !jobType) return 0;
     return userPreferredType === jobType ? 1 : 0;
+  }
+
+  /**
+   * Calculate experience level match score
+   */
+  experienceScore(userExp, jobExp) {
+    if (!userExp || !jobExp) return 0;
+    // If exact match or user has higher experience than required
+    return userExp.toLowerCase() === jobExp.toLowerCase() ? 1 : 0.4;
   }
 
   /**
    * Calculate location match score
    */
   locationScore(userPreferredLocation, jobLocation) {
-    if (!userPreferredLocation || !jobLocation) return 0.5;
+    if (!userPreferredLocation || !jobLocation) return 0;
     return userPreferredLocation.toLowerCase() === jobLocation.toLowerCase()
       ? 1
       : 0;
@@ -60,6 +69,7 @@ class ContentBasedFiltering {
       const userSkills = user.skills || [];
       const preferredJobType = user.preferred_job_type;
       const preferredLocation = user.preferred_location;
+      const userExperience = user.experience_level || "mid";
 
       // Get all active jobs (excluding those already applied)
       const jobs = await Job.findAll({
@@ -88,21 +98,34 @@ class ContentBasedFiltering {
         // Job type match
         const typeScore = this.jobTypeScore(preferredJobType, job.job_type);
 
+        // Experience match
+        const expScore = this.experienceScore(
+          userExperience,
+          job.experience_level,
+        );
+
         // Location match
         const locationMatch = this.locationScore(
           preferredLocation,
           job.location,
         );
 
-        // Overall score (weighted average)
+        /**
+         * New Weighted Parameters:
+         * Skills Match: 50% | Experience: 20% | Job Type: 15% | Location: 15%
+         */
         const score =
-          skillsSimilarity * 0.5 + typeScore * 0.25 + locationMatch * 0.25;
+          skillsSimilarity * 0.5 +
+          expScore * 0.2 +
+          typeScore * 0.15 +
+          locationMatch * 0.15;
 
         return {
           job,
           score: Math.round(score * 100) / 100,
           details: {
             skillsSimilarity: Math.round(skillsSimilarity * 100) / 100,
+            experienceScore: expScore,
             typeScore,
             locationMatch,
           },
@@ -118,6 +141,9 @@ class ContentBasedFiltering {
           reasons.push(
             `${Math.round(rec.details.skillsSimilarity * 100)}% skills match`,
           );
+        }
+        if (rec.details.experienceScore === 1) {
+          reasons.push("Matches your experience level");
         }
         if (rec.details.typeScore === 1) {
           reasons.push("Job type matches your preference");
