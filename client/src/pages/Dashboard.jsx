@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
 import { 
   Briefcase, Heart, CheckCircle, MapPin, Calendar, User, Mail, Phone, ChevronRight,
-  Upload, GraduationCap, Languages, Code, Filter, RefreshCw 
+  Upload, GraduationCap, Languages, Code, Filter, RefreshCw, Search, Bell, Clock, Eye, Edit3, Check, XCircle
 } from "lucide-react";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -23,8 +23,9 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [pollInterval, setPollInterval] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [stats, setStats] = useState({ applied: 0, interviews: 0, saved: 0 });
+  const [stats, setStats] = useState({ applied: 0, interviews: 0, saved: 0, messages: 0 });
 
   // Initial load
   useEffect(() => {
@@ -54,7 +55,9 @@ export default function Dashboard() {
     if (applications.length > 0) {
       setStats({
         applied: applications.length,
-        interviews: applications.filter(a => a.status === 'considering' && a.interview_date).length
+        interviews: applications.filter(a => a.status === 'considering' && a.interview_date).length,
+        saved: stats.saved,
+        messages: stats.messages
       });
     }
   }, [applications]);
@@ -66,10 +69,12 @@ export default function Dashboard() {
       const appsData = appsRes?.data || [];
       setApplications(appsData);
       setLastUpdated(new Date());
-      setStats({
+      
+      setStats(prev => ({
+        ...prev,
         applied: appsData.length,
         interviews: appsData.filter(a => a.status === 'considering' && a.interview_date).length
-      });
+      }));
       if (toast && toast.success) toast.success('Applications updated!');
     } catch (err) {
       const message = err?.response?.data?.message || err?.message || 'Failed to refresh applications';
@@ -90,6 +95,15 @@ export default function Dashboard() {
       const recData = recRes?.data?.jobs || recRes?.data || [];
       setRecommendedJobs(recData.slice(0, 3));
       
+      // Fetch messages count for stats
+      const msgRes = await api.get('/messages');
+      const unread = (msgRes.data || []).filter(m => !m.read).length;
+      setStats(prev => ({ ...prev, messages: unread }));
+
+      // Fetch saved jobs count
+      const savedRes = await api.get('/jobs?saved=true');
+      setStats(prev => ({ ...prev, saved: (savedRes.data?.total || 0) }));
+
       // Fetch applications separately (already handles its own loading/error)
       await fetchApplications();
       
@@ -105,19 +119,19 @@ export default function Dashboard() {
     setRefreshKey(prev => prev + 1);
   };
 
-  const profilePercentage = Math.min(100, Math.round(
-    ((user?.name ? 1 : 0) +
-     (user?.phone ? 1 : 0) +
-     (user?.address ? 1 : 0) +
-     (user?.skills?.length || 0) +
-     (user?.education?.trim() ? 1 : 0) +
-     (user?.experience?.trim() ? 1 : 0) +
-     (user?.languages?.length || 0) +
-     (user?.preferred_job_type ? 1 : 0) +
-     (user?.preferred_location?.trim() ? 1 : 0) +
-     (user?.linkedin ? 1 : 0) +
-     (user?.github ? 1 : 0) +
-     (user?.salary_expectation ? 1 : 0)) / 12 * 100
+  const handleQuickSearch = (e) => {
+    e.preventDefault();
+    if (searchTerm.trim()) navigate(`/jobs?search=${searchTerm}`);
+  };
+
+  // Weighted Profile Strength Calculation
+  const profilePercentage = Math.min(100, (
+    (user?.profile_photo ? 10 : 0) +
+    (user?.skills?.length > 0 ? 20 : 0) +
+    (user?.education?.trim() ? 15 : 0) +
+    (applications.some(a => a.resume_id || a.resume_pdf_url) ? 25 : 0) +
+    (user?.experience?.trim() ? 15 : 0) +
+    ((user?.summary || user?.bio) ? 15 : 0)
   ));
 
   // Filter applications by status
@@ -162,14 +176,16 @@ export default function Dashboard() {
         <aside className="dash-sidebar">
           <div className="card profile-info-card">
             <div className="avatar-box">
-              <User size={40} />
+              {user?.profile_photo ? <img src={user.profile_photo} alt="Profile" /> : <User size={40} />}
             </div>
             <h3>{user?.name || "Job Seeker"}</h3>
+            <p className="user-role-title">{user?.current_company ? `Developer at ${user.current_company}` : "Aspiring Professional"}</p>
             <div className="contact-details">
               <p><MapPin size={14} /> {user?.address || "N/A"}</p>
-              <p><Phone size={14} /> {user?.phone || "N/A"}</p>
-              <p><Mail size={14} /> {user?.email}</p>
             </div>
+            <button className="btn-upload-resume" onClick={() => navigate('/resume-builder')}>
+              <Upload size={14} /> Update Resume
+            </button>
           </div>
 
           {/* PROFILE STRENGTH - ENHANCED WITH ANIMATION + CHECKLIST */}
@@ -197,25 +213,53 @@ export default function Dashboard() {
               </div>
               <div className="check-item">
                 <Upload size={16} className={user?.cv_url ? "complete" : ""} />
-                <span>Upload CV</span>
+                <span>Resume uploaded (25%)</span>
               </div>
               <div className="check-item">
                 <GraduationCap size={16} className={user?.education?.trim() ? "complete" : ""} />
-                <span>Add education</span>
+                <span>Add education (15%)</span>
               </div>
             </div>
             <button className="btn-action-orange" onClick={() => navigate('/profile')}>
               Complete Profile
             </button>
           </div>
+
+          {/* QUICK ACTIONS */}
+          <div className="card quick-actions-card">
+            <h4>Quick Actions</h4>
+            <div className="action-btns-list">
+              <button onClick={() => navigate('/jobs')}><Search size={14}/> Browse Jobs</button>
+              <button onClick={() => navigate('/profile')}><Edit3 size={14}/> Edit Profile</button>
+              <button onClick={() => navigate('/jobs?saved=true')}><Heart size={14}/> Saved Jobs</button>
+            </div>
+          </div>
         </aside>
 
         {/* RIGHT MAIN - RESTRUCTURED */}
         <main className="dash-main-content">
           
+          {/* QUICK SEARCH BAR */}
+          <motion.div 
+            className="quick-search-container"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <form onSubmit={handleQuickSearch} className="quick-search-form">
+              <Search size={20} className="search-icon" />
+              <input 
+                type="text" 
+                placeholder="Quick search for your next role..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <button type="submit" className="btn-search">Find Jobs</button>
+            </form>
+          </motion.div>
+
           {/* 1. COMPACT RECOMMENDED JOBS */}
           <motion.section 
-            className="recommendations-box compact-rec"
+            className="recommendations-box"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -227,12 +271,19 @@ export default function Dashboard() {
               </div>
               <Link to="/jobs" className="link-text">View All <ChevronRight size={14} /></Link>
             </div>
-            <div className="compact-list">
+            <div className="rec-detailed-list">
               {recommendedJobs.length > 0 ? (
                 recommendedJobs.slice(0, 3).map(job => (
-                  <div key={job.id} className="compact-job" onClick={() => navigate(`/jobs/${job.id}`)}>
-                    <h5>{job.title}</h5>
-                    <p>{job.company_name}</p>
+                  <div key={job.id} className="rec-item-card" onClick={() => navigate(`/jobs/${job.id}`)}>
+                    <div className="rec-info">
+                      <h5>{job.title}</h5>
+                      <p>{job.company_name} • {job.location || 'Remote'}</p>
+                      <div className="match-tags">
+                        <span className="match-perc">{(job.matchScore || 85)}% Match</span>
+                        <span className="match-reason">Matches your skills</span>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="arrow" />
                   </div>
                 ))
               ) : (
@@ -243,152 +294,90 @@ export default function Dashboard() {
             </div>
           </motion.section>
 
-          {/* 2. STATS CARDS WITH HOVER */}
-          <motion.div 
-            className="stats-grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <motion.div 
-              className="stat-box" 
-              whileHover={{ scale: 1.02, y: -5 }}
-              transition={{ type: "spring" }}
-              onClick={() => setApplicationsTab('all')}
-            >
-              <div className="icon-wrap orange"><Briefcase size={20} /></div>
-              <div>
-                <p>Applications</p>
-                <h2>{stats.applied}</h2>
+          {/* 3. APPLICATION PIPELINE & RECENT ACTIVITY */}
+          <div className="dash-grid-layout">
+            <section className="pipeline-section">
+              <div className="section-header">
+                <h4>Recent Applications</h4>
+                <Link to="/my-applications" className="link-text">Manage</Link>
               </div>
-            </motion.div>
-            <motion.div 
-              className="stat-box" 
-              whileHover={{ scale: 1.02, y: -5 }}
-              transition={{ type: "spring" }}
-              onClick={() => setApplicationsTab('interview')}
-            >
-              <div className="icon-wrap blue"><CheckCircle size={20} /></div>
-              <div>
-                <p>Interviews</p>
-                <h2>{stats.interviews}</h2>
+              <div className="pipeline-list">
+                {applications.slice(0, 3).map(app => (
+                  <div key={app.id} className="pipeline-card">
+                    <div className="app-main-info">
+                      <h5>{app.job?.title}</h5>
+                      <p>{app.job?.company_name}</p>
+                    </div>
+                    <div className="app-status-flow">
+                      <div className={`step active`}><span>Applied</span></div>
+                      <div className="connector"></div>
+                      <div className={`step ${app.status !== 'applied' || app.employer_notes ? 'active' : ''}`}><span>Viewed</span></div>
+                      <div className="connector"></div>
+                      <div className={`step ${['considering', 'final'].includes(app.status) ? 'active' : ''}`}><span>Shortlisted</span></div>
+                      <div className="connector"></div>
+                      <div className={`step ${app.interview_date || app.status === 'final' ? 'active' : ''}`}><span>Interview</span></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </motion.div>
+            </section>
 
-          </motion.div>
-
-          {/* 3. APPLICATIONS - MAIN FOCUS */}
-          <motion.div 
-            className="applications-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <div className="apps-header">
-              <h3>Your Applications</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button 
-                  className="refresh-btn"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  title="Refresh applications (R)"
-                >
-                  {isRefreshing ? (
-                    <RefreshCw className="spin" size={16} />
-                  ) : (
-                    <RefreshCw size={16} />
-                  )}
-                </button>
-                {lastUpdated && (
-                  <span className="last-updated" title={lastUpdated.toLocaleString()}>
-                    Updated {Math.floor((Date.now() - lastUpdated) / 1000 / 60)}m ago
-                  </span>
-                )}
-                <div className="apps-tabs">
-                  <button 
-                    className={`tab-btn ${applicationsTab === 'all' ? 'active' : ''}`}
-                    onClick={() => setApplicationsTab('all')}
-                  >
-                    All
-                  </button>
-                  <button 
-                    className={`tab-btn ${applicationsTab === 'pending' ? 'active' : ''}`}
-                    onClick={() => setApplicationsTab('pending')}
-                  >
-                    Pending
-                  </button>
-                  <button 
-                    className={`tab-btn ${applicationsTab === 'shortlisted' ? 'active' : ''}`}
-                    onClick={() => setApplicationsTab('shortlisted')}
-                  >
-                    Shortlisted
-                  </button>
-                  <button 
-                    className={`tab-btn ${applicationsTab === 'rejected' ? 'active' : ''}`}
-                    onClick={() => setApplicationsTab('rejected')}
-                  >
-                    Rejected
-                  </button>
-                  <button 
-                    className={`tab-btn ${applicationsTab === 'interview' ? 'active' : ''}`}
-                    onClick={() => setApplicationsTab('interview')}
-                  >
-                    Interview
-                  </button>
+            <section className="activity-timeline">
+              <h4>Activity Feed</h4>
+              <div className="timeline-items">
+                {applications.slice(0, 4).map((app, i) => (
+                  <div key={i} className="timeline-event">
+                    <div className="event-icon"><Check size={12}/></div>
+                    <div className="event-desc">
+                      <p>Applied to <strong>{app.job?.title}</strong> at {app.job?.company_name}</p>
+                      <span>{new Date(app.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="timeline-event">
+                  <div className="event-icon"><Eye size={12}/></div>
+                  <div className="event-desc">
+                    <p>Employer viewed your profile</p>
+                    <span>Yesterday</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
+          </div>
 
-            <div className="applications-list">
-              {getFilteredApps().length > 0 ? (
-                getFilteredApps().map(app => (
-                  <motion.div 
-                    key={app.id}
-                    className="app-card"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 * app.id }}
-                    whileHover={{ y: -2 }}
-                  >
-                    <div className="app-left">
-                      <h4>{app.job?.title || 'Title'}</h4>
-                      <p className="company">{app.job?.company_name || 'Company'}</p>
-                      <div className="app-meta">
-                        <span><Calendar size={14} /> {new Date(app.created_at).toLocaleDateString()}</span>
+          {/* 3. UPCOMING INTERVIEWS TIMELINE */}
+          {stats.interviews > 0 && (
+            <motion.section 
+              className="timeline-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="section-header">
+                <h4>Upcoming Interviews</h4>
+              </div>
+              <div className="timeline-list">
+                {applications
+                  .filter(a => a.status === 'considering' && a.interview_date)
+                  .sort((a, b) => new Date(a.interview_date) - new Date(b.interview_date))
+                  .slice(0, 2)
+                  .map(app => (
+                    <div key={app.id} className="timeline-item">
+                      <div className="date-badge">
+                        <span className="day">{new Date(app.interview_date).getDate()}</span>
+                        <span className="month">{new Date(app.interview_date).toLocaleString('default', { month: 'short' })}</span>
+                      </div>
+                      <div className="details">
+                        <h5>{app.job?.title}</h5>
+                        <p>{app.job?.company_name} • {new Date(app.interview_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                       </div>
                     </div>
-                    <div className="app-right">
-                      <span className={`status-badge ${app.status}`}>
-                        {statusConfig[app.status]?.label || app.status}
-                      </span>
-                      <Link to={`/jobs/${app.job_id}`} className="view-job-btn">
-                        View Job
-                      </Link>
-                    </div>
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div 
-                  className="empty-applications"
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                >
-                  <Briefcase size={64} className="empty-icon" />
-                  <h4>No applications yet</h4>
-                  <p>Start exploring jobs and apply to opportunities that match your skills.</p>
-                  <button 
-                    className="browse-btn" 
-                    onClick={() => navigate('/jobs')}
-                  >
-                    Browse Jobs
-                  </button>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
+                  ))}
+              </div>
+            </motion.section>
+          )}
         </main>
       </div>
     </div>
   );
 }
-
