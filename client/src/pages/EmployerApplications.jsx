@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import ApplicationMessages from './ApplicationMessages'
+import { 
+  ModernTemplate, ClassicTemplate, CreativeTemplate, ExecutiveTemplate 
+} from './ResumeTemplates'
+import { X, Printer } from 'lucide-react'
 import '../styles/EmployerApplications.css'
 
 const EmployerApplications = ({ jobId }) => {
@@ -13,6 +17,7 @@ const EmployerApplications = ({ jobId }) => {
   const [interviewModal, setInterviewModal] = useState({ open: false, appId: null })
   const [unreadCounts, setUnreadCounts] = useState({})
   const [interviewAppStatus, setInterviewAppStatus] = useState(null)
+  const [resumePreview, setResumePreview] = useState({ open: false, data: null })
   const [sortMode, setSortMode] = useState('default') // 'default' | 'top-candidates'
 
   const newStages = ['applied', 'considering', 'final']
@@ -127,6 +132,34 @@ const EmployerApplications = ({ jobId }) => {
     }
   }
 
+  const handleViewResume = async (url, resumeData = null) => {
+    if (resumeData && !url.endsWith('.pdf')) {
+      // Open the interactive preview modal instead of raw JSON
+      setResumePreview({ open: true, data: resumeData });
+      return;
+    }
+
+    // If it's an API endpoint (structured resume), we must fetch with our auth headers
+    if (url.includes('/api/resumes/')) {
+      try {
+        // Use the full URL to bypass potentially incorrect baseURL settings
+        // while still using the authenticated axios instance to send the token.
+        const response = await api.get(url);
+        
+        // Create a temporary JSON blob to display the structured data
+        const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, '_blank');
+      } catch (err) {
+        console.error('Error viewing resume:', err);
+        alert('Failed to load resume. Your session may have expired.');
+      }
+    } else {
+      // For static files (uploaded PDFs), we can attempt a direct open
+      window.open(url, '_blank');
+    }
+  };
+
   const openInterviewModal = (appId) => {
     const app = applications.find(a => a.id === appId)
     setInterviewAppStatus(app?.status)
@@ -207,9 +240,49 @@ const EmployerApplications = ({ jobId }) => {
                   <h3 className="job-title">{app.job?.title}</h3>
                   <h2>{app.applicant?.name}</h2>
                   <p>{app.applicant?.email}</p>
-                  {app.cover_letter && (
-                    <p className="cover-preview">" {app.cover_letter.substring(0, 100)}... "</p>
-                  )}
+
+                  {/* Resume PDF (if available from resume record) */}
+                  {(() => {
+                    // Prioritize the specific resume linked to this application, fallback to first profile resume
+                    const resume = app.resume || (Array.isArray(app.applicant?.resumes) ? app.applicant.resumes[0] : null)
+                    
+                    const derivedResumeUrl = resume?.id
+                      ? `/resumes/${resume.id}`
+                      : null
+
+                    const serverBase = 'http://localhost:5001'
+                    const resumeUrl = 
+                      (app.resume_pdf_url ? `${serverBase}${app.resume_pdf_url}` : null) || 
+                      (resume?.resume_url ? `${serverBase}${resume.resume_url}` : null) || 
+                      resume?.file_url || 
+                      resume?.pdf_url || 
+                      (derivedResumeUrl ? `${serverBase}/api${derivedResumeUrl}` : null)
+
+                    return app.cover_letter ? (
+                      <>
+                        <p className="cover-preview">" {app.cover_letter.substring(0, 100)}... "</p>
+                        {resumeUrl && (
+                          <button 
+                            onClick={() => handleViewResume(resumeUrl, resume)} 
+                            className="resume-view-link"
+                            style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, textDecoration: 'underline', font: 'inherit', textAlign: 'left' }}
+                          >
+                            View Resume
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      resumeUrl && (
+                        <button 
+                          onClick={() => handleViewResume(resumeUrl, resume)} 
+                          className="resume-view-link"
+                          style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', padding: 0, textDecoration: 'underline', font: 'inherit', textAlign: 'left' }}
+                        >
+                          View Resume
+                        </button>
+                      )
+                    )
+                  })()}
                 </div>
                 <div className={`status-badge status-${app.status}`}>
                   {app.status}
@@ -315,9 +388,38 @@ const EmployerApplications = ({ jobId }) => {
           </div>
         </div>
       )}
+
+      {/* RESUME PREVIEW MODAL */}
+      {resumePreview.open && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal resume-preview-modal" style={{ maxWidth: '900px', width: '95%', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid #eee' }}>
+              <h3>Resume Preview - {resumePreview.data.personal_info?.name}</h3>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => window.print()} className="btn-secondary" style={{ padding: '5px 12px', fontSize: '14px' }}>
+                  <Printer size={16} /> Print / Save PDF
+                </button>
+                <button onClick={() => setResumePreview({ open: false, data: null })} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+            <div className="modal-body" style={{ overflowY: 'auto', padding: '20px', backgroundColor: '#f3f4f6' }}>
+              <div className="resume-paper-shadow" style={{ backgroundColor: 'white', margin: '0 auto', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', width: '100%', minHeight: '1000px' }}>
+                {resumePreview.data.template === 'modern' && <ModernTemplate resumeData={resumePreview.data} />}
+                {resumePreview.data.template === 'executive' && <ExecutiveTemplate resumeData={resumePreview.data} />}
+                {resumePreview.data.template === 'classic' && <ClassicTemplate resumeData={resumePreview.data} />}
+                {resumePreview.data.template === 'creative' && <CreativeTemplate resumeData={resumePreview.data} />}
+                {(!resumePreview.data.template || !['modern', 'executive', 'classic', 'creative'].includes(resumePreview.data.template)) && (
+                  <ModernTemplate resumeData={resumePreview.data} />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default EmployerApplications
-

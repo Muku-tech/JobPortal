@@ -68,7 +68,7 @@ export const ModernTemplate = ({ resumeData }) => (
       </section>
     )}
 
-    {['experiences', 'educations', 'projects', 'certifications'].map(key => (
+    {['experiences', 'internships', 'educations', 'projects', 'certifications'].map(key => (
       resumeData[key]?.length > 0 && (
         <section key={key} style={{ marginBottom: '25px' }}>
           <SectionHeader title={key} color={resumeData.primary_color} />
@@ -76,6 +76,19 @@ export const ModernTemplate = ({ resumeData }) => (
         </section>
       )
     ))}
+
+    {(resumeData.skills?.length > 0 || resumeData.technical_skills?.length > 0) && (
+      <section style={{ marginBottom: '25px' }}>
+        <SectionHeader title="Skills & Tools" color={resumeData.primary_color} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          {[...(resumeData.skills || []), ...(resumeData.technical_skills || [])].map((s, i) => (
+            <span key={i} style={{ fontSize: '12px', padding: '4px 10px', backgroundColor: '#f1f5f9', borderRadius: '4px', border: `1px solid #e2e8f0` }}>
+              {s.title || s}
+            </span>
+          ))}
+        </div>
+      </section>
+    )}
   </div>
 );
 
@@ -115,7 +128,7 @@ export const ExecutiveTemplate = ({ resumeData }) => (
           <p style={{ fontSize: '13px', lineHeight: '1.5' }}>{resumeData.summary}</p>
         </section>
       )}
-      {['experiences', 'educations', 'projects'].map(key => (
+      {['experiences', 'internships', 'educations', 'projects', 'certifications'].map(key => (
         resumeData[key]?.length > 0 && (
           <section key={key} style={{ marginBottom: '30px' }}>
             <h2 style={{ fontSize: '18px', borderBottom: `2px solid ${resumeData.primary_color}`, paddingBottom: '5px', marginBottom: '15px', color: '#1e293b' }}>
@@ -140,7 +153,7 @@ export const ClassicTemplate = ({ resumeData }) => (
       {resumeData.personal_info.linkedin && <div style={{ fontSize: '12px' }}>{resumeData.personal_info.linkedin}</div>}
     </header>
 
-    {['summary', 'experiences', 'educations', 'skills'].map(key => {
+    {['summary', 'experiences', 'internships', 'educations', 'skills', 'technical_skills', 'projects'].map(key => {
       if (!resumeData[key] || (Array.isArray(resumeData[key]) && resumeData[key].length === 0)) return null;
       return (
         <section key={key}>
@@ -178,7 +191,7 @@ export const CreativeTemplate = ({ resumeData }) => (
         <ContactItem icon={ExternalLink} text={resumeData.personal_info.portfolio} />
       </div>
       <div className="right-col">
-        {['experiences', 'educations'].map(key => (
+        {['experiences', 'internships', 'educations', 'projects'].map(key => (
           resumeData[key]?.length > 0 && (
             <section key={key} style={{ marginBottom: '30px' }}>
               <SectionHeader title={key} color={resumeData.primary_color} />

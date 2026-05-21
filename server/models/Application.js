@@ -57,6 +57,10 @@ const Application = sequelize.define(
         key: "id",
       },
     },
+    resume_pdf_url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     tableName: "applications",

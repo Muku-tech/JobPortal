@@ -3,14 +3,17 @@ const { Application, Job, User, Message, Resume } = require("../models");
 exports.applyForJob = async (req, res) => {
   try {
     const { jobId, coverLetter, resumeId } = req.body;
+    const jobIdNum = jobId ? Number(jobId) : null;
+    const resumeIdNum = resumeId ? Number(resumeId) : null;
     const userId = req.user.id; // Assuming req.user is populated by auth middleware
-    const job = await Job.findByPk(jobId ? Number(jobId) : null);
+
+    const job = await Job.findByPk(jobIdNum);
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
 
     // Auto-select default resume if none provided
-    let finalResumeId = resumeId;
+    let finalResumeId = resumeIdNum;
     if (!finalResumeId) {
       const defaultResume = await Resume.findOne({
         where: { user_id: userId, is_default: true },
@@ -18,36 +21,37 @@ exports.applyForJob = async (req, res) => {
       finalResumeId = defaultResume?.id;
     }
 
-    // resume_pdf_url column may not exist in DB; keep upload path in case
-    // you want to persist it later.
-    // (applyForJob currently stores only resume_id)
     let resumePdfUrl = null;
     if (req.file) {
       resumePdfUrl = `/resumes/${req.file.filename}`;
     }
 
-    // Avoid selecting non-existent columns during existence check
     const existingApplication = await Application.findOne({
-      where: { job_id: jobId, user_id: userId },
-      // older DB schema may not include resume_pdf_url
+      where: { job_id: jobIdNum, user_id: userId },
     });
     if (existingApplication) {
       return res
         .status(400)
         .json({ message: "You have already applied for this job" });
     }
-    // Some DB schemas may not include applications.resume_pdf_url.
-    // Explicitly exclude it from the insert.
     const application = await Application.create(
       {
-        job_id: jobId,
+        job_id: jobIdNum,
         user_id: userId,
         cover_letter: coverLetter,
         resume_id: finalResumeId,
+        resume_pdf_url: resumePdfUrl,
         status: "applied",
       },
       {
-        fields: ["job_id", "user_id", "cover_letter", "resume_id", "status"],
+        fields: [
+          "job_id",
+          "user_id",
+          "cover_letter",
+          "resume_id",
+          "resume_pdf_url",
+          "status",
+        ],
       },
     );
     res.status(201).json({
@@ -65,6 +69,17 @@ exports.getMyApplications = async (req, res) => {
     const userId = req.user.id;
     const applications = await Application.findAll({
       where: { user_id: userId },
+      attributes: [
+        "id",
+        "job_id",
+        "user_id",
+        "cover_letter",
+        "resume_id",
+        "resume_pdf_url",
+        "status",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
         {
           model: Job,
@@ -83,8 +98,6 @@ exports.getMyApplications = async (req, res) => {
         },
       ],
       order: [["createdAt", "DESC"]],
-      // Avoid selecting non-existent columns in some DB schemas.
-      // (e.g., resume_pdf_url may not exist)
     });
     res.json(applications);
   } catch (error) {
@@ -97,6 +110,17 @@ exports.getEmployerApplications = async (req, res) => {
   try {
     const userId = req.user.id;
     const applications = await Application.findAll({
+      attributes: [
+        "id",
+        "job_id",
+        "user_id",
+        "cover_letter",
+        "resume_id",
+        "resume_pdf_url",
+        "status",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
         {
           model: Job,
@@ -107,6 +131,11 @@ exports.getEmployerApplications = async (req, res) => {
           model: User,
           as: "applicant",
           attributes: ["id", "name", "email", "skills"],
+          include: [{ model: Resume, as: "resumes" }],
+        },
+        {
+          model: Resume,
+          as: "resume",
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -134,6 +163,17 @@ exports.getJobApplications = async (req, res) => {
 
     const applications = await Application.findAll({
       where: { job_id: jobId },
+      attributes: [
+        "id",
+        "job_id",
+        "user_id",
+        "cover_letter",
+        "resume_id",
+        "resume_pdf_url",
+        "status",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
         {
           model: User,
@@ -147,11 +187,33 @@ exports.getJobApplications = async (req, res) => {
             "cluster_id",
             "experience_level",
           ],
-          include: [{ model: Resume, as: "resumes" }], // Include structured resumes if needed
+          include: [{ model: Resume, as: "resumes" }], // Include structured resumes
+        },
+        {
+          model: Resume,
+          as: "resume",
         },
       ],
       order: [["createdAt", "DESC"]],
     });
+
+    // DEBUG (temporary): verify cover_letter present in API response
+    try {
+      const first = applications?.[0];
+      console.log(
+        "[getJobApplications debug] first application cover_letter:",
+        first?.cover_letter,
+      );
+      console.log(
+        "[getJobApplications debug] first application resume_id:",
+        first?.resume_id,
+      );
+    } catch (e) {
+      console.log(
+        "[getJobApplications debug] unable to log first application",
+        e?.message,
+      );
+    }
 
     // Compute matchScore for each applicant based on skill overlap
     const jobSkills = (job.required_skills || []).map((s) =>

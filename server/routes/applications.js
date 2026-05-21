@@ -3,9 +3,27 @@ const router = express.Router();
 const applicationController = require("../controllers/applicationController");
 const auth = require("../middleware/auth");
 const messageController = require("../controllers/messageController");
+const multer = require("multer");
+const path = require("path");
+
+// Configure multer for resume PDF uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "public/resumes/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `resume-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+const upload = multer({ storage });
 
 // Apply for a job
-router.post("/", auth.verifyToken, applicationController.applyForJob);
+router.post(
+  "/",
+  auth.verifyToken,
+  upload.single("resumePdf"),
+  applicationController.applyForJob,
+);
 
 // FIXED: Changed from /my-applications to /user to match frontend api.get("/applications/user")
 router.get("/user", auth.verifyToken, applicationController.getMyApplications);

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import api, { resumeApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { 
@@ -12,7 +13,8 @@ import {
 
 const ResumeBuilder = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const toastContext = useToast();
+  const toast = toastContext?.toast || toastContext; // Handle both {toast} and direct object
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(true);
   
@@ -51,6 +53,31 @@ const ResumeBuilder = () => {
   
   const resumeRef = useRef(null);
   const [previewTemplate, setPreviewTemplate] = useState('modern');
+
+  useEffect(() => {
+    const fetchExistingResume = async () => {
+      if (!user) return;
+      try {
+        const response = await resumeApi.getResumes();
+        if (response.data && response.data.length > 0) {
+          // Load the first resume or default one
+          const existing = response.data.find(r => r.is_default) || response.data[0];
+          setResumeData({
+            ...existing,
+            skills: Array.isArray(existing.skills) ? existing.skills : [],
+            technical_skills: Array.isArray(existing.technical_skills) ? existing.technical_skills : [],
+            experiences: Array.isArray(existing.experiences) ? existing.experiences : [],
+            educations: Array.isArray(existing.educations) ? existing.educations : [],
+            projects: Array.isArray(existing.projects) ? existing.projects : [],
+          });
+          setPreviewTemplate(existing.template || 'modern');
+        }
+      } catch (err) {
+        console.error('Error fetching existing resume:', err);
+      }
+    };
+    fetchExistingResume();
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -124,6 +151,48 @@ const addEntry = (sectionKey) => {
     }
   };
 
+  const handleSaveResume = async () => {
+    if (!resumeData?.personal_info?.name) {
+      toast.error('Please enter your full name in Contact Details before saving');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Ensure all array fields are clean arrays before sending to server
+      const dataToSave = {
+        ...resumeData,
+        template: previewTemplate,
+        is_default: true,
+        skills: resumeData.skills || [],
+        technical_skills: resumeData.technical_skills || [],
+        experiences: resumeData.experiences || [],
+        educations: resumeData.educations || [],
+        projects: resumeData.projects || []
+      };
+
+      let response;
+      if (resumeData.id) {
+        response = await api.put(`/resumes/${resumeData.id}`, dataToSave);
+      } else {
+        response = await api.post('/resumes', dataToSave);
+      }
+      
+      const savedId = response.data?.id || response.data?.resume?.id;
+      if (savedId) {
+        setResumeData(prev => ({ ...prev, id: savedId }));
+      }
+      
+      toast.success('Resume saved successfully! It is now linked to your profile.');
+    } catch (error) {
+      console.error('Error saving resume:', error);
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Failed to save resume';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!user || user.role !== 'jobseeker') {
     return (
       <div className="error-container">
@@ -161,6 +230,10 @@ const addEntry = (sectionKey) => {
             {editing ? <><Eye size={18} /> Preview</> : <><Edit3 size={18} /> Edit</>}
           </button>
           
+          <button onClick={handleSaveResume} disabled={loading} className="btn btn-primary" style={{ backgroundColor: '#10b981' }}>
+            {loading ? 'Saving...' : <><Settings size={18} /> Save to Profile</>}
+          </button>
+
           <button onClick={handleDownloadPdf} disabled={loading} className="btn btn-primary">
             {loading ? 'Processing...' : <><Download size={18} /> Download PDF</>}
           </button>
