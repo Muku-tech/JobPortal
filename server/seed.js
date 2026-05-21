@@ -1273,6 +1273,23 @@ async function seed() {
   await sequelize.query("SET FOREIGN_KEY_CHECKS = 1");
   console.log("  Data cleaned\n");
 
+  console.log("Creating system user...");
+  // Ensure a system user with ID 1 exists for automated messages
+  const systemUser = await User.create({
+    id: 1, // Explicitly set ID to 1
+    name: "System",
+
+    email: "system@jobportal.com",
+    password:
+      "$2a$10$000000000000000000000u00000000000000000000000000000000000000000", // Placeholder hash for 'password'
+    role: "system", // Ensure your User model allows this role
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  console.log(
+    `  System user created: ${systemUser.email} (ID: ${systemUser.id})\n`,
+  );
+
   console.log("Creating employers...");
   const emps = [];
   const se = [...EMP].sort(() => 0.5 - Math.random());

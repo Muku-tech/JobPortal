@@ -15,7 +15,6 @@ function MyApplications() {
   const fetchApplications = async () => {
     try {
       const response = await api.get("/applications/user");
-      // Logging helps identify if data uses 'job' (lowercase) or 'Job' (PascalCase)
       console.log("Applications data:", response.data);
       setApplications(response.data);
     } catch (error) {
@@ -103,6 +102,21 @@ function MyApplications() {
             const job = app.job || app.Job;
             const companyName = job?.company_name || job?.employer?.name || "Company Name";
 
+            const attachedResume = app.resume || app.Resume;
+            const resumeName =
+              attachedResume?.personal_info?.name ||
+              attachedResume?.personal_info?.summary_name ||
+              attachedResume?.personal_info?.email ||
+              "Resume";
+
+            // When backend supports resume uploads, show a link. For now we display the attached resume content/name.
+            const resumeUrl = app.resume_url || attachedResume?.resume_url || attachedResume?.file_url || null;
+
+
+            const resumeTemplate = attachedResume?.template
+              ? `${attachedResume.template.charAt(0).toUpperCase()}${attachedResume.template.slice(1)}`
+              : "Selected";
+
             return (
               <div key={app.id} className="app-card">
                 <div className="app-card-top">
@@ -121,6 +135,18 @@ function MyApplications() {
                   <span>Location: {job?.location || "Nepal"}</span>
                   <span>Type: {job?.job_type || "Full Time"}</span>
                   <span>Date: {new Date(app.createdAt).toLocaleDateString()}</span>
+                  {attachedResume ? (
+                    <span>
+                      Attached Resume: {resumeTemplate} ({resumeName})
+                      {resumeUrl ? (
+                        <a href={resumeUrl} target="_blank" rel="noreferrer" style={{ marginLeft: 8 }}>
+                          View CV/Resume
+                        </a>
+                      ) : null}
+                    </span>
+                  ) : (
+                    <span>Attached Resume: Not provided</span>
+                  )}
                 </div>
                 
                 <div className="app-card-actions">

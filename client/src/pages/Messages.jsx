@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-
-import { Bell, Check, Trash2, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, Check, Trash2, RefreshCw, Briefcase, MapPin, ExternalLink } from 'lucide-react';
 import api from '../services/api';
 import '../styles/Messages.css';
 
 function Messages() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -67,6 +68,61 @@ function Messages() {
 
   const getTopic = (notif) => {
     return notif.sender?.name || 'System';
+  };
+
+  const renderMessageContent = (notif) => {
+    // Try to parse the message as JSON to see if it's a structured recommendation
+    // This works even if the type is 'system' or 'message'
+    if (typeof notif.message === 'string' && notif.message.trim().startsWith('{')) {
+      try {
+        const data = JSON.parse(notif.message);
+        if (!data.jobs) throw new Error("Not a job recommendation");
+        
+        return (
+          <div className="recommendation-content">
+            <p style={{ marginBottom: '1rem', color: '#475569' }}>{data.text}</p>
+            <div className="jobs-recommendation-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {data.jobs?.map(job => (
+                <div 
+                  key={job.id} 
+                  className="job-recommendation-card"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    backgroundColor: '#fff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent toggling the message collapse
+                    navigate(`/jobs/${job.id}`);
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: '700', color: '#1e293b', fontSize: '0.95rem' }}>{job.title}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{job.company} • {job.location}</span>
+                  </div>
+                  <ExternalLink size={16} color="#f97316" />
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '1rem', fontStyle: 'italic' }}>{data.footer}</p>
+          </div>
+        );
+      } catch (err) { 
+        // If JSON parsing fails (old messages), try to show the raw text
+        return <p className="message-body">{
+          typeof notif.message === 'string' && notif.message.startsWith('{') 
+          ? "New recommendations are available." 
+          : notif.message
+        }</p>; 
+      }
+    }
+    return <p className="message-body">{notif.message}</p>;
   };
 
   const filteredNotifs = notifications.filter(n => {
@@ -138,7 +194,7 @@ function Messages() {
                   <div className="message-header">
                     <h4>{getTopic(notif)}</h4>
                   </div>
-                  <p className="message-body">{notif.message}</p>
+                  {renderMessageContent(notif)}
                   <div className="message-meta">
                     <span>{new Date(notif.createdAt).toLocaleString()}</span>
                     {notif.type === 'status_update' && <span className="type-badge">Application Update</span>}
@@ -154,4 +210,3 @@ function Messages() {
 }
 
 export default Messages;
-

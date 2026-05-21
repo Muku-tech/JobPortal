@@ -29,6 +29,9 @@ router.get("/kmeans", recommendationController.getKMeansRecommendations);
 // All algorithms at once
 router.get("/all", recommendationController.getAllAlgorithmRecommendations);
 
+// Send recommendations as a message to the user
+router.post("/send-as-message", recommendationController.sendRecommendationAsMessage);
+
 // Track job views for collaborative filtering
 router.post("/track-view", recommendationController.trackJobView);
 

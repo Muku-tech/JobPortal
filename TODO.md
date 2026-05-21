@@ -1,12 +1,23 @@
-# Recommendation System Refactor - TODO
+# TODO - Job Recommendations in Messages
 
-## Steps
+## Plan (approved)
 
-- [x] 1. Create TODO.md and plan
-- [x] 2. Remove recommendation section from Home.jsx
-- [x] 3. Add `getAllAlgorithmRecommendations` endpoint in recommendationController.js
-- [x] 4. Add `/all` route in recommendations.js
-- [x] 5. Enhance algorithms with `matchReasons` (contentBased, collaborative, kMeans)
-- [x] 6. Update Jobs.jsx with powerful recommendation section + algorithm tabs
-- [x] 7. Update Jobs.css with recommendation section styles
-- [x] 8. Verify and test
+1. Add backend endpoint to convert smart recommendations into a `messages` row for the logged-in user.
+   - Create controller method in `server/controllers/messageController.js` (or new controller) that:
+     - calls `/recommendations/smart` logic (or imports `recommendationController.getSmartRecommendations` internals) to get top jobs
+     - creates a `Message` row with `type: 'system'` and `message` text like: “Here are your recommended jobs: A, B, C”
+     - sets `sender_id` to a safe value (system/admin) or reuse recipient as sender.
+     - sets `application_id: null`.
+   - Add route in `server/routes/messages.js` e.g. `POST /recommendations/to-messages`.
+
+2. Update frontend Dashboard (and optionally Home) to call the new endpoint after recommendations are fetched.
+   - On mount, Dashboard already calls `api.get('/recommendations/smart')` and stores top 3.
+   - Add `useEffect` to post them into messages once (use a ref/flag to avoid duplicates).
+
+3. Update `/messages` UI if needed.
+   - Ensure `client/src/pages/Messages.jsx` displays system messages (it already uses `notif.message`).
+   - If backend includes `sender.name` as null for system, ensure `getTopic` shows “System”.
+
+4. Test
+   - Run backend + frontend.
+   - Login as jobseeker, open Dashboard/Home, verify messages appear under `/messages` and unread count increments.

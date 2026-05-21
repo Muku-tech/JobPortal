@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import api from "../services/api";
+import { useToast } from '../context/ToastContext';
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Jobs.css";
@@ -43,6 +44,8 @@ export default function Jobs() {
   const [recommendations, setRecommendations] = useState([]);
   const [recLoading, setRecLoading] = useState(true);
   const [activeRecTab, setActiveRecTab] = useState("smart");
+  const { toast } = useToast();
+  const hasSentMessage = useRef(false);
   const [allRecData, setAllRecData] = useState(null);
 
   const recTabs = [
@@ -61,6 +64,22 @@ export default function Jobs() {
           const res = await api.get("/recommendations/all?limit=8");
           setAllRecData(res.data);
           setRecommendations(res.data.smart?.jobs || []);
+
+          // Only send for Job Seekers once per session
+          if (!hasSentMessage.current && user.role === 'jobseeker') {
+            try {
+              await api.post("/recommendations/send-as-message?limit=5"); // This is the call that sends the message
+              hasSentMessage.current = true;
+            } catch (msgErr) {
+              console.error("Failed to send recommendations to messages:", msgErr);
+              // Safely extract error message to prevent UI crash
+              const serverData = msgErr?.response?.data || {};
+              const errorMessage = serverData?.message || serverData?.error || msgErr?.message || "Failed to send job recommendations.";
+              if (toast && typeof toast.error === 'function') {
+                toast.error(errorMessage);
+              }
+            }
+          }
         } else {
           const res = await publicApi.get("/recommendations/guest?limit=8");
           setRecommendations(res.data.jobs || []);
@@ -402,4 +421,3 @@ export default function Jobs() {
     </div>
   );
 }
-

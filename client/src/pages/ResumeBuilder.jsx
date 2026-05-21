@@ -117,7 +117,8 @@ const addEntry = (sectionKey) => {
       await html2pdf().set(opt).from(resumeRef.current).save();
       toast.success('Resume downloaded!');
     } catch (err) {
-      toast.error('Failed to generate PDF');
+      console.error("PDF generation error:", err);
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to generate PDF');
     } finally {
       setLoading(false);
     }

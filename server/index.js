@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
 const { connectDB } = require("./config/database");
 const routes = require("./routes");
@@ -12,14 +15,31 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Multer configuration for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // Ensure the directory exists
+    const uploadPath = path.join(__dirname, "public/resumes");
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const upload = multer({ storage: storage });
+app.use(upload.single("resumePdf")); // Middleware to handle single file upload with field name 'resumePdf'
+
 // Routes
 const messagesRoutes = require("./routes/messages");
 app.use("/api", routes);
 app.use("/api/messages", messagesRoutes);
 
-// Serve static logos
-const path = require("path");
+// Serve static files (logos and resumes)
 app.use("/logos", express.static(path.join(__dirname, "public/logos")));
+app.use("/resumes", express.static(path.join(__dirname, "public/resumes")));
 
 // Health check
 app.get("/health", (req, res) => {

@@ -70,10 +70,12 @@ export default function Dashboard() {
         applied: appsData.length,
         interviews: appsData.filter(a => a.status === 'considering' && a.interview_date).length
       });
-      toast.success('Applications updated!');
+      if (toast && toast.success) toast.success('Applications updated!');
     } catch (err) {
-      console.error("Applications fetch error:", err.response?.data?.message || err.message);
-      toast.error('Failed to refresh applications');
+      const message = err?.response?.data?.message || err?.message || 'Failed to refresh applications';
+      console.error("Applications fetch error:", message, err);
+      // toast context may be undefined during boot / provider mismatch
+      if (toast?.error) toast.error(message);
     } finally {
       setIsRefreshing(false);
     }
@@ -92,7 +94,8 @@ export default function Dashboard() {
       await fetchApplications();
       
     } catch (err) {
-      console.error("Dashboard fetch error:", err.response?.data?.message || err.message);
+      const message = err?.response?.data?.message || err?.message || 'Failed to load dashboard';
+      console.error("Dashboard fetch error:", message, err);
     } finally {
       setLoading(false);
     }

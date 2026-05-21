@@ -28,6 +28,7 @@ export default function JobDetails() {
   const [resumes, setResumes] = useState([])
   const [loadingResumes, setLoadingResumes] = useState(false)
   const [selectedResumeId, setSelectedResumeId] = useState(null)
+  const [resumePdfFile, setResumePdfFile] = useState(null) // New state for PDF file
 
   useEffect(() => {
     fetchJob()
@@ -103,19 +104,43 @@ export default function JobDetails() {
     setApplying(true)
 
     try {
-      await api.post('/applications', {
-        jobId: Number(id),
-        coverLetter,
-        resumeId: selectedResumeId
-      })
+      const formData = new FormData();
+      formData.append('jobId', Number(id));
+      formData.append('coverLetter', coverLetter);
+      
+      if (selectedResumeId) {
+        formData.append('resumeId', selectedResumeId);
+      }
+      if (resumePdfFile) {
+        formData.append('resumePdf', resumePdfFile); // Append the PDF file
+      }
+
+      const resp = await api.post('/applications', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Important for file uploads
+        },
+      });
+
       setApplied(true)
-      toast.success('Application submitted with resume! Check Dashboard.')
+      toast?.success?.('Application submitted with resume! Check Dashboard.')
+      console.log('Application create response:', resp?.data);
       navigate('/dashboard')
     } catch (error) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to apply')
+      console.error("Application submission error:", error);
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to apply'
+
+      if (toast?.error) toast.error(msg)
+      else console.error(msg)
     } finally {
       setApplying(false)
     }
+  }
+
+  const handleResumePdfChange = (e) => {
+    setResumePdfFile(e.target.files[0]);
   }
 
   // Skills parser
@@ -246,7 +271,7 @@ export default function JobDetails() {
                   </div>
                 ) : (
                   <select 
-                    value={selectedResumeId || ''} 
+                    value={selectedResumeId || ''}
                     onChange={(e) => setSelectedResumeId(e.target.value ? Number(e.target.value) : null)}
                     className="resume-select"
                     required
@@ -259,6 +284,16 @@ export default function JobDetails() {
                     ))}
                   </select>
                 )}
+                <small className="resume-attach-hint">Your selected resume will be linked to this application.</small>
+
+                <label>Attach Resume PDF (Optional)</label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleResumePdfChange}
+                  className="resume-pdf-input"
+                />
+                <small className="resume-attach-hint">Upload a PDF version of your resume.</small>
                 <label>Cover Letter (Optional)</label>
                 <textarea
                   value={coverLetter}
@@ -269,7 +304,7 @@ export default function JobDetails() {
                 <motion.button 
                   type="submit" 
                   className="btn btn-primary"
-                  disabled={applying || !selectedResumeId}
+                  disabled={applying || (!selectedResumeId && !resumePdfFile)} // Disable if no resume selected or PDF attached
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -380,4 +415,3 @@ export default function JobDetails() {
     </div>
   )
 }
-

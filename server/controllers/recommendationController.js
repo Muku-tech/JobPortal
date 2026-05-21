@@ -1,4 +1,11 @@
-const { Job, User, Application, JobView } = require("../models");
+const {
+  Job,
+  User,
+  Application,
+  JobView,
+  Message,
+  Notification,
+} = require("../models");
 const contentBasedFiltering = require("../services/algorithms/contentBasedFiltering");
 const collaborativeFiltering = require("../services/algorithms/collaborativeFiltering");
 const kMeansClustering = require("../services/algorithms/kMeansClustering");
@@ -121,11 +128,97 @@ function blendRecommendations(sources, limit, userSkills = []) {
   // Re-attach scores
   const scoreLookup = new Map(sorted.map((s) => [s.job.id, s.score]));
 
-  return diverse.slice(0, limit).map((job) => ({
-    ...job,
-    recommendationScore: Math.round((scoreLookup.get(job.id) || 0) * 100) / 100,
-  }));
+  return diverse.slice(0, limit).map((job) => {
+    // Ensure we are working with a plain object, not a Sequelize instance
+    const plainJob = typeof job.toJSON === "function" ? job.toJSON() : job;
+    return {
+      ...plainJob,
+      recommendationScore:
+        Math.round((scoreLookup.get(job.id) || 0) * 100) / 100,
+    };
+  });
 }
+
+// Internal helper to get smart recommendations without Express context
+const _getSmartRecommendationsInternal = async (userId, limit) => {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new Error("User not found for recommendations");
+  }
+
+  const stats = await getSystemStats(userId);
+
+  let recommendations = [];
+  let algorithmUsed = "";
+  let stage = 0;
+
+  // STAGE 1: Cold Start - No user interactions yet
+  if (stats.userInteractions === 0) {
+    stage = 1;
+    algorithmUsed = "content-based";
+    recommendations = await contentBasedFiltering.getRecommendations(
+      userId,
+      limit,
+    );
+  }
+  // STAGE 2: Few interactions - blend K-Means + Content-Based
+  else if (stats.totalUsers < 10 || stats.userInteractions < 5) {
+    stage = 2;
+    algorithmUsed = "kmeans+content";
+    const kmeansJobs = await kMeansClustering.getRecommendations(userId, limit);
+    const contentJobs = await contentBasedFiltering.getRecommendations(
+      userId,
+      limit,
+    );
+    recommendations = blendRecommendations(
+      [
+        { jobs: kmeansJobs, weight: 0.6 },
+        { jobs: contentJobs, weight: 0.4 },
+      ],
+      limit,
+      user.skills || [],
+    );
+  }
+  // STAGE 3: Enough data - blend Collaborative + K-Means + Content-Based
+  else {
+    stage = 3;
+    algorithmUsed = "hybrid";
+    const collabJobs = await collaborativeFiltering.getRecommendations(
+      userId,
+      limit,
+    );
+    const kmeansJobs = await kMeansClustering.getRecommendations(userId, limit);
+    const contentJobs = await contentBasedFiltering.getRecommendations(
+      userId,
+      limit,
+    );
+    recommendations = blendRecommendations(
+      [
+        { jobs: collabJobs, weight: 0.5 },
+        { jobs: kmeansJobs, weight: 0.3 },
+        { jobs: contentJobs, weight: 0.2 },
+      ],
+      limit,
+      user.skills || [],
+    );
+  }
+
+  // FALLBACK: If no recommendations found, get popular jobs
+  if (recommendations.length === 0) {
+    const popularJobs = await Job.findAll({
+      limit: limit,
+      order: [["createdAt", "DESC"]], // Simple recent fallback
+    });
+    recommendations = popularJobs.map((j) => ({
+      ...j.toJSON(),
+      recommendationType: "popular",
+      recommendationScore: 0.5,
+    }));
+    algorithmUsed = algorithmUsed || "fallback-popular";
+  }
+
+  return { recommendations, user, stats, algorithmUsed, stage };
+};
 
 // Smart hybrid recommendation system
 // Blends algorithms based on data availability with fallback enrichment
@@ -134,76 +227,10 @@ exports.getSmartRecommendations = async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
 
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const { recommendations, user, stats, algorithmUsed, stage } =
+      await _getSmartRecommendationsInternal(userId, limit);
 
-    const stats = await getSystemStats(userId);
-
-    let recommendations = [];
-    let algorithmUsed = "";
-    let stage = 0;
-
-    // STAGE 1: Cold Start - No user interactions yet
-    if (stats.userInteractions === 0) {
-      stage = 1;
-      algorithmUsed = "content-based";
-      console.log("Stage 1: Content-Based (Cold Start)");
-      recommendations = await contentBasedFiltering.getRecommendations(
-        userId,
-        limit,
-      );
-    }
-    // STAGE 2: Few interactions - blend K-Means + Content-Based
-    else if (stats.totalUsers < 10 || stats.userInteractions < 5) {
-      stage = 2;
-      algorithmUsed = "kmeans+content";
-      console.log("Stage 2: K-Means + Content-Based");
-      const kmeansJobs = await kMeansClustering.getRecommendations(
-        userId,
-        limit,
-      );
-      const contentJobs = await contentBasedFiltering.getRecommendations(
-        userId,
-        limit,
-      );
-      recommendations = blendRecommendations(
-        [
-          { jobs: kmeansJobs, weight: 0.6 },
-          { jobs: contentJobs, weight: 0.4 },
-        ],
-        limit,
-        user.skills || [],
-      );
-    }
-    // STAGE 3: Enough data - blend Collaborative + K-Means + Content-Based
-    else {
-      stage = 3;
-      algorithmUsed = "hybrid";
-      console.log("Stage 3: Hybrid (Collaborative + K-Means + Content-Based)");
-      const collabJobs = await collaborativeFiltering.getRecommendations(
-        userId,
-        limit,
-      );
-      const kmeansJobs = await kMeansClustering.getRecommendations(
-        userId,
-        limit,
-      );
-      const contentJobs = await contentBasedFiltering.getRecommendations(
-        userId,
-        limit,
-      );
-      recommendations = blendRecommendations(
-        [
-          { jobs: collabJobs, weight: 0.5 },
-          { jobs: kmeansJobs, weight: 0.3 },
-          { jobs: contentJobs, weight: 0.2 },
-        ],
-        limit,
-        user.skills || [],
-      );
-    }
+    console.log(`Stage ${stage}: ${algorithmUsed}`);
 
     res.json({
       jobs: recommendations,
@@ -383,6 +410,106 @@ exports.getRecommendationStats = async (req, res) => {
   } catch (error) {
     console.error("Error getting recommendation stats:", error);
     res.status(500).json({ message: "Error getting stats" });
+  }
+};
+
+// Send personalized job recommendations as a message to the user
+exports.sendRecommendationAsMessage = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const limit = parseInt(req.query.limit) || 5;
+
+    const { recommendations, user, algorithmUsed, stage } =
+      await _getSmartRecommendationsInternal(userId, limit);
+
+    if (recommendations.length === 0) {
+      // If no recommendations are found, return a 200 with a message, not 404,
+      // as it's not an error, just no recommendations at this time.
+      return res.json({
+        message: "No recommendations found for this user at this time.",
+        count: 0,
+        jobs: [],
+        algorithm: algorithmUsed,
+        stage,
+      });
+    }
+
+    // Create structured data for the UI to render clickable elements
+    const messageData = {
+      title: "Your Personalized Job Recommendations",
+      text: `Hi ${user.name}! We found ${recommendations.length} jobs that match your profile based on your skills and preferences.`,
+      jobs: recommendations.map((job) => ({
+        id: job.id,
+        title: job.title,
+        company: job.company_name,
+        location: job.location || "Nepal",
+        job_type: job.job_type || "Full-time",
+      })),
+      algorithm: algorithmUsed,
+      footer: `Generated using the ${algorithmUsed} matching system.`,
+    };
+
+    // Use the dedicated system user (ID 1) as the sender
+    // We ensure this user exists via seed.js
+    // NOTE: UI displays sender name by joining User.sender_id.
+    // Keep sender name stable as "System".
+    const senderId = 1;
+
+    console.log(
+      `Attempting to create message: senderId=${senderId}, recipient_id=${userId}`,
+    );
+
+    // Send as a system message to the user
+    // NOTE: Message.type in your DB is ENUM('system','user')
+    const message = await Message.create({
+      sender_id: senderId,
+      recipient_id: userId,
+      message: JSON.stringify(messageData),
+      type: "system",
+      read: false,
+    });
+
+    // Also create a notification (best-effort)
+    // If notifications table/DB isn't present, we don't block recommendations.
+    try {
+      await Notification.create({
+        user_id: userId,
+        from_user_id: senderId,
+        title: "New Job Recommendations",
+        message: `We found ${recommendations.length} new jobs that match your profile!`,
+        // Notification.type ENUM does NOT include 'message'
+        // Use a safe default that exists in DB model.
+        type: "system",
+        read: false,
+      });
+    } catch (nErr) {
+      console.warn(
+        "Notification create failed (non-fatal):",
+        nErr?.message || nErr,
+      );
+    }
+
+    console.log(
+      `✅ Sent ${recommendations.length} job recommendations as message to user ${userId} using ${algorithmUsed} (Stage ${stage})`,
+    );
+
+    res.json({
+      message: "Recommendations sent as message",
+      count: recommendations.length,
+      jobs: recommendations,
+      algorithm: algorithmUsed,
+      stage,
+    });
+  } catch (error) {
+    console.error("❌ Error sending recommendation as message:", error);
+    // Log the full error object for debugging
+    console.error("Error details:", error?.message, error?.stack);
+    res.status(500).json({
+      message: "Error sending recommendations",
+      error: error?.message,
+      // Helps frontend/debugging without needing server logs
+      name: error?.name,
+    });
   }
 };
 

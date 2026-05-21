@@ -3,8 +3,8 @@ const { Application, Job, User, Message, Resume } = require("../models");
 exports.applyForJob = async (req, res) => {
   try {
     const { jobId, coverLetter, resumeId } = req.body;
-    const userId = req.user.id;
-    const job = await Job.findByPk(jobId);
+    const userId = req.user.id; // Assuming req.user is populated by auth middleware
+    const job = await Job.findByPk(jobId ? Number(jobId) : null);
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
@@ -18,21 +18,38 @@ exports.applyForJob = async (req, res) => {
       finalResumeId = defaultResume?.id;
     }
 
+    // resume_pdf_url column may not exist in DB; keep upload path in case
+    // you want to persist it later.
+    // (applyForJob currently stores only resume_id)
+    let resumePdfUrl = null;
+    if (req.file) {
+      resumePdfUrl = `/resumes/${req.file.filename}`;
+    }
+
+    // Avoid selecting non-existent columns during existence check
     const existingApplication = await Application.findOne({
       where: { job_id: jobId, user_id: userId },
+      // older DB schema may not include resume_pdf_url
     });
     if (existingApplication) {
       return res
         .status(400)
         .json({ message: "You have already applied for this job" });
     }
-    const application = await Application.create({
-      job_id: jobId,
-      user_id: userId,
-      cover_letter: coverLetter,
-      resume_id: finalResumeId,
-      status: "applied",
-    });
+    // Some DB schemas may not include applications.resume_pdf_url.
+    // Explicitly exclude it from the insert.
+    const application = await Application.create(
+      {
+        job_id: jobId,
+        user_id: userId,
+        cover_letter: coverLetter,
+        resume_id: finalResumeId,
+        status: "applied",
+      },
+      {
+        fields: ["job_id", "user_id", "cover_letter", "resume_id", "status"],
+      },
+    );
     res.status(201).json({
       message: "Application submitted successfully",
       application,
@@ -60,8 +77,14 @@ exports.getMyApplications = async (req, res) => {
             },
           ],
         },
+        {
+          model: Resume,
+          as: "resume",
+        },
       ],
       order: [["createdAt", "DESC"]],
+      // Avoid selecting non-existent columns in some DB schemas.
+      // (e.g., resume_pdf_url may not exist)
     });
     res.json(applications);
   } catch (error) {
@@ -124,6 +147,7 @@ exports.getJobApplications = async (req, res) => {
             "cluster_id",
             "experience_level",
           ],
+          include: [{ model: Resume, as: "resumes" }], // Include structured resumes if needed
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -144,6 +168,7 @@ exports.getJobApplications = async (req, res) => {
       const total = jobSkills.length || 1;
       appJson.matchScore = Math.round((matched / total) * 100);
       appJson.clusterMatch = appJson.applicant?.cluster_id;
+      // The resume_pdf_url is already part of appJson from the Application model
       return appJson;
     });
 
