@@ -1,10 +1,5 @@
 const { Job, User, Application, JobView } = require("../../models");
 
-/**
- * K-Means Clustering Algorithm
- * Clusters jobs and users to recommend jobs from matching clusters
- */
-
 class KMeansClustering {
   constructor(k = 5) {
     this.k = k;
@@ -59,9 +54,8 @@ class KMeansClustering {
   }
 
   userToVector(user, categories) {
-    // User Vector based on: Skills, Experience, Job Type, Location
     const skillsScore = (user.skills || []).length / 20; // Normalized
-    
+
     return [
       skillsScore,
       this.encodeExperience(user.experience_level || "mid"),
@@ -173,22 +167,17 @@ class KMeansClustering {
     }
   }
 
-  /**
-   * Calculate skill overlap ratio between user and job
-   */
   calculateSkillOverlapScore(userSkills, jobSkills) {
     if (!userSkills || userSkills.length === 0) return 0.3;
     if (!jobSkills || jobSkills.length === 0) return 0.3;
-    const lowerUser = userSkills.map((s) => s.toLowerCase());
-    const matched = jobSkills.filter((s) =>
-      lowerUser.includes(s.toLowerCase()),
-    ).length;
+    const lowerUser = userSkills.map((s) => s.toLowerCase().trim());
+    const matched = jobSkills.filter((s) => {
+      const js = s.toLowerCase().trim();
+      return lowerUser.some((us) => us.includes(js) || js.includes(us));
+    }).length;
     return Math.min(1, matched / Math.max(1, jobSkills.length));
   }
 
-  /**
-   * Calculate category relevance score based on user's skills
-   */
   calculateCategoryRelevance(userSkills, jobCategory) {
     if (!userSkills || userSkills.length === 0 || !jobCategory) return 0.3;
 
@@ -397,9 +386,6 @@ class KMeansClustering {
     return Math.min(1, 0.3 + (matched / Math.max(1, keywords.length)) * 0.7);
   }
 
-  /**
-   * Enforce diversity: round-robin pick from different categories
-   */
   enforceDiversity(jobs, userSkills, limit) {
     if (!userSkills || userSkills.length <= 1) return jobs.slice(0, limit);
 
@@ -430,14 +416,21 @@ class KMeansClustering {
     return result;
   }
 
-  /**
-   * Get job recommendations using K-Means clustering with continuous scoring
-   */
   async getRecommendations(userId, limit = 10) {
     try {
       const user = await User.findByPk(userId);
       if (!user) return [];
-      const userSkills = user.skills || [];
+      let userSkills = user.skills || [];
+      if (typeof userSkills === "string") {
+        try {
+          userSkills = JSON.parse(userSkills);
+        } catch (e) {
+          userSkills = userSkills
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      }
       const userClusterId = user.cluster_id ?? 0;
 
       const clusterUsers = await User.findAll({
@@ -486,7 +479,6 @@ class KMeansClustering {
         where: { id: candidateJobIds, status: "active" },
       });
 
-      // Score each job with continuous skill and category relevance
       const scoredJobs = candidateJobs.map((job) => {
         const clusterScore = jobScores[job.id] || 0;
         const skillScore = this.calculateSkillOverlapScore(
@@ -498,7 +490,6 @@ class KMeansClustering {
           job.category,
         );
 
-        // Combined: 40% cluster popularity, 40% skill overlap, 20% category fit
         const combinedScore =
           clusterScore * 0.4 +
           skillScore * 100 * 0.4 +
@@ -516,7 +507,6 @@ class KMeansClustering {
 
       scoredJobs.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-      // Add match reasons for explainability
       scoredJobs.forEach((job) => {
         const reasons = [];
         if (job._skillScore > 0.5) {
@@ -534,7 +524,6 @@ class KMeansClustering {
         job.matchReasons = reasons;
       });
 
-      // Enforce diversity across categories
       const diverseJobs = this.enforceDiversity(scoredJobs, userSkills, limit);
 
       return diverseJobs.slice(0, limit);

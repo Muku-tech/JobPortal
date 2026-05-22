@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import '../styles/EmployerApplications.css' // Reuse ATS styles
 
 const ApplicationMessages = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
   const [sendingMessage, setSendingMessage] = useState(false)
@@ -44,21 +46,12 @@ const ApplicationMessages = () => {
 
     try {
       setSendingMessage(true)
-      // Note: Would need POST /applications/:id/messages endpoint
-      // For now, simulate with optimistic update
-      const newMessage = {
-        id: Date.now(),
-        application_id: id,
-        sender_id: 'current_user',
-        recipient_id: 'applicant',
-        message: messageText,
-        type: 'user',
-        read: false,
-        createdAt: new Date().toISOString()
-      }
-      setMessages(prev => [...prev, newMessage])
+      const response = await api.post(`/applications/${id}/messages`, { message: messageText });
+      // Optimistic update with actual message from server
+      setMessages(prev => [...prev, response.data.message]);
       e.target.reset()
-      fetchMessages() // Sync with server
+      // No need to fetch all messages again, as the server returns the new message
+      // fetchMessages(); 
     } catch (error) {
       console.error('Send error:', error)
     } finally {
@@ -88,7 +81,7 @@ const ApplicationMessages = () => {
           messages.map(msg => (
             <div 
               key={msg.id} 
-              className={`message ${msg.type} ${msg.sender_id === 'current_user' ? 'own' : ''}`}
+              className={`message ${msg.type} ${msg.sender_id === user?.id ? 'own' : ''}`}
             >
               <div className="message-content">
                 <p>{msg.message}</p>
@@ -117,4 +110,3 @@ const ApplicationMessages = () => {
 }
 
 export default ApplicationMessages
-

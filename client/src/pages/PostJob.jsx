@@ -16,7 +16,7 @@ function PostJob() {
     company_name: '',
     location: '',
     job_type: 'full-time',
-    status: 'draft',
+    status: 'active',
     category: '',
     salary_min: '',
     salary_max: '',
@@ -93,10 +93,20 @@ function PostJob() {
         salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
         salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
         vacancy: parseInt(formData.vacancy),
-        required_skills: formData.required_skills.split(',').map(s => s.trim()).filter(s => s)
+        required_skills: typeof formData.required_skills === 'string' 
+          ? formData.required_skills.split(',').map(s => s.trim()).filter(s => s)
+          : formData.required_skills,
+        status: 'active' // Ensure it is published as active
       }
-      await api.post('/jobs', jobData)
-      setSuccess('Job vacancy posted successfully!')
+
+      if (formData.id) {
+        await api.put(`/jobs/${formData.id}`, jobData)
+        setSuccess('Job vacancy updated successfully!')
+      } else {
+        await api.post('/jobs', jobData)
+        setSuccess('Job vacancy posted successfully!')
+      }
+
       setTimeout(() => navigate('/employer'), 2000)
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to post job')

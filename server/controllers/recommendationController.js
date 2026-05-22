@@ -10,7 +10,6 @@ const contentBasedFiltering = require("../services/algorithms/contentBasedFilter
 const collaborativeFiltering = require("../services/algorithms/collaborativeFiltering");
 const kMeansClustering = require("../services/algorithms/kMeansClustering");
 
-// Helper function to get system stats
 const getSystemStats = async (userId) => {
   const totalUsers = await User.count();
   let totalJobViews = 0;
@@ -46,18 +45,39 @@ const getSystemStats = async (userId) => {
   };
 };
 
-// Calculate skill overlap ratio (0-1)
-function calcSkillOverlap(userSkills, jobSkills) {
+function calcSkillOverlap(userSkills, jobSkillsRaw) {
   if (!userSkills || userSkills.length === 0) return 0;
-  if (!jobSkills || jobSkills.length === 0) return 0;
-  const lowerUser = userSkills.map((s) => s.toLowerCase());
-  const matched = jobSkills.filter((s) =>
-    lowerUser.includes(s.toLowerCase()),
-  ).length;
+
+  let jobSkills = jobSkillsRaw || [];
+  if (typeof jobSkills === "string") {
+    try {
+      jobSkills = JSON.parse(jobSkills);
+    } catch (e) {
+      jobSkills = jobSkills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+  }
+  if (!Array.isArray(jobSkills) || jobSkills.length === 0) return 0;
+
+  const lowerUser = userSkills.map((s) => s.toLowerCase().trim());
+  const matched = jobSkills.filter((s) => {
+    const js = s.toLowerCase().trim();
+    return lowerUser.some((us) => us.includes(js) || js.includes(us));
+  }).length;
   return Math.min(1, matched / Math.max(1, jobSkills.length));
 }
 
-// Enforce diversity: round-robin pick from different categories
+function calcLocationScore(preferredLocation, jobLocation) {
+  if (!preferredLocation || !jobLocation) return 0;
+  const p = preferredLocation.toLowerCase().trim();
+  const l = jobLocation.toLowerCase().trim();
+  if (p === l) return 1;
+  if (l.includes(p) || p.includes(l)) return 0.8;
+  return 0;
+}
+
 function enforceDiversity(jobs, limit) {
   const categoryGroups = new Map();
   jobs.forEach((job) => {
@@ -85,60 +105,63 @@ function enforceDiversity(jobs, limit) {
   return result;
 }
 
-// Blend recommendations from multiple algorithms
-// sources = [{ jobs: [...], weight: 0.5 }, ...]
-function blendRecommendations(sources, limit, userSkills = []) {
+function blendRecommendations(
+  sources,
+  limit,
+  userSkills = [],
+  preferredLocation = "",
+) {
   const scoreMap = new Map();
 
   sources.forEach(({ jobs, weight }) => {
     if (!Array.isArray(jobs)) return;
+    const sourceCount = jobs.length || limit;
     jobs.forEach((job, idx) => {
       const id = job.id;
-      const rankScore = (limit - idx) / limit; // 1.0 for first, decreasing
+      const rankScore = (sourceCount - idx) / sourceCount;
       const algoScore = job.recommendationScore || 0;
       const baseScore = (algoScore * 0.5 + rankScore * 0.5) * weight;
 
-      // Continuous skill bonus: more overlapping skills = higher score
       const skillOverlap = calcSkillOverlap(
         userSkills,
         job.required_skills || [],
       );
-      // Blend base score with skill overlap (max 30% boost for full overlap)
-      const combined = baseScore * (1 + skillOverlap * 0.3);
+      const locScore = calcLocationScore(preferredLocation, job.location);
+      const combined = baseScore * (1 + skillOverlap * 0.4 + locScore * 1.5);
 
       if (!scoreMap.has(id)) {
         scoreMap.set(id, { job, score: combined });
       } else {
-        scoreMap.get(id).score += combined;
+        const entry = scoreMap.get(id);
+        entry.score += combined;
+        if (job.matchReasons) {
+          const merged = new Set([
+            ...(entry.job.matchReasons || []),
+            ...job.matchReasons,
+          ]);
+          entry.job.matchReasons = Array.from(merged);
+        }
       }
     });
   });
 
-  // Sort by score
   const sorted = Array.from(scoreMap.values()).sort(
     (a, b) => b.score - a.score,
   );
 
-  // Normalize scores to a 0-1 scale so top results feel like "High Matches"
-  // We use 1.0 as a minimum baseline to prevent very low scores (like 0.1)
-  // from being scaled up to 100% when the profile is empty.
   const rawMax = sorted.length > 0 ? sorted[0].score : 0;
   const maxBlendedScore = Math.max(rawMax, 0.8);
 
-  // Enforce diversity so jobs from multiple categories appear
   const diverse = enforceDiversity(
     sorted.map((s) => s.job),
     limit,
   );
 
-  // Re-attach scores
-  // We divide by maxBlendedScore and apply a slight boost for top rank
   const scoreLookup = new Map(
     sorted.map((s) => [s.job.id, s.score / maxBlendedScore]),
   );
 
   return diverse.slice(0, limit).map((job) => {
-    // Ensure we are working with a plain object, not a Sequelize instance
     const plainJob = typeof job.toJSON === "function" ? job.toJSON() : job;
     return {
       ...plainJob,
@@ -148,19 +171,20 @@ function blendRecommendations(sources, limit, userSkills = []) {
   });
 }
 
-// Internal helper to get smart recommendations without Express context
 const _getSmartRecommendationsInternal = async (userId, limit) => {
   const user = await User.findByPk(userId);
   if (!user) {
     throw new Error("User not found for recommendations");
   }
 
-  // Data Sanitization: Ensure skills is an array even if DB returns a string
-  if (typeof user.skills === 'string') {
+  if (typeof user.skills === "string") {
     try {
       user.skills = JSON.parse(user.skills);
     } catch (e) {
-      user.skills = user.skills.split(',').map(s => s.trim()).filter(Boolean);
+      user.skills = user.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
   }
   if (!Array.isArray(user.skills)) user.skills = [];
@@ -171,23 +195,29 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
   let algorithmUsed = "";
   let stage = 0;
 
-  // STAGE 1: Cold Start - No user interactions yet
   if (stats.userInteractions === 0) {
     stage = 1;
     algorithmUsed = "content-based";
-    recommendations = await contentBasedFiltering.getRecommendations(
-      userId,
-      limit,
-    );
-  }
-  // STAGE 2: Few interactions - blend K-Means + Content-Based
-  else if (stats.totalUsers < 10 || stats.userInteractions < 5) {
-    stage = 2;
-    algorithmUsed = "kmeans+content";
-    const kmeansJobs = await kMeansClustering.getRecommendations(userId, limit);
     const contentJobs = await contentBasedFiltering.getRecommendations(
       userId,
+      Math.max(limit * 3, 30),
+    );
+    recommendations = blendRecommendations(
+      [{ jobs: contentJobs, weight: 1.0 }],
       limit,
+      user.skills || [],
+      user.preferred_location || "",
+    );
+  } else if (stats.totalUsers < 10 || stats.userInteractions < 5) {
+    stage = 2;
+    algorithmUsed = "kmeans+content";
+    const kmeansJobs = await kMeansClustering.getRecommendations(
+      userId,
+      Math.max(limit * 2, 20),
+    );
+    const contentJobs = await contentBasedFiltering.getRecommendations(
+      userId,
+      Math.max(limit * 2, 20),
     );
     recommendations = blendRecommendations(
       [
@@ -196,20 +226,22 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
       ],
       limit,
       user.skills || [],
+      user.preferred_location || "",
     );
-  }
-  // STAGE 3: Enough data - blend Collaborative + K-Means + Content-Based
-  else {
+  } else {
     stage = 3;
     algorithmUsed = "hybrid";
     const collabJobs = await collaborativeFiltering.getRecommendations(
       userId,
-      limit,
+      Math.max(limit * 2, 20),
     );
-    const kmeansJobs = await kMeansClustering.getRecommendations(userId, limit);
+    const kmeansJobs = await kMeansClustering.getRecommendations(
+      userId,
+      Math.max(limit * 2, 20),
+    );
     const contentJobs = await contentBasedFiltering.getRecommendations(
       userId,
-      limit,
+      Math.max(limit * 2, 20),
     );
     recommendations = blendRecommendations(
       [
@@ -219,14 +251,15 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
       ],
       limit,
       user.skills || [],
+      user.preferred_location || "",
     );
   }
 
-  // FALLBACK: If no recommendations found, get popular jobs
   if (recommendations.length === 0) {
     const popularJobs = await Job.findAll({
+      where: { status: "active" },
       limit: limit,
-      order: [["createdAt", "DESC"]], // Simple recent fallback
+      order: [["createdAt", "DESC"]],
     });
     recommendations = popularJobs.map((j) => ({
       ...j.toJSON(),
@@ -239,8 +272,6 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
   return { recommendations, user, stats, algorithmUsed, stage };
 };
 
-// Smart hybrid recommendation system
-// Blends algorithms based on data availability with fallback enrichment
 exports.getSmartRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -266,7 +297,6 @@ exports.getSmartRecommendations = async (req, res) => {
   }
 };
 
-// Get Content-Based Filtering recommendations specifically
 exports.getContentBasedRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -287,7 +317,6 @@ exports.getContentBasedRecommendations = async (req, res) => {
   }
 };
 
-// Get Collaborative Filtering recommendations specifically
 exports.getCollaborativeRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -308,7 +337,6 @@ exports.getCollaborativeRecommendations = async (req, res) => {
   }
 };
 
-// Get K-Means Clustering recommendations specifically
 exports.getKMeansRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -329,50 +357,95 @@ exports.getKMeansRecommendations = async (req, res) => {
   }
 };
 
-// Track job view for collaborative filtering
 exports.trackJobView = async (req, res) => {
   try {
     const { jobId, duration, action } = req.body;
+    const jobIdNum = parseInt(jobId);
     const userId = req.user.id;
 
-    await JobView.create({
-      user_id: userId,
-      job_id: jobId,
-      view_duration: duration || 0,
-      action_type: action || "view",
+    if (isNaN(jobIdNum))
+      return res.status(400).json({ message: "Invalid jobId" });
+
+    if (action === "save") {
+      const existingSave = await JobView.findOne({
+        where: { user_id: userId, job_id: jobIdNum, action_type: "save" },
+      });
+
+      if (existingSave) {
+        await existingSave.destroy();
+        return res.json({
+          success: true,
+          message: "Job unsaved",
+          saved: false,
+        });
+      } else {
+      }
+    }
+
+    const existingInteraction = await JobView.findOne({
+      where: { user_id: userId, job_id: jobIdNum },
     });
 
-    // Trigger automated recommendation message on significant interaction
-    // Throttled to once every 15 minutes to avoid spamming the user
-    if (action === 'click' || action === 'save' || action === 'apply') {
+    if (existingInteraction) {
+      await existingInteraction.update({
+        action_type: action || existingInteraction.action_type,
+        view_duration:
+          (duration || 0) + (existingInteraction.view_duration || 0),
+      });
+    } else {
+      await JobView.create({
+        user_id: userId,
+        job_id: jobIdNum,
+        view_duration: duration || 0,
+        action_type: action || "view",
+      });
+    }
+
+    if (action === "click" || action === "save" || action === "apply") {
       const lastMessage = await Message.findOne({
-        where: { recipient_id: userId, type: 'system' },
-        order: [['createdAt', 'DESC']]
+        where: { recipient_id: userId, type: "system" },
+        order: [["createdAt", "DESC"]],
       });
 
       const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
       if (!lastMessage || lastMessage.createdAt < fifteenMinsAgo) {
-        // Fire and forget internal call to send message
-        exports.sendRecommendationAsMessage({ user: { id: userId }, query: { limit: 5 } }, { json: () => {} })
-          .catch(err => console.error("Auto-recommendation error:", err.message));
+        const mockRes = {
+          status: function () {
+            return this;
+          },
+          json: function () {
+            return this;
+          },
+        };
+        exports
+          .sendRecommendationAsMessage(
+            { user: { id: userId }, query: { limit: 5 } },
+            mockRes,
+          )
+          .catch((err) =>
+            console.error("Auto-recommendation error:", err.message),
+          );
       }
     }
 
-    res.json({ success: true, message: "Job view tracked" });
+    res.json({
+      success: true,
+      message: action === "save" ? "Job saved" : "Job view tracked",
+      saved: action === "save" ? true : undefined,
+    });
   } catch (error) {
     console.error("Error tracking job view:", error);
     res.status(500).json({ message: "Error tracking view" });
   }
 };
 
-// Guest recommendations - top jobs for non-logged in users
 exports.getGuestRecommendations = async (req, res) => {
   try {
     const { Job, JobView, Application, sequelize } = require("../models");
     const limit = parseInt(req.query.limit) || 8;
 
-    // Get top jobs by views + applications (popularity score)
     const topJobs = await Job.findAll({
+      where: { status: "active" },
       attributes: [
         "id",
         "title",
@@ -410,9 +483,9 @@ exports.getGuestRecommendations = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in guest recommendations:", error);
-    // Fallback to recent jobs
     const { Job } = require("../models");
     const fallback = await Job.findAll({
+      where: { status: "active" },
       limit: 8,
       order: [["createdAt", "DESC"]],
     });
@@ -420,7 +493,6 @@ exports.getGuestRecommendations = async (req, res) => {
   }
 };
 
-// Get recommendation system status
 exports.getRecommendationStats = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -448,7 +520,6 @@ exports.getRecommendationStats = async (req, res) => {
   }
 };
 
-// Send personalized job recommendations as a message to the user
 exports.sendRecommendationAsMessage = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -457,7 +528,6 @@ exports.sendRecommendationAsMessage = async (req, res) => {
     const { recommendations, user, stats, algorithmUsed, stage } =
       await _getSmartRecommendationsInternal(userId, limit);
 
-    // Check for empty profile (Cold Start + No Skills)
     const hasNoSkills = !Array.isArray(user.skills) || user.skills.length === 0;
     if (stage === 1 && hasNoSkills && stats.userInteractions === 0) {
       return res.json({
@@ -467,8 +537,6 @@ exports.sendRecommendationAsMessage = async (req, res) => {
     }
 
     if (recommendations.length === 0) {
-      // If no recommendations are found, return a 200 with a message, not 404,
-      // as it's not an error, just no recommendations at this time.
       return res.json({
         message: "No recommendations found for this user at this time.",
         count: 0,
@@ -478,7 +546,6 @@ exports.sendRecommendationAsMessage = async (req, res) => {
       });
     }
 
-    // Create structured data for the UI to render clickable elements
     const messageData = {
       title: "Your Personalized Job Recommendations",
       text: `Hi ${user.name}! We found ${recommendations.length} jobs that match your profile based on your skills and preferences.`,
@@ -493,13 +560,9 @@ exports.sendRecommendationAsMessage = async (req, res) => {
       footer: `Generated using the ${algorithmUsed} matching system.`,
     };
 
-    // Automated recommendations use the system persona (Nabin Gautam)
-    // We default to ID 1 (System Admin) if the persona user isn't found
     const nabinUser = await User.findOne({ where: { name: "Nabin Gautam" } });
     const senderId = nabinUser ? nabinUser.id : 1;
 
-    // Send as a system message to the user
-    // NOTE: Message.type in your DB is ENUM('system','user')
     const message = await Message.create({
       sender_id: senderId,
       recipient_id: userId,
@@ -508,16 +571,12 @@ exports.sendRecommendationAsMessage = async (req, res) => {
       read: false,
     });
 
-    // Also create a notification (best-effort)
-    // If notifications table/DB isn't present, we don't block recommendations.
     try {
       await Notification.create({
         user_id: userId,
         from_user_id: senderId,
         title: "New Job Recommendations",
         message: `We found ${recommendations.length} new jobs that match your profile!`,
-        // Notification.type ENUM does NOT include 'message'
-        // Use a safe default that exists in DB model.
         type: "system",
         read: false,
       });
@@ -541,12 +600,10 @@ exports.sendRecommendationAsMessage = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error sending recommendation as message:", error);
-    // Log the full error object for debugging
     console.error("Error details:", error?.message, error?.stack);
     res.status(500).json({
       message: "Error sending recommendations",
       error: error?.message,
-      // Helps frontend/debugging without needing server logs
       name: error?.name,
     });
   }
@@ -591,6 +648,7 @@ exports.getAllAlgorithmRecommendations = async (req, res) => {
         ],
         limit,
         user.skills || [],
+        user.preferred_location || "",
       );
     } else {
       stage = 3;
@@ -603,6 +661,7 @@ exports.getAllAlgorithmRecommendations = async (req, res) => {
         ],
         limit,
         user.skills || [],
+        user.preferred_location || "",
       );
     }
 
@@ -644,21 +703,25 @@ exports.getUniqueSkills = async (req, res) => {
     // Fetch all active jobs but only the required_skills column
     const jobs = await Job.findAll({
       attributes: ["required_skills"],
-      where: { status: ["active", "draft"] }, // Include drafts to populate more skills
+      where: { status: "active" },
     });
 
     const skillsSet = new Set();
     jobs.forEach((job) => {
       let skills = job.required_skills;
       // Handle potential string vs array storage in DB
-      if (typeof skills === 'string') {
-        try { skills = JSON.parse(skills); } catch { skills = skills.split(','); }
+      if (typeof skills === "string") {
+        try {
+          skills = JSON.parse(skills);
+        } catch {
+          skills = skills.split(",");
+        }
       }
-      
+
       if (Array.isArray(skills)) {
-        skills.forEach((s) => { 
-          const skillName = typeof s === 'string' ? s : s?.title;
-          if (skillName) skillsSet.add(skillName.trim()); 
+        skills.forEach((s) => {
+          const skillName = typeof s === "string" ? s : s?.title;
+          if (skillName) skillsSet.add(skillName.trim());
         });
       }
     });

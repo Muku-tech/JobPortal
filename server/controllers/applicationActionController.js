@@ -5,7 +5,7 @@ exports.performAction = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, interview_date } = req.body;
-    const userId = req.user.id; // Employer
+    const userId = req.user.id;
 
     const validActions = ["shortlist", "interview", "hire", "reject"];
     if (!validActions.includes(action)) {
@@ -23,12 +23,10 @@ exports.performAction = async (req, res) => {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    // Authorization check
     if (!application.job || application.job.employer_id !== userId) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    // Perform action
     switch (action) {
       case "shortlist":
         application.status = "considering";
@@ -54,7 +52,6 @@ exports.performAction = async (req, res) => {
       return res.status(400).json({ message: "Invalid application data" });
     }
 
-    // Generate and save system message
     const messageContent = generateMessage(action, {
       interviewDate: interview_date,
       jobTitle: application.job?.title || "a job",
@@ -62,7 +59,7 @@ exports.performAction = async (req, res) => {
     });
     await Message.create({
       application_id: id,
-      sender_id: userId, // Employer (system)
+      sender_id: userId,
       recipient_id: application.applicant.id,
       message: messageContent,
       type: "system",

@@ -20,6 +20,7 @@ import EmployerProfile from "./pages/EmployerProfile"
 import EmployerJobApplicants from "./pages/EmployerJobApplicants"
 import ResumeBuilder from "./pages/ResumeBuilder"
 import Messages from "./pages/Messages"
+import ApplicationMessages from "./pages/ApplicationMessages"
 
 // NEW IMPORT
 import { useParams } from "react-router-dom"
@@ -143,6 +144,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRole="employer">
                     <EmployerJobApplicants />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/applications/:id/messages"
+                element={
+                  <ProtectedRoute>
+                    <ApplicationMessages />
                   </ProtectedRoute>
                 }
               />

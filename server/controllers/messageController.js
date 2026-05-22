@@ -58,7 +58,7 @@ const getUnreadPerApp = async (req, res) => {
     const count = await Message.count({
       where: {
         application_id: appId,
-        sender_id: req.user.id,
+        recipient_id: req.user.id,
         read: false,
       },
     });
@@ -106,32 +106,27 @@ const markAllRead = async (req, res) => {
 
 const markAppAllRead = async (req, res) => {
   try {
-    const { appId } = req.params;
-    const updatedRead = await Message.update(
+    const { id: applicationId } = req.params;
+    const userId = req.user.id;
+
+    const updated = await Message.update(
       { read: true },
       {
         where: {
-          application_id: appId,
-          recipient_id: req.user.id,
+          application_id: applicationId,
+          recipient_id: userId,
           read: false,
         },
       },
     );
-    const updatedApplicantRead = await Message.update(
-      { applicant_read: true },
-      {
-        where: {
-          application_id: appId,
-          sender_id: req.user.id,
-          applicant_read: false,
-        },
-      },
+    console.log(
+      `📊 App ${applicationId} for employer ${userId}: ${updated[0]} messages marked as read.`,
     );
     res.json({
-      message: `${updatedRead[0] + updatedApplicantRead[0]} messages marked as read`,
+      message: `${updated[0]} messages marked as read for application ${applicationId}`,
     });
   } catch (error) {
-    console.error("Error updating app messages:", error);
+    console.error("Error updating app messages to read:", error);
     res.status(500).json({ message: "Error updating messages" });
   }
 };
@@ -149,14 +144,14 @@ const sendMessage = async (req, res) => {
       sender_id: req.user.id,
       recipient_id: recipientId,
       message: content,
-      type: "message",
+      type: "user",
     });
 
     const messageToSender = await Message.create({
       sender_id: recipientId,
       recipient_id: req.user.id,
       message: `Message sent to ${recipient.name}`,
-      type: "message",
+      type: "user",
     });
 
     console.log(
@@ -183,7 +178,7 @@ const seedTestMessages = async (req, res) => {
         recipient_id: 1,
         title: "Application Shortlisted",
         message: "Your job application has been shortlisted! Check details.",
-        type: "application_update",
+        type: "system",
         read: false,
       },
       {
@@ -191,7 +186,7 @@ const seedTestMessages = async (req, res) => {
         recipient_id: 1,
         title: "Interview Request",
         message: "Interview scheduled for tomorrow. Please confirm.",
-        type: "interview_request",
+        type: "system",
         read: false,
       },
       {
@@ -199,7 +194,7 @@ const seedTestMessages = async (req, res) => {
         recipient_id: 1,
         title: "New Job Match",
         message: "New React Developer job matched your profile.",
-        type: "message",
+        type: "user",
         read: false,
       },
     ];
@@ -228,6 +223,7 @@ module.exports = {
   getUnreadPerApp,
   markRead,
   markAllRead,
+  markAppAllRead,
   sendMessage,
   seedTestMessages,
 };

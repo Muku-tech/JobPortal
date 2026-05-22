@@ -1,8 +1,5 @@
 const { Job, User, JobView, Application } = require("../../models");
 class CollaborativeFiltering {
-  /**
-   * Build user-item interaction matrix
-   */
   async buildInteractionMatrix(userId) {
     try {
       const views = await JobView.findAll({
@@ -94,17 +91,14 @@ class CollaborativeFiltering {
     }
   }
 
-  /**
-   * Calculate skill overlap ratio between user and job
-   * Returns 0-1 score based on how many job skills match user skills
-   */
   calculateSkillOverlapScore(userSkills, jobSkills) {
     if (!userSkills || userSkills.length === 0) return 0.3; 
     if (!jobSkills || jobSkills.length === 0) return 0.3;
-    const lowerUser = userSkills.map((s) => s.toLowerCase());
-    const matched = jobSkills.filter((s) =>
-      lowerUser.includes(s.toLowerCase()),
-    ).length;
+    const lowerUser = userSkills.map((s) => s.toLowerCase().trim());
+    const matched = jobSkills.filter((s) => {
+      const js = s.toLowerCase().trim();
+      return lowerUser.some((us) => us.includes(js) || js.includes(us));
+    }).length;
   
     return Math.min(1, matched / Math.max(1, jobSkills.length));
   }
@@ -354,16 +348,23 @@ class CollaborativeFiltering {
     return result;
   }
 
-  /**
-   * Get job recommendations based on similar users
-   */
   async getRecommendations(userId, limit = 10) {
     try {
       const userIdStr = userId.toString();
       const interactions = await this.buildInteractionMatrix(userId);
 
       const user = await User.findByPk(userId);
-      const userSkills = user?.skills || [];
+      let userSkills = user?.skills || [];
+      if (typeof userSkills === 'string') {
+        try {
+          userSkills = JSON.parse(userSkills);
+        } catch (e) {
+          userSkills = userSkills
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      }
 
       const userJobs = new Set(Object.keys(interactions[userIdStr] || {}));
       const similarUsers = await this.findSimilarUsers(userId, 20);
@@ -399,13 +400,11 @@ class CollaborativeFiltering {
         }
       }
 
-      // Fetch candidate jobs
       const candidateJobIds = Object.keys(jobScores).map((id) => parseInt(id));
       const candidateJobs = await Job.findAll({
         where: { id: candidateJobIds, status: "active" },
       });
 
-      // Score each job with skill overlap and category relevance
       const scoredJobs = candidateJobs.map((job) => {
         const rawScore = jobScores[job.id]?.score || 0;
         const skillScore = this.calculateSkillOverlapScore(
@@ -417,8 +416,6 @@ class CollaborativeFiltering {
           job.category,
         );
 
-        // Weighted combined score:
-        // 40% collaborative popularity, 40% skill overlap, 20% category relevance
         const combinedScore =
           rawScore * 0.4 + skillScore * 100 * 0.4 + categoryScore * 100 * 0.2;
 
@@ -431,10 +428,8 @@ class CollaborativeFiltering {
         };
       });
 
-      // Sort by combined score
       scoredJobs.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-      // Add match reasons for explainability
       scoredJobs.forEach((job) => {
         const reasons = [];
         if (job._skillScore > 0.5) {
@@ -454,7 +449,6 @@ class CollaborativeFiltering {
         job.matchReasons = reasons;
       });
 
-      // Enforce diversity across categories
       const diverseJobs = this.enforceDiversity(scoredJobs, userSkills, limit);
 
       return diverseJobs.slice(0, limit);

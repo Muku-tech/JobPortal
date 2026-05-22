@@ -11,7 +11,8 @@ import '../styles/JobDetails.css'
 export default function JobDetails() {
   const { id } = useParams()
   const { user } = useAuth()
-  const { toast } = useToast()
+  const toastContext = useToast()
+  const toast = toastContext?.toast || toastContext
   const { jobDetailsTheme, setJobDetailsTheme } = useTheme()
   const navigate = useNavigate()
 
@@ -30,6 +31,7 @@ export default function JobDetails() {
   const [selectedResumeId, setSelectedResumeId] = useState(null)
   const [resumePdfFile, setResumePdfFile] = useState(null) // New state for PDF file
 
+  const [isSaved, setIsSaved] = useState(false)
   useEffect(() => {
     fetchJob()
   }, [id, user])
@@ -47,8 +49,21 @@ export default function JobDetails() {
   const fetchJob = async () => {
     try {
       setLoading(true)
-      const response = await api.get(`/jobs/${id}`)
+      const response = await api.get(`/jobs/${id}?userId=${user?.id}`) // Pass userId to get isSaved status
       setJob(response.data)
+      setIsSaved(response.data.isSaved || false)
+
+      if (user) {
+        try {
+          // Check applied
+          const appResponse = await api.get(`/applications/user`)
+          const hasApplied = appResponse.data.some(app => app.job_id === Number(id))
+          setApplied(hasApplied)
+        } catch (appError) {
+          console.error('Error checking applications:', appError)
+          // Silently fail - don't block job display
+        }
+      }
     } catch (jobError) {
       console.error('Error fetching job details:', jobError)
       if (jobError.response?.status === 404) {
@@ -59,18 +74,6 @@ export default function JobDetails() {
       toast.error(jobError.response?.data?.message || 'Failed to load job details')
       setLoading(false)
       return
-    }
-
-    if (user) {
-      try {
-        // Check applied
-        const appResponse = await api.get(`/applications/user`)
-        const hasApplied = appResponse.data.some(app => app.job_id === Number(id))
-        setApplied(hasApplied)
-      } catch (appError) {
-        console.error('Error checking applications:', appError)
-        // Silently fail - don't block job display
-      }
     }
     setLoading(false)
   }
@@ -115,11 +118,7 @@ export default function JobDetails() {
         formData.append('resumePdf', resumePdfFile); // Append the PDF file
       }
 
-      const resp = await api.post('/applications', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data', // Important for file uploads
-        },
-      });
+      const resp = await api.post('/applications', formData);
 
       setApplied(true)
       toast?.success?.('Application submitted with resume! Check Dashboard.')
@@ -142,6 +141,26 @@ export default function JobDetails() {
   const handleResumePdfChange = (e) => {
     setResumePdfFile(e.target.files[0]);
   }
+
+  const handleSaveJob = async () => {
+    if (!user) {
+      toast?.error?.("Please login to save jobs");
+      return;
+    }
+
+    try {
+      const res = await api.post("/recommendations/track-view", {
+        jobId: job.id,
+        action: "save",
+      });
+      
+      setIsSaved(res.data.saved ?? true); // Fallback to true if saved is missing
+      toast?.success?.(res.data.message);
+    } catch (err) {
+      console.error("Failed to update saved jobs:", err);
+      toast?.error?.("Failed to update saved jobs");
+    }
+  };
 
   // Skills parser
   const renderSkills = () => {
@@ -198,6 +217,12 @@ export default function JobDetails() {
             >
               {applied ? '✓ Applied' : applying ? 'Applying...' : 'Apply Now'}
             </motion.button>
+            <button 
+              className={`save-job-btn ${isSaved ? 'active' : ''}`}
+              onClick={handleSaveJob}
+            >
+              <Heart size={24} fill={isSaved ? "#ec4899" : "none"} color={isSaved ? "#ec4899" : "currentColor"} />
+            </button>
           </div>
         </div>
       </header>

@@ -15,23 +15,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Multer configuration for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Ensure the directory exists
-    const uploadPath = path.join(__dirname, "public/resumes");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-const upload = multer({ storage: storage });
-app.use(upload.single("resumePdf")); // Middleware to handle single file upload with field name 'resumePdf'
-
 // Routes
 const messagesRoutes = require("./routes/messages");
 app.use("/api", routes);

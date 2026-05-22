@@ -7,7 +7,6 @@ const Notification = require("./Notification");
 const Message = require("./Message");
 const Resume = require("./Resume");
 
-// Create models map
 const models = {
   sequelize,
   User,
@@ -19,7 +18,6 @@ const models = {
   Resume,
 };
 
-// Associate models after all are loaded
 Object.keys(models).forEach((modelName) => {
   if (models[modelName] && typeof models[modelName].associate === "function") {
     models[modelName].associate(models);

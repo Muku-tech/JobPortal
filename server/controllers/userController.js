@@ -3,7 +3,6 @@ const path = require("path");
 const fs = require("fs");
 const auth = require("../middleware/auth");
 
-// Upload company logo
 exports.uploadLogo = async (req, res) => {
   try {
     if (!req.file) {
@@ -15,7 +14,6 @@ exports.uploadLogo = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Delete old logo if exists
     if (user.logo) {
       const oldLogoPath = path.join(
         __dirname,
@@ -27,7 +25,6 @@ exports.uploadLogo = async (req, res) => {
       }
     }
 
-    // New logo path: /logos/filename.ext
     const logoPath = `/logos/${req.file.filename}`;
     await user.update({ logo: logoPath });
 

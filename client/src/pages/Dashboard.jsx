@@ -96,8 +96,9 @@ export default function Dashboard() {
       setRecommendedJobs(recData.slice(0, 3));
       
       // Fetch messages count for stats
-      const msgCountRes = await api.get('/messages/count');
-      setStats(prev => ({ ...prev, messages: msgCountRes.data.unreadCount || 0 }));
+      const msgRes = await api.get('/messages');
+      const unread = (msgRes.data || []).filter(m => !m.read).length;
+      setStats(prev => ({ ...prev, messages: unread }));
 
       // Fetch saved jobs count
       const savedRes = await api.get('/jobs?saved=true');
@@ -128,7 +129,7 @@ export default function Dashboard() {
     (user?.profile_photo ? 10 : 0) +
     (user?.skills?.length > 0 ? 20 : 0) +
     (user?.education?.trim() ? 15 : 0) +
-    ((user?.resume_url || user?.resume_id || applications.some(a => a.resume_id)) ? 25 : 0) +
+    (applications.some(a => a.resume_id || a.resume_pdf_url) ? 25 : 0) +
     (user?.experience?.trim() ? 15 : 0) +
     ((user?.summary || user?.bio) ? 15 : 0)
   ));
@@ -278,7 +279,9 @@ export default function Dashboard() {
                       <h5>{job.title}</h5>
                       <p>{job.company_name} • {job.location || 'Remote'}</p>
                       <div className="match-tags">
-                        <span className="match-reason">Matches your skills</span>
+                        {(job.matchReasons || ["Top Match"]).slice(0, 1).map((reason, idx) => (
+                          <span key={idx} className="match-reason">{reason}</span>
+                        ))}
                       </div>
                     </div>
                     <ChevronRight size={18} className="arrow" />

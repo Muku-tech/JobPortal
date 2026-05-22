@@ -4,15 +4,15 @@ const {
   Application,
   sequelize,
   Notification,
+  JobView,
 } = require("../models");
 const { Op } = require("sequelize");
 
-// 1. GET GROUPED JOBS (For Homepage Tabs)
 exports.getGroupedJobs = async (req, res) => {
   try {
     const { type = "company", limit = 2 } = req.query;
 
-    const where = { status: { [Op.in]: ["active", "draft"] } };
+    const where = { status: "active" };
     const groupField =
       type === "industry"
         ? "category"
@@ -54,7 +54,7 @@ exports.getGroupedJobs = async (req, res) => {
         limit > 0
           ? await Job.findAll({
               where: {
-                status: { [Op.in]: ["active", "draft"] },
+                status: "active",
                 [groupField]: groupValue,
               },
               attributes: ["id", "title"],
@@ -81,7 +81,6 @@ exports.getGroupedJobs = async (req, res) => {
   }
 };
 
-// 2. GET ALL JOBS (For Browse/Search Page - Optimized)
 exports.getAllJobs = async (req, res) => {
   try {
     const {
@@ -95,11 +94,28 @@ exports.getAllJobs = async (req, res) => {
       salaryMax,
       experienceLevel,
       sort = "createdAt",
+      saved,
     } = req.query;
 
-    const where = { status: { [Op.in]: ["active", "draft"] } };
+    const where = { status: "active" };
 
-    // MySQL-compatible case-insensitive search
+    const include = [
+      {
+        model: User,
+        as: "employer",
+        attributes: ["id", "name", "email"],
+      },
+    ];
+
+    if (saved === "true" && req.user) {
+      include.push({
+        model: JobView,
+        as: "job_views",
+        where: { user_id: req.user.id, action_type: "save" },
+        required: true,
+      });
+    }
+
     if (location) {
       where.location = sequelize.where(
         sequelize.fn("LOWER", sequelize.col("location")),
@@ -145,14 +161,12 @@ exports.getAllJobs = async (req, res) => {
 
     const offset = (page - 1) * limit;
 
-    // Relevance sort: if user is authenticated, compute content-based scores
     let relevanceScores = null;
     if (sort === "relevance" && req.user) {
       const { User } = require("../models");
       const user = await User.findByPk(req.user.id);
       if (user) {
         const userSkills = (user.skills || []).map((s) => s.toLowerCase());
-        // We need to fetch all matching jobs first, then score them
         const allMatchingJobs = await Job.findAll({ where });
         relevanceScores = new Map();
         allMatchingJobs.forEach((job) => {
@@ -171,31 +185,35 @@ exports.getAllJobs = async (req, res) => {
 
     let order = [[sort, "DESC"]];
     if (sort === "relevance") {
-      order = [["createdAt", "DESC"]]; // fallback if no scores
+      order = [["createdAt", "DESC"]];
     }
 
     const { count, rows } = await Job.findAndCountAll({
       where,
-      include: [
-        {
-          model: User,
-          as: "employer",
-          attributes: ["id", "name", "email"],
-        },
-      ],
+      include,
       order,
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
 
+    let savedJobIds = [];
+    if (req.user) {
+      const userSaves = await JobView.findAll({
+        where: { user_id: req.user.id, action_type: "save" },
+        attributes: ["job_id"],
+      });
+      savedJobIds = userSaves.map((s) => s.job_id);
+    }
+
     let finalJobs = rows;
+    finalJobs = rows.map((job) => ({
+      ...job.toJSON(),
+      isSaved: savedJobIds.includes(job.id),
+      relevanceScore: relevanceScores ? (relevanceScores.get(job.id) || 0) : 0,
+    }));
+
     if (sort === "relevance" && relevanceScores) {
-      finalJobs = rows
-        .map((job) => ({
-          ...job.toJSON(),
-          relevanceScore: relevanceScores.get(job.id) || 0,
-        }))
-        .sort((a, b) => b.relevanceScore - a.relevanceScore);
+      finalJobs.sort((a, b) => b.relevanceScore - a.relevanceScore);
     }
 
     res.json({
@@ -210,10 +228,11 @@ exports.getAllJobs = async (req, res) => {
   }
 };
 
-// 3. GET SINGLE JOB BY ID
 exports.getJobById = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.id || req.query.userId;
+
     const job = await Job.findByPk(id, {
       include: [
         {
@@ -224,13 +243,21 @@ exports.getJobById = async (req, res) => {
       ],
     });
     if (!job) return res.status(404).json({ message: "Job not found" });
-    res.json(job);
+
+    let isSaved = false;
+    if (userId) {
+      const savedJob = await JobView.findOne({
+        where: { user_id: userId, job_id: id, action_type: "save" },
+      });
+      isSaved = !!savedJob;
+    }
+
+    res.json({ ...job.toJSON(), isSaved });
   } catch (error) {
     res.status(500).json({ message: "Error fetching job" });
   }
 };
 
-// 4. CREATE JOB
 exports.createJob = async (req, res) => {
   try {
     if (req.user.role !== "employer" && req.user.role !== "admin") {
@@ -243,7 +270,6 @@ exports.createJob = async (req, res) => {
   }
 };
 
-// 5. UPDATE JOB
 exports.updateJob = async (req, res) => {
   try {
     const job = await Job.findByPk(req.params.id);
@@ -259,7 +285,6 @@ exports.updateJob = async (req, res) => {
   }
 };
 
-// 6. DELETE JOB
 exports.deleteJob = async (req, res) => {
   try {
     const job = await Job.findByPk(req.params.id);
@@ -275,7 +300,6 @@ exports.deleteJob = async (req, res) => {
   }
 };
 
-// 7. GET EMPLOYER-SPECIFIC JOBS (Dashboard)
 exports.getEmployerJobs = async (req, res) => {
   try {
     if (req.user.role !== "employer" && req.user.role !== "admin") {
@@ -319,7 +343,6 @@ exports.getEmployerJobs = async (req, res) => {
   }
 };
 
-// 8. GET TOP COMPANIES (Homepage)
 exports.getTopCompanies = async (req, res) => {
   try {
     const { limit = 8 } = req.query;
@@ -341,7 +364,6 @@ exports.getTopCompanies = async (req, res) => {
   }
 };
 
-// 9. GET CATEGORIES WITH COUNTS (Homepage)
 exports.getCategories = async (req, res) => {
   try {
     const categories = await Job.findAll({
@@ -361,7 +383,6 @@ exports.getCategories = async (req, res) => {
   }
 };
 
-// 10. GET FEATURED JOBS (Recent active)
 exports.getFeaturedJobs = async (req, res) => {
   try {
     const { limit = 8 } = req.query;
@@ -377,16 +398,14 @@ exports.getFeaturedJobs = async (req, res) => {
   }
 };
 
-// 11. GET CATEGORY JOBS (for Home page Jobs by Category)
 exports.getCategoryJobs = async (req, res) => {
   try {
     const { type = "location", limit = 8 } = req.query;
-    const where = { status: { [Op.in]: ["active", "draft"] } };
+    const where = { status: "active" };
 
     let order = [["createdAt", "DESC"]];
 
     if (type === "location") {
-      // Top 8 recent jobs across different locations
       order = [
         ["location", "ASC"],
         ["createdAt", "DESC"],
@@ -409,7 +428,6 @@ exports.getCategoryJobs = async (req, res) => {
         };
       }
     } else if (type === "experience") {
-      // By experience level enum order
       const levels = ["entry", "mid", "senior", "lead", "executive"];
       where.experience_level = { [Op.in]: levels };
       order = [
@@ -431,7 +449,6 @@ exports.getCategoryJobs = async (req, res) => {
   }
 };
 
-// 12. GET SKILL GAP ANALYSIS
 exports.getSkillGap = async (req, res) => {
   try {
     console.log(
@@ -457,12 +474,10 @@ exports.getSkillGap = async (req, res) => {
     const jobSkills = job.required_skills || [];
     console.log("🔍 Parsed - userSkills:", userSkills, "jobSkills:", jobSkills);
 
-    // Simple set difference for missing skills
     const userSet = new Set(userSkills.map((s) => s.toLowerCase().trim()));
     const jobSet = new Set(jobSkills.map((s) => s.toLowerCase().trim()));
     const missing = Array.from(jobSet).filter((skill) => !userSet.has(skill));
 
-    // Gap score: percentage of job skills user has
     const gapScore =
       jobSkills.length > 0
         ? Math.round(
@@ -472,7 +487,7 @@ exports.getSkillGap = async (req, res) => {
 
     res.json({
       gapScore,
-      missingSkills: missing.slice(0, 5), // Top 5
+      missingSkills: missing.slice(0, 5),
       totalMissing: missing.length,
       yourSkills: userSkills.slice(0, 5),
       jobSkillsCount: jobSkills.length,

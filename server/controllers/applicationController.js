@@ -6,14 +6,13 @@ exports.applyForJob = async (req, res) => {
     const { jobId, coverLetter, resumeId } = req.body;
     const jobIdNum = jobId ? Number(jobId) : null;
     const resumeIdNum = resumeId ? Number(resumeId) : null;
-    const userId = req.user.id; // Assuming req.user is populated by auth middleware
+    const userId = req.user.id;
 
     const job = await Job.findByPk(jobIdNum);
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
 
-    // Auto-select default resume if none provided
     let finalResumeId = resumeIdNum;
     if (!finalResumeId) {
       const defaultResume = await Resume.findOne({
@@ -60,8 +59,6 @@ exports.applyForJob = async (req, res) => {
       application,
     });
 
-    // Trigger fresh recommendations based on the new application
-    // Use a mock response object as this is a fire-and-forget background task
     const mockRes = {
       status: function() { return this; },
       json: function() { return this; }
@@ -158,6 +155,60 @@ exports.getEmployerApplications = async (req, res) => {
   }
 };
 
+// Send a message related to a specific application
+exports.sendApplicationMessage = async (req, res) => {
+  try {
+    const applicationId = parseInt(req.params.id);
+    const { message: messageText } = req.body;
+    const senderId = req.user.id; // This is the employer's ID
+
+    if (!messageText || messageText.trim() === "") {
+      return res.status(400).json({ message: "Message cannot be empty" });
+    }
+
+    const application = await Application.findByPk(applicationId, {
+      include: [{ model: Job, as: "job" }],
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    let recipientId;
+    const isSenderEmployer =
+      application.job && application.job.employer_id == senderId;
+    const isSenderApplicant = application.user_id == senderId;
+
+    if (isSenderEmployer) {
+      recipientId = application.user_id;
+    } else if (isSenderApplicant && application.job) {
+      recipientId = application.job.employer_id;
+    } else {
+      return res.status(403).json({
+        message: "Not authorized to send messages for this application",
+      });
+    }
+
+    const message = await Message.create({
+      application_id: applicationId,
+      sender_id: senderId,
+      recipient_id: recipientId,
+      message: messageText,
+      type: "user",
+      read: false,
+    });
+
+    res.status(201).json({ message: "Message sent successfully", message });
+  } catch (error) {
+    console.error("Error sending application message:", error);
+    res.status(500).json({
+      message: "Error sending message",
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+  }
+};
+
 exports.getJobApplications = async (req, res) => {
   try {
     const { jobId } = req.params;
@@ -208,7 +259,6 @@ exports.getJobApplications = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-    // DEBUG (temporary): verify cover_letter present in API response
     try {
       const first = applications?.[0];
       console.log(
@@ -226,7 +276,6 @@ exports.getJobApplications = async (req, res) => {
       );
     }
 
-    // Compute matchScore for each applicant based on skill overlap
     const jobSkills = (job.required_skills || []).map((s) =>
       s.toLowerCase().trim(),
     );
@@ -241,7 +290,6 @@ exports.getJobApplications = async (req, res) => {
       const total = jobSkills.length || 1;
       appJson.matchScore = Math.round((matched / total) * 100);
       appJson.clusterMatch = appJson.applicant?.cluster_id;
-      // The resume_pdf_url is already part of appJson from the Application model
       return appJson;
     });
 
@@ -299,7 +347,6 @@ exports.updateApplicationStatus = async (req, res) => {
         .json({ message: "Not authorized to update this application" });
     }
 
-    // DB ENUM: applied | considering | final
     const validStatuses = ["applied", "considering", "final"];
 
     if (!validStatuses.includes(status)) {
@@ -318,7 +365,6 @@ exports.updateApplicationStatus = async (req, res) => {
 
     console.log("Save successful!");
 
-    // Send internal notification to applicant on meaningful status changes
     if (["considering", "final"].includes(status)) {
       const applicant = await User.findByPk(application.user_id);
       if (applicant) {
@@ -339,7 +385,7 @@ exports.updateApplicationStatus = async (req, res) => {
             sender_id: req.user.id,
             recipient_id: applicant.id,
             message: `${template.title}\n\n${template.message}`,
-            type: "status_update",
+            type: "system",
           });
           console.log("✅ Status message sent to", applicant.name);
         } catch (notifError) {

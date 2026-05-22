@@ -11,6 +11,7 @@ import {
   Brain,
   Target,
   Users,
+  Heart
 } from "lucide-react";
 import api from "../services/api";
 import { useToast } from '../context/ToastContext';

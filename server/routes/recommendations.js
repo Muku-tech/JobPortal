@@ -3,22 +3,16 @@ const router = express.Router();
 const recommendationController = require("../controllers/recommendationController");
 const auth = require("../middleware/auth");
 
-// Guest recommendations (public)
 router.get("/guest", recommendationController.getGuestRecommendations);
 
-// All other recommendation routes require authentication
 router.use(auth.verifyToken);
 
-// Get all unique skills from jobs for autocomplete
 router.get("/unique-skills", recommendationController.getUniqueSkills);
 
-// Default route - redirects to smart recommendations
 router.get("/", recommendationController.getSmartRecommendations);
 
-// Smart recommendations - automatically selects best algorithm
 router.get("/smart", recommendationController.getSmartRecommendations);
 
-// Individual algorithm endpoints
 router.get(
   "/content-based",
   recommendationController.getContentBasedRecommendations,
@@ -29,19 +23,15 @@ router.get(
 );
 router.get("/kmeans", recommendationController.getKMeansRecommendations);
 
-// All algorithms at once
 router.get("/all", recommendationController.getAllAlgorithmRecommendations);
 
-// Send recommendations as a message to the user
 router.post(
   "/send-as-message",
   recommendationController.sendRecommendationAsMessage,
 );
 
-// Track job views for collaborative filtering
 router.post("/track-view", recommendationController.trackJobView);
 
-// Get recommendation system stats
 router.get("/stats", recommendationController.getRecommendationStats);
 
 module.exports = router;

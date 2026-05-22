@@ -83,6 +83,24 @@
   transform: translateY(-2px);
 }
 
+.job-header .save-job-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  color: var(--job-text-muted);
+  transition: color 0.2s, transform 0.2s;
+}
+
+.job-header .save-job-btn:hover {
+  color: #ec4899; /* Pink for saved */
+  transform: scale(1.1);
+}
+
+.job-header .save-job-btn.active { color: #ec4899; }
 .apply-top-btn.applied { background: var(--job-success); box-shadow: none; }
 
 /* --- GRID LAYOUT --- */

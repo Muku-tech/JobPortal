@@ -29,6 +29,9 @@ const User = sequelize.define(
     role: {
       type: DataTypes.ENUM("jobseeker", "employer", "admin", "system"),
       defaultValue: "jobseeker",
+      validate: {
+        isIn: [["jobseeker", "employer", "admin", "system"]]
+      }
     },
     skills: {
       type: DataTypes.TEXT,
@@ -152,7 +155,6 @@ User.prototype.toJSON = function () {
 
 User.associate = (models) => {
   User.hasMany(models.Job, { foreignKey: "employer_id", as: "employerJobs" });
-  // Needed for getJobApplications -> include [{ model: Resume, as: "resumes" }]
   User.hasMany(models.Resume, { foreignKey: "user_id", as: "resumes" });
 };
 

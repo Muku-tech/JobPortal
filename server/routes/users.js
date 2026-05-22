@@ -7,7 +7,6 @@ const recommendationController = require("../controllers/recommendationControlle
 const multer = require("multer");
 const path = require("path");
 
-// Get user profile
 router.get("/profile", auth, async (req, res) => {
   try {
     const user = await User.findByPk(req.user.id, {
@@ -20,16 +19,13 @@ router.get("/profile", auth, async (req, res) => {
   }
 });
 
-// Update user profile
 router.put("/profile", auth, async (req, res) => {
   try {
     console.log("Profile update request:", req.body);
 
-    // Fetch user first to check role
     const user = await User.findByPk(req.user.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Normalize arrays
     const normalizeArray = (value, current) => {
       if (Array.isArray(value)) return value;
       if (typeof value === "string")
@@ -40,7 +36,6 @@ router.put("/profile", auth, async (req, res) => {
       return current || [];
     };
 
-    // Helper for ENUM fields - null if empty string
     const enumToNull = (value) => (value === "" ? null : value);
 
     const updateData = {
@@ -113,7 +108,6 @@ router.put("/profile", auth, async (req, res) => {
     try {
       await user.update(updateData);
 
-      // BI-DIRECTIONAL SYNC: If user is a jobseeker, update their default resume too
       if (user.role === "jobseeker") {
         const defaultResume = await Resume.findOne({
           where: { user_id: user.id, is_default: true },
@@ -129,14 +123,11 @@ router.put("/profile", auth, async (req, res) => {
               portfolio: updateData.portfolio || updateData.github,
             },
             summary: updateData.summary,
-            // Map skills back to the structured format used by the builder
             skills: (updateData.skills || []).map((s) => ({ title: s })),
           });
         }
       }
       
-      // Trigger fresh recommendations based on the new profile data
-      // Improved mock response to prevent background crashes
       const mockRes = { 
         status: function() { return this; }, 
         json: function() { return this; } 
@@ -163,7 +154,6 @@ router.put("/profile", auth, async (req, res) => {
   }
 });
 
-// Update resume URL
 router.put("/resume", auth, async (req, res) => {
   try {
     const { resume_url } = req.body;
@@ -176,7 +166,6 @@ router.put("/resume", auth, async (req, res) => {
   }
 });
 
-// Get user applications
 router.get("/applications", auth, async (req, res) => {
   try {
     const applications = await Application.findAll({
@@ -196,7 +185,6 @@ router.get("/applications", auth, async (req, res) => {
   }
 });
 
-// Multer config for logo upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "public/logos/"),
   filename: (req, file, cb) => {
@@ -207,14 +195,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) =>
     file.mimetype.startsWith("image/")
       ? cb(null, true)
       : cb(new Error("Only images")),
 });
 
-// Upload logo
 router.post("/logo", auth, upload.single("logo"), userController.uploadLogo);
 
 module.exports = router;
