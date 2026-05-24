@@ -25,14 +25,18 @@ function MyApplications() {
   };
 
   const getStatusClass = (status) => {
+    // Backend statuses:
+    // - applied
+    // - considering
+    // - final
+    // Map them to existing CSS classes used by the UI.
     const statusMap = {
-      hired: "status-hired",
-      shortlisted: "status-shortlisted",
-      interviewed: "status-interviewed",
-      reviewed: "status-reviewed",
-      rejected: "status-rejected",
-      pending: "status-pending"
+      applied: "status-pending",
+      considering: "status-shortlisted",
+      final: "status-reviewed",
     };
+
+    // Fallback to keep UI from breaking.
     return statusMap[status] || "status-pending";
   };
 
@@ -44,11 +48,11 @@ function MyApplications() {
 
   const statusCounts = {
     all: applications.length,
-    pending: applications.filter((a) => a.status === "pending").length,
-    interviewed: applications.filter((a) => a.status === "interviewed").length,
-    shortlisted: applications.filter((a) => a.status === "shortlisted").length,
-    hired: applications.filter((a) => a.status === "hired").length,
-    rejected: applications.filter((a) => a.status === "rejected").length,
+    pending: applications.filter((a) => a.status === "applied").length,
+    shortlisted: applications.filter((a) => a.status === "considering").length,
+    interviewed: applications.filter((a) => a.status === "considering" && a.interview_date).length,
+    hired: applications.filter((a) => a.status === "final" && a.decision === "hired").length,
+    rejected: applications.filter((a) => a.status === "final" && a.decision === "rejected").length,
   };
 
   if (loading) {

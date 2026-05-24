@@ -9,6 +9,7 @@ const {
 const contentBasedFiltering = require("../services/algorithms/contentBasedFiltering");
 const collaborativeFiltering = require("../services/algorithms/collaborativeFiltering");
 const kMeansClustering = require("../services/algorithms/kMeansClustering");
+const skillMatcher = require("../utils/skillMatcher");
 
 const getSystemStats = async (userId) => {
   const totalUsers = await User.count();
@@ -61,11 +62,9 @@ function calcSkillOverlap(userSkills, jobSkillsRaw) {
   }
   if (!Array.isArray(jobSkills) || jobSkills.length === 0) return 0;
 
-  const lowerUser = userSkills.map((s) => s.toLowerCase().trim());
-  const matched = jobSkills.filter((s) => {
-    const js = s.toLowerCase().trim();
-    return lowerUser.some((us) => us.includes(js) || js.includes(us));
-  }).length;
+  const matched = jobSkills.filter((js) =>
+    userSkills.some((us) => skillMatcher.matchSkills(us, js))
+  ).length;
   return Math.min(1, matched / Math.max(1, jobSkills.length));
 }
 

@@ -31,6 +31,9 @@ function PostJob() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [skillSuggestions, setSkillSuggestions] = useState([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [dbSkills, setDbSkills] = useState([])
 
   const locations = ['Kathmandu', 'Pokhara', 'Birgunj', 'Biratnagar', 'Lalitpur', 'Bhaktapur', 'Butwal', 'Dharan', 'Janakpur', 'Narayangadh']
   const jobTypes = ['full-time', 'part-time', 'contract', 'internship']
@@ -52,8 +55,43 @@ function PostJob() {
   }
 
   const handleEdit = (job) => {
-    setFormData(job)
+    const formattedJob = {
+      ...job,
+      required_skills: Array.isArray(job.required_skills)
+        ? job.required_skills.map(s => typeof s === 'object' ? s.title || s : s).join(', ')
+        : job.required_skills || ''
+    }
+    setFormData(formattedJob)
     setActiveTab('new')
+  }
+
+  const handleSkillsChange = (e) => {
+    const value = e.target.value
+    setFormData({ ...formData, required_skills: value })
+
+    // Get the part currently being typed (after the last comma)
+    const parts = value.split(',')
+    const currentPart = parts[parts.length - 1].trim()
+
+    if (currentPart.length >= 2) {
+      const matches = dbSkills.filter(skill => 
+        skill.toLowerCase().includes(currentPart.toLowerCase()) &&
+        !parts.some(p => p.trim().toLowerCase() === skill.toLowerCase())
+      ).slice(0, 5) // Limit to top 5 matches
+
+      setSkillSuggestions(matches)
+      setShowSuggestions(matches.length > 0)
+    } else {
+      setShowSuggestions(false)
+    }
+  }
+
+  const selectSkill = (skill) => {
+    const skillsVal = typeof formData.required_skills === 'string' ? formData.required_skills : '';
+    const parts = skillsVal.split(',')
+    parts[parts.length - 1] = ` ${skill}` // Replace partial with full skill
+    setFormData({ ...formData, required_skills: parts.join(',').trim() + ', ' })
+    setShowSuggestions(false)
   }
 
   const handleMarkComplete = async (jobId) => {
@@ -80,6 +118,15 @@ function PostJob() {
 
   useEffect(() => {
     loadEmployerJobs()
+    const fetchDbSkills = async () => {
+      try {
+        const res = await api.get('/recommendations/unique-skills')
+        setDbSkills(res.data || [])
+      } catch (err) {
+        console.error('Failed to fetch skills from database', err)
+      }
+    }
+    fetchDbSkills()
   }, [])
 
   const handleSubmit = async (e) => {
@@ -214,9 +261,32 @@ function PostJob() {
                   </div>
                 </div>
 
-                <div className="input-group">
+                <div className="input-group" style={{ position: 'relative' }}>
                   <label>Required Skills (Comma separated)</label>
-                  <input type="text" name="required_skills" value={formData.required_skills} onChange={handleChange} placeholder="React, Node.js, SQL" />
+                  <input 
+                    type="text" 
+                    name="required_skills" 
+                    value={formData.required_skills} 
+                    onChange={handleSkillsChange} 
+                    placeholder="React, Node.js, SQL" 
+                    autoComplete="off"
+                  />
+                  {showSuggestions && (
+                    <div className="skill-autocomplete-dropdown" style={{
+                      position: 'absolute', top: '100%', left: 0, right: 0, 
+                      backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, marginTop: '4px', overflow: 'hidden'
+                    }}>
+                      {skillSuggestions.map((skill, index) => (
+                        <div key={index} onClick={() => selectSkill(skill)} style={{
+                          padding: '10px 15px', cursor: 'pointer', borderBottom: index !== skillSuggestions.length - 1 ? '1px solid #f1f5f9' : 'none',
+                          color: '#334155', fontSize: '0.9rem', textAlign: 'left'
+                        }} onMouseOver={(e) => e.target.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}>
+                          {skill}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <small>Separate skills with commas (e.g. Photoshop, Figma)</small>
                 </div>
               </div>

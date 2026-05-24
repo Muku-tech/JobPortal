@@ -1,4 +1,5 @@
 const { Job, User, Application, JobView } = require("../../models");
+const skillMatcher = require("../../utils/skillMatcher");
 
 class KMeansClustering {
   constructor(k = 5) {
@@ -170,11 +171,9 @@ class KMeansClustering {
   calculateSkillOverlapScore(userSkills, jobSkills) {
     if (!userSkills || userSkills.length === 0) return 0.3;
     if (!jobSkills || jobSkills.length === 0) return 0.3;
-    const lowerUser = userSkills.map((s) => s.toLowerCase().trim());
-    const matched = jobSkills.filter((s) => {
-      const js = s.toLowerCase().trim();
-      return lowerUser.some((us) => us.includes(js) || js.includes(us));
-    }).length;
+    const matched = jobSkills.filter((js) => 
+      userSkills.some((us) => skillMatcher.matchSkills(us, js))
+    ).length;
     return Math.min(1, matched / Math.max(1, jobSkills.length));
   }
 

@@ -1,4 +1,5 @@
 const { Job, User } = require("../../models");
+const skillMatcher = require("../../utils/skillMatcher");
 
 class ContentBasedFiltering {
   cosineSimilarity(vec1, vec2) {
@@ -11,9 +12,8 @@ class ContentBasedFiltering {
   }
 
   skillsToVector(userSkills, allSkills) {
-    const lowerUser = userSkills.map((s) => s.toLowerCase().trim());
     return allSkills.map((skill) =>
-      lowerUser.some((us) => us.includes(skill.toLowerCase()) || skill.toLowerCase().includes(us)) ? 1 : 0,
+      userSkills.some((us) => skillMatcher.matchSkills(us, skill)) ? 1 : 0,
     );
   }
 
