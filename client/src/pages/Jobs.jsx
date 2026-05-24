@@ -11,6 +11,7 @@ import {
   Brain,
   Target,
   Users,
+  Bookmark,
 } from "lucide-react";
 import api from "../services/api";
 import { useToast } from '../context/ToastContext';
@@ -180,6 +181,29 @@ export default function Jobs() {
     return pages;
   };
 
+  // ─── Card helpers ───
+  const COMPANY_COLORS = ['#4f46e5','#e11d48','#059669','#d97706','#7c3aed','#0891b2','#db2777'];
+  const getCompanyColor = (name) =>
+    COMPANY_COLORS[(name || 'C').charCodeAt(0) % COMPANY_COLORS.length];
+
+  const timeAgo = (date) => {
+    const diff = Date.now() - new Date(date).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return '1d ago';
+    if (days < 7) return `${days}d ago`;
+    return `${Math.floor(days / 7)}w ago`;
+  };
+
+  const formatSalary = (job) => {
+    const fmt = (n) => n >= 1000 ? `$${Math.round(n / 1000)}k` : `$${n}`;
+    if (job.salary_min && job.salary_max)
+      return `${fmt(job.salary_min)} – ${fmt(job.salary_max)}`;
+    if (job.salary_min) return `From ${fmt(job.salary_min)}`;
+    if (job.salary) return job.salary;
+    return null;
+  };
+
   return (
     <div className="jobs-page">
       {/* Search Section */}
@@ -332,32 +356,73 @@ export default function Jobs() {
         ) : (
           <>
             <div className="jobs-grid">
-              {jobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="job-card"
-                  onClick={() => navigate("/jobs/" + job.id)}
-                >
-                  <div className="job-banner">
-                    <div className="banner-overlay">
-                      <h3>{job.title}</h3>
-                      <span className="banner-company">
-                        {job.company_name || job.employer?.name || "Hiring Company"}
-                      </span>
+              {jobs.map((job) => {
+                const companyName = job.company_name || job.employer?.name || "Company";
+                const salary = formatSalary(job);
+                return (
+                  <div
+                    key={job.id}
+                    className="job-card"
+                    onClick={() => navigate("/jobs/" + job.id)}
+                  >
+                    {/* ── Header: logo + company + save ── */}
+                    <div className="job-card-header">
+                      <div
+                        className="company-logo-circle"
+                        style={{ background: getCompanyColor(companyName) }}
+                      >
+                        {companyName[0]?.toUpperCase()}
+                      </div>
+                      <div className="company-info">
+                        <span className="company-name-tag">{companyName}</span>
+                        <span className="post-time">{timeAgo(job.createdAt)}</span>
+                      </div>
+                      <button
+                        className="save-btn"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Save job"
+                      >
+                        <Bookmark size={14} />
+                      </button>
                     </div>
-                  </div>
 
-                  <div className="job-content">
-                    <div className="card-meta">
-                      <span className="meta-item">
-                        <MapPin size={14} /> {job.location}
-                      </span>
-                      <span className="card-tag">{job.job_type}</span>
+                    {/* ── Title ── */}
+                    <h3 className="job-title">{job.title}</h3>
+
+                    {/* ── Tags ── */}
+                    <div className="job-tags">
+                      {job.job_type && (
+                        <span className="job-tag">{job.job_type}</span>
+                      )}
+                      {job.work_mode && (
+                        <span className="job-tag">{job.work_mode}</span>
+                      )}
+                      {job.experience_level && (
+                        <span className="job-tag">{job.experience_level}</span>
+                      )}
                     </div>
-                    <button className="card-view-btn">View Details</button>
+
+                    {/* ── Footer: salary + apply ── */}
+                    <div className="job-card-footer">
+                      <div className="salary-block">
+                        {salary && <span className="salary-text">{salary}</span>}
+                        <span className="location-text">
+                          <MapPin size={11} /> {job.location}
+                        </span>
+                      </div>
+                      <button
+                        className="apply-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate("/jobs/" + job.id);
+                        }}
+                      >
+                        Apply now
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {totalPages > 1 && (

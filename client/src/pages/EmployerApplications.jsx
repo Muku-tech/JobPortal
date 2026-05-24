@@ -5,6 +5,7 @@ import ApplicationMessages from './ApplicationMessages'
 import { 
   ModernTemplate, ClassicTemplate, CreativeTemplate, ExecutiveTemplate 
 } from './ResumeTemplates'
+
 import { X, Printer } from 'lucide-react'
 import '../styles/EmployerApplications.css'
 
@@ -18,7 +19,7 @@ const EmployerApplications = ({ jobId }) => {
   const [unreadCounts, setUnreadCounts] = useState({})
   const [interviewAppStatus, setInterviewAppStatus] = useState(null)
   const [resumePreview, setResumePreview] = useState({ open: false, data: null })
-  const [sortMode, setSortMode] = useState('default') // 'default' | 'top-candidates'
+
 
   const newStages = ['applied', 'considering', 'final']
 
@@ -171,10 +172,7 @@ const EmployerApplications = ({ jobId }) => {
       ? applications
       : applications.filter(app => app.status === filter)
 
-  // Sort by match score when Top Candidates mode is active
-  if (sortMode === 'top-candidates') {
-    displayApps = [...displayApps].sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-  }
+
 
   if (loading) {
     return (
@@ -216,14 +214,8 @@ const EmployerApplications = ({ jobId }) => {
             {stage === 'all' ? `All (${applications.length})` : stage.replace('_', ' ')}
           </button>
         ))}
-        <button
-          onClick={() => setSortMode(prev => prev === 'top-candidates' ? 'default' : 'top-candidates')}
-          className={`filter-tab ${sortMode === 'top-candidates' ? 'active' : ''}`}
-          style={{ marginLeft: 'auto', background: sortMode === 'top-candidates' ? '#dbeafe' : undefined }}
-        >
-          Top Candidates
-        </button>
       </div>
+
 
       {/* APPLICATIONS */}
       <div className="applications-feed">
