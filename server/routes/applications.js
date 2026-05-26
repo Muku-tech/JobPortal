@@ -63,11 +63,18 @@ router.get(
   messageController.getUnreadPerApp,
 );
 
-// Mark all messages for application as read (TEMPORARILY DISABLED due to undefined callback)
-// router.put(
-//   "/:id/messages/read-all",
-//   auth.verifyToken,
-//   messageController.markAppAllRead,
-// );
+// Mark all messages for application as read
+router.put(
+  "/:id/messages/read-all",
+  auth.verifyToken,
+  messageController.markAppAllRead,
+);
+
+// Send message for application
+router.post(
+  "/:id/messages",
+  auth.verifyToken,
+  messageController.sendAppMessage,
+);
 
 module.exports = router;

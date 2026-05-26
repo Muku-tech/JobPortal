@@ -1,4 +1,4 @@
-const { Message, User } = require("../models");
+const { Message, User, Application, Job } = require("../models");
 
 const getMessages = async (req, res) => {
   try {
@@ -106,7 +106,7 @@ const markAllRead = async (req, res) => {
 
 const markAppAllRead = async (req, res) => {
   try {
-    const { appId } = req.params;
+    const appId = req.params.id;
     const updatedRead = await Message.update(
       { read: true },
       {
@@ -133,6 +133,48 @@ const markAppAllRead = async (req, res) => {
   } catch (error) {
     console.error("Error updating app messages:", error);
     res.status(500).json({ message: "Error updating messages" });
+  }
+};
+
+const sendAppMessage = async (req, res) => {
+  try {
+    const { id } = req.params; // Application ID
+    const { message: content } = req.body;
+
+    const application = await Application.findByPk(id, {
+      include: [
+        { model: Job, as: "job" },
+        { model: User, as: "applicant" }
+      ]
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    const userId = req.user.id;
+    let recipientId;
+
+    if (application.job && application.job.employer_id === userId) {
+      recipientId = application.applicant.id;
+    } else if (application.applicant && application.applicant.id === userId) {
+      recipientId = application.job.employer_id;
+    } else {
+      return res.status(403).json({ message: "Not authorized to send messages for this application" });
+    }
+
+    const newMessage = await Message.create({
+      application_id: id,
+      sender_id: userId,
+      recipient_id: recipientId,
+      message: content,
+      type: "user",
+    });
+
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error("Error sending application message:", error);
+    res.status(500).json({ message: "Error sending message" });
   }
 };
 
@@ -228,6 +270,8 @@ module.exports = {
   getUnreadPerApp,
   markRead,
   markAllRead,
+  markAppAllRead,
   sendMessage,
+  sendAppMessage,
   seedTestMessages,
 };

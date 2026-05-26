@@ -44,21 +44,9 @@ const ApplicationMessages = () => {
 
     try {
       setSendingMessage(true)
-      // Note: Would need POST /applications/:id/messages endpoint
-      // For now, simulate with optimistic update
-      const newMessage = {
-        id: Date.now(),
-        application_id: id,
-        sender_id: 'current_user',
-        recipient_id: 'applicant',
-        message: messageText,
-        type: 'user',
-        read: false,
-        createdAt: new Date().toISOString()
-      }
-      setMessages(prev => [...prev, newMessage])
+      const response = await api.post(`/applications/${id}/messages`, { message: messageText })
+      setMessages(prev => [...prev, response.data])
       e.target.reset()
-      fetchMessages() // Sync with server
     } catch (error) {
       console.error('Send error:', error)
     } finally {
