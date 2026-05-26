@@ -90,6 +90,38 @@ const connectDB = async () => {
       console.log("✅ messages table exists");
     }
 
+    // Check and create saved_jobs table if missing
+    const [savedJobsTables] = await sequelize.query(
+      `
+      SELECT TABLE_NAME 
+      FROM INFORMATION_SCHEMA.TABLES 
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'saved_jobs'
+    `,
+      { replacements: [sequelize.config.database] },
+    );
+
+    if (savedJobsTables.length === 0) {
+      console.log("⚠️ saved_jobs table missing, creating...");
+      await sequelize.query(`
+        CREATE TABLE saved_jobs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id INT NOT NULL,
+          job_id INT NOT NULL,
+          createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_user_job_save (user_id, job_id),
+          KEY idx_saved_user_id (user_id),
+          KEY idx_saved_job_id (job_id),
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+      console.log("✅ saved_jobs table created");
+    } else {
+      console.log("✅ saved_jobs table exists");
+    }
+
+
     console.log(
       "✅ Database authenticated (sync skipped to avoid FK drop issues - tables exist)",
     );

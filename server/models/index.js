@@ -6,6 +6,7 @@ const JobView = require("./JobView");
 const Notification = require("./Notification");
 const Message = require("./Message");
 const Resume = require("./Resume");
+const SavedJob = require("./SavedJob");
 
 // Create models map
 const models = {
@@ -17,6 +18,7 @@ const models = {
   Notification,
   Message,
   Resume,
+  SavedJob,
 };
 
 // Associate models after all are loaded
@@ -35,4 +37,5 @@ module.exports = {
   Notification,
   Message,
   Resume,
+  SavedJob,
 };

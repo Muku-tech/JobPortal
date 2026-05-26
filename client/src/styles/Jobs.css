@@ -482,6 +482,16 @@
   color: var(--j-accent);
   border-color: var(--j-accent);
 }
+.save-btn.saved {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fca5a5;
+}
+.save-btn.saved:hover {
+  background: #e11d48;
+  color: #fff;
+  border-color: #e11d48;
+}
 
 /* ── Job Title ── */
 .job-title {

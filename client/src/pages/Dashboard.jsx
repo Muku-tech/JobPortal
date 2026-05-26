@@ -230,7 +230,7 @@ export default function Dashboard() {
             <div className="action-btns-list">
               <button onClick={() => navigate('/jobs')}><Search size={14}/> Browse Jobs</button>
               <button onClick={() => navigate('/profile')}><Edit3 size={14}/> Edit Profile</button>
-              <button onClick={() => navigate('/jobs?saved=true')}><Heart size={14}/> Saved Jobs</button>
+              <button onClick={() => navigate('/saved-jobs')}><Heart size={14}/> Saved Jobs</button>
             </div>
           </div>
         </aside>

@@ -20,6 +20,91 @@ router.get("/profile", auth, async (req, res) => {
   }
 });
 
+// Merging helper functions for bi-directional sync
+const mergeExperiences = (existingExperiences, newText) => {
+  if (newText === undefined) return existingExperiences || [];
+  if (!newText || typeof newText !== "string") return [];
+  
+  const parsed = newText.split("\n").map(line => {
+    line = line.trim();
+    if (!line) return null;
+    const atIndex = line.toLowerCase().lastIndexOf(" at ");
+    if (atIndex !== -1) {
+      const title = line.substring(0, atIndex).trim();
+      const org = line.substring(atIndex + 4).trim();
+      return { title, organization: org, company: org };
+    }
+    return { title: line, organization: "", company: "" };
+  }).filter(Boolean);
+
+  const existingList = Array.isArray(existingExperiences) ? existingExperiences : [];
+  
+  return parsed.map(p => {
+    const match = existingList.find(e => 
+      e.title?.toLowerCase() === p.title.toLowerCase() && 
+      (e.organization?.toLowerCase() === p.organization.toLowerCase() || 
+       e.company?.toLowerCase() === p.company.toLowerCase())
+    );
+    if (match) {
+      return {
+        ...match,
+        title: p.title,
+        organization: p.organization,
+        company: p.company
+      };
+    }
+    return {
+      title: p.title,
+      organization: p.organization,
+      company: p.company,
+      dates: "",
+      description: ""
+    };
+  });
+};
+
+const mergeEducations = (existingEducations, newText) => {
+  if (newText === undefined) return existingEducations || [];
+  if (!newText || typeof newText !== "string") return [];
+
+  const parsed = newText.split("\n").map(line => {
+    line = line.trim();
+    if (!line) return null;
+    const fromIndex = line.toLowerCase().lastIndexOf(" from ");
+    if (fromIndex !== -1) {
+      const title = line.substring(0, fromIndex).trim();
+      const org = line.substring(fromIndex + 6).trim();
+      return { title, organization: org, company: org };
+    }
+    return { title: line, organization: "", company: "" };
+  }).filter(Boolean);
+
+  const existingList = Array.isArray(existingEducations) ? existingEducations : [];
+  
+  return parsed.map(p => {
+    const match = existingList.find(e => 
+      e.title?.toLowerCase() === p.title.toLowerCase() && 
+      (e.organization?.toLowerCase() === p.organization.toLowerCase() || 
+       e.company?.toLowerCase() === p.company.toLowerCase())
+    );
+    if (match) {
+      return {
+        ...match,
+        title: p.title,
+        organization: p.organization,
+        company: p.company
+      };
+    }
+    return {
+      title: p.title,
+      organization: p.organization,
+      company: p.company,
+      dates: "",
+      description: ""
+    };
+  });
+};
+
 // Update user profile
 router.put("/profile", auth, async (req, res) => {
   try {
@@ -115,9 +200,15 @@ router.put("/profile", auth, async (req, res) => {
 
       // BI-DIRECTIONAL SYNC: If user is a jobseeker, update their default resume too
       if (user.role === "jobseeker") {
-        const defaultResume = await Resume.findOne({
+        let defaultResume = await Resume.findOne({
           where: { user_id: user.id, is_default: true },
         });
+        if (!defaultResume) {
+          defaultResume = await Resume.findOne({
+            where: { user_id: user.id },
+            order: [["updatedAt", "DESC"]],
+          });
+        }
         if (defaultResume) {
           await defaultResume.update({
             personal_info: {
@@ -128,9 +219,11 @@ router.put("/profile", auth, async (req, res) => {
               linkedin: updateData.linkedin,
               portfolio: updateData.portfolio || updateData.github,
             },
-            summary: updateData.summary,
+            summary: req.body.summary !== undefined ? req.body.summary : defaultResume.summary,
             // Map skills back to the structured format used by the builder
             skills: (updateData.skills || []).map((s) => ({ title: s })),
+            experiences: mergeExperiences(defaultResume.experiences, req.body.experience),
+            educations: mergeEducations(defaultResume.educations, req.body.education)
           });
         }
       }

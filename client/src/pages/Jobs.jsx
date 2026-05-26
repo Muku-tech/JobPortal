@@ -12,6 +12,7 @@ import {
   Target,
   Users,
   Bookmark,
+  BookmarkCheck,
 } from "lucide-react";
 import api from "../services/api";
 import { useToast } from '../context/ToastContext';
@@ -48,6 +49,7 @@ export default function Jobs() {
   const { toast } = useToast();
   const hasSentMessage = useRef(false);
   const [allRecData, setAllRecData] = useState(null);
+  const [savedJobIds, setSavedJobIds] = useState(new Set());
 
   const recTabs = [
     { key: "smart", label: "Smart Hybrid", icon: Sparkles },
@@ -77,6 +79,17 @@ export default function Jobs() {
       }
     };
     fetchRecs();
+  }, [user]);
+
+  // Fetch saved job IDs so we can show filled bookmark icons
+  useEffect(() => {
+    if (!user) return;
+    api.get("/jobs/saved")
+      .then((res) => {
+        const ids = new Set((res.data.jobs || []).map((j) => j.id));
+        setSavedJobIds(ids);
+      })
+      .catch(() => {});
   }, [user]);
 
   const handleRecTabChange = (tabKey) => {
@@ -202,6 +215,38 @@ export default function Jobs() {
     if (job.salary_min) return `From ${fmt(job.salary_min)}`;
     if (job.salary) return job.salary;
     return null;
+  };
+
+  const handleToggleSave = async (e, jobId) => {
+    e.stopPropagation();
+    if (!user) {
+      toast?.info?.("Please log in to save jobs");
+      navigate("/login");
+      return;
+    }
+    // Optimistic update
+    setSavedJobIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+        toast?.success?.("Job removed from saved");
+      } else {
+        next.add(jobId);
+        toast?.success?.("Job saved!");
+      }
+      return next;
+    });
+    try {
+      await api.post(`/jobs/${jobId}/save`);
+    } catch {
+      // Revert on failure
+      setSavedJobIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+        return next;
+      });
+      toast?.error?.("Failed to save job");
+    }
   };
 
   return (
@@ -378,11 +423,13 @@ export default function Jobs() {
                         <span className="post-time">{timeAgo(job.createdAt)}</span>
                       </div>
                       <button
-                        className="save-btn"
-                        onClick={(e) => e.stopPropagation()}
-                        title="Save job"
+                        className={`save-btn${savedJobIds.has(job.id) ? ' saved' : ''}`}
+                        onClick={(e) => handleToggleSave(e, job.id)}
+                        title={savedJobIds.has(job.id) ? 'Remove from saved' : 'Save job'}
                       >
-                        <Bookmark size={14} />
+                        {savedJobIds.has(job.id)
+                          ? <BookmarkCheck size={14} />
+                          : <Bookmark size={14} />}
                       </button>
                     </div>
 
@@ -405,7 +452,6 @@ export default function Jobs() {
                     {/* ── Footer: salary + apply ── */}
                     <div className="job-card-footer">
                       <div className="salary-block">
-                        {salary && <span className="salary-text">{salary}</span>}
                         <span className="location-text">
                           <MapPin size={11} /> {job.location}
                         </span>
