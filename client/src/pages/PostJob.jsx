@@ -93,9 +93,18 @@ function PostJob() {
         salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
         salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
         vacancy: parseInt(formData.vacancy),
-        required_skills: formData.required_skills.split(',').map(s => s.trim()).filter(s => s)
+        required_skills: formData.required_skills
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s)
       }
-      await api.post('/jobs', jobData)
+
+      // If editing an existing job, update instead of creating
+      if (formData.id) {
+        await api.put(`/jobs/${formData.id}`, jobData)
+      } else {
+        await api.post('/jobs', jobData)
+      }
       setSuccess('Job vacancy posted successfully!')
       setTimeout(() => navigate('/employer'), 2000)
     } catch (err) {
@@ -112,6 +121,10 @@ function PostJob() {
         <button onClick={() => navigate('/employer')} className="btn-back">
           <ArrowLeft size={18} /> Back to Dashboard
         </button>
+
+
+
+
 
         {/* TABS */}
         <div className="job-tabs">
@@ -272,6 +285,7 @@ function PostJob() {
                       >
                         Delete
                       </button>
+                      
                     </div>
                   </div>
                 ))
