@@ -28,6 +28,23 @@ class ContentBasedFiltering {
   }
 
   /**
+   * Parse skills from DB into array of strings
+   */
+  parseSkills(skills) {
+    if (typeof skills === 'string') {
+      try {
+        skills = JSON.parse(skills);
+      } catch (e) {
+        skills = skills.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    if (!Array.isArray(skills)) return [];
+    return skills
+      .map((s) => (typeof s === 'string' ? s : s?.title || ''))
+      .filter(Boolean);
+  }
+
+  /**
    * Calculate job type match score
    */
   jobTypeScore(userPreferredType, jobType) {
@@ -40,8 +57,17 @@ class ContentBasedFiltering {
    */
   experienceScore(userExp, jobExp) {
     if (!userExp || !jobExp) return 0;
+    const levels = {
+      entry: 1,
+      mid: 2,
+      senior: 3,
+      lead: 4,
+      executive: 5,
+    };
+    const userVal = levels[userExp.toLowerCase()] || 2;
+    const jobVal = levels[jobExp.toLowerCase()] || 2;
     // If exact match or user has higher experience than required
-    return userExp.toLowerCase() === jobExp.toLowerCase() ? 1 : 0.4;
+    return userVal >= jobVal ? 1 : 0.4;
   }
 
   /**
@@ -49,9 +75,9 @@ class ContentBasedFiltering {
    */
   locationScore(userPreferredLocation, jobLocation) {
     if (!userPreferredLocation || !jobLocation) return 0;
-    return userPreferredLocation.toLowerCase() === jobLocation.toLowerCase()
-      ? 1
-      : 0;
+    const u = userPreferredLocation.toLowerCase().trim();
+    const j = jobLocation.toLowerCase().trim();
+    return u.includes(j) || j.includes(u) ? 1 : 0;
   }
 
   /**
@@ -66,9 +92,9 @@ class ContentBasedFiltering {
       }
 
       // Get user's skills and preferences
-      const userSkills = user.skills || [];
+      const userSkills = this.parseSkills(user.skills);
       const preferredJobType = user.preferred_job_type;
-      const preferredLocation = user.preferred_location;
+      const preferredLocation = user.preferred_location || (user.address ? user.address.split(',')[0].trim() : null);
       const userExperience = user.experience_level || "mid";
 
       // Get all active jobs (excluding those already applied)
@@ -81,16 +107,17 @@ class ContentBasedFiltering {
       // Get all unique skills from jobs for vectorization
       const allSkillsSet = new Set();
       jobs.forEach((job) => {
-        (job.required_skills || []).forEach((skill) => allSkillsSet.add(skill));
+        this.parseSkills(job.required_skills).forEach((skill) => allSkillsSet.add(skill));
       });
       const allSkills = Array.from(allSkillsSet);
 
       // Calculate similarity scores
       const recommendations = jobs.map((job) => {
         // Skills similarity
+        const jobSkills = this.parseSkills(job.required_skills);
         const userVector = this.skillsToVector(userSkills, allSkills);
         const jobVector = this.skillsToVector(
-          job.required_skills || [],
+          jobSkills,
           allSkills,
         );
         const skillsSimilarity = this.cosineSimilarity(userVector, jobVector);
@@ -112,13 +139,13 @@ class ContentBasedFiltering {
 
         /**
          * New Weighted Parameters:
-         * Skills Match: 50% | Experience: 20% | Job Type: 15% | Location: 15%
+         * Skills Match: 60% | Experience: 5% | Job Type: 5% | Location: 30%
          */
         const score =
-          skillsSimilarity * 0.5 +
-          expScore * 0.2 +
-          typeScore * 0.15 +
-          locationMatch * 0.15;
+          skillsSimilarity * 0.6 +
+          expScore * 0.05 +
+          typeScore * 0.05 +
+          locationMatch * 0.3;
 
         return {
           job,
@@ -132,10 +159,28 @@ class ContentBasedFiltering {
         };
       });
 
-      // Sort by score and return top recommendations
-      recommendations.sort((a, b) => b.score - a.score);
+      // Partition recommendations: location-matching vs others
+      const locationMatching = [];
+      const others = [];
 
-      return recommendations.slice(0, limit).map((rec) => {
+      recommendations.forEach((rec) => {
+        const isLocMatch = preferredLocation && rec.job.location &&
+          (preferredLocation.toLowerCase().includes(rec.job.location.toLowerCase()) ||
+           rec.job.location.toLowerCase().includes(preferredLocation.toLowerCase()));
+        if (isLocMatch) {
+          locationMatching.push(rec);
+        } else {
+          others.push(rec);
+        }
+      });
+
+      // Sort each partition by score
+      locationMatching.sort((a, b) => b.score - a.score);
+      others.sort((a, b) => b.score - a.score);
+
+      const sortedRecommendations = [...locationMatching, ...others];
+
+      return sortedRecommendations.slice(0, limit).map((rec) => {
         const reasons = [];
         if (rec.details.skillsSimilarity > 0.3) {
           reasons.push(
@@ -181,14 +226,15 @@ class ContentBasedFiltering {
         throw new Error("User or Job not found");
       }
 
-      const userSkills = user.skills || [];
+      const userSkills = this.parseSkills(user.skills);
+      const jobSkills = this.parseSkills(job.required_skills);
       const allSkills = [
-        ...new Set([...userSkills, ...(job.required_skills || [])]),
+        ...new Set([...userSkills, ...jobSkills]),
       ];
 
       const userVector = this.skillsToVector(userSkills, allSkills);
       const jobVector = this.skillsToVector(
-        job.required_skills || [],
+        jobSkills,
         allSkills,
       );
 

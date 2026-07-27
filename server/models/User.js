@@ -111,7 +111,7 @@ const User = sequelize.define(
     },
     cluster_id: {
       type: DataTypes.INTEGER,
-      defaultValue: 0,
+      defaultValue: null,
       allowNull: true,
     },
     company_name: {

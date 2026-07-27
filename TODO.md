@@ -1,23 +1,34 @@
-# TODO - Job Recommendations in Messages
+# Fix: Irrelevant Job Recommendations
 
-## Plan (approved)
+## Root Cause Analysis
 
-1. Add backend endpoint to convert smart recommendations into a `messages` row for the logged-in user.
-   - Create controller method in `server/controllers/messageController.js` (or new controller) that:
-     - calls `/recommendations/smart` logic (or imports `recommendationController.getSmartRecommendations` internals) to get top jobs
-     - creates a `Message` row with `type: 'system'` and `message` text like: “Here are your recommended jobs: A, B, C”
-     - sets `sender_id` to a safe value (system/admin) or reuse recipient as sender.
-     - sets `application_id: null`.
-   - Add route in `server/routes/messages.js` e.g. `POST /recommendations/to-messages`.
+Jobs with 0% skill overlap are still recommended because:
 
-2. Update frontend Dashboard (and optionally Home) to call the new endpoint after recommendations are fetched.
-   - On mount, Dashboard already calls `api.get('/recommendations/smart')` and stores top 3.
-   - Add `useEffect` to post them into messages once (use a ref/flag to avoid duplicates).
+1. No minimum skill overlap threshold exists in `blendRecommendations`
+2. Score normalization `Math.max(rawMax, 0.8)` artificially inflates weak scores
+3. Diversity enforcement (`enforceDiversity`) round-robins across categories regardless of skill match
+4. Fallback returns random recent jobs sorted by `createdAt`
 
-3. Update `/messages` UI if needed.
-   - Ensure `client/src/pages/Messages.jsx` displays system messages (it already uses `notif.message`).
-   - If backend includes `sender.name` as null for system, ensure `getTopic` shows “System”.
+## Fixes to Apply
 
-4. Test
-   - Run backend + frontend.
-   - Login as jobseeker, open Dashboard/Home, verify messages appear under `/messages` and unread count increments.
+### [x] Fix 1: Add skill overlap threshold
+
+- Add `SKILL_OVERLAP_THRESHOLD = 0.1` constant (10%)
+- Add `filterBySkillOverlap()` helper to remove jobs below threshold
+
+### [x] Fix 2: Fix score normalization
+
+- Remove `Math.max(rawMax, 0.8)` floor so weak matches show low scores naturally
+
+### [x] Fix 3: Fix diversity enforcement
+
+- Apply `filterBySkillOverlap` before `enforceDiversity` in `blendRecommendations`
+
+### [x] Fix 4: Fix fallback logic
+
+- Instead of `order: [["createdAt", "DESC"]]`, search for jobs with ANY skill overlap with user
+
+### [x] Fix 5: Message-level filtering
+
+- In `sendRecommendationAsMessage`, post-filter to only include jobs above threshold
+- Skip sending if no qualifying jobs remain

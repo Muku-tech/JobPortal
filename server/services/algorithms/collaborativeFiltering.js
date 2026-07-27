@@ -6,7 +6,7 @@ class CollaborativeFiltering {
   async buildInteractionMatrix(userId) {
     try {
       const views = await JobView.findAll({
-        attributes: ["user_id", "job_id", "action_type", "view_duration"],
+        attributes: ["user_id", "job_id", "action_type", "view_duration", "createdAt"],
       });
 
       const applications = await Application.findAll({
@@ -48,6 +48,20 @@ class CollaborativeFiltering {
       console.error("Error building interaction matrix:", error);
       throw error;
     }
+  }
+
+  parseSkills(skills) {
+    if (typeof skills === 'string') {
+      try {
+        skills = JSON.parse(skills);
+      } catch (e) {
+        skills = skills.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    if (!Array.isArray(skills)) return [];
+    return skills
+      .map((s) => (typeof s === 'string' ? s : s?.title || ''))
+      .filter(Boolean);
   }
 
   calculateUserSimilarity(user1Interactions, user2Interactions) {
@@ -99,19 +113,21 @@ class CollaborativeFiltering {
    * Returns 0-1 score based on how many job skills match user skills
    */
   calculateSkillOverlapScore(userSkills, jobSkills) {
-    if (!userSkills || userSkills.length === 0) return 0.3; 
-    if (!jobSkills || jobSkills.length === 0) return 0.3;
-    const lowerUser = userSkills.map((s) => s.toLowerCase());
-    const matched = jobSkills.filter((s) =>
+    const uSkills = this.parseSkills(userSkills);
+    const jSkills = this.parseSkills(jobSkills);
+    if (uSkills.length === 0 || jSkills.length === 0) return 0.3; 
+    const lowerUser = uSkills.map((s) => s.toLowerCase());
+    const matched = jSkills.filter((s) =>
       lowerUser.includes(s.toLowerCase()),
     ).length;
   
-    return Math.min(1, matched / Math.max(1, jobSkills.length));
+    return Math.min(1, matched / Math.max(1, jSkills.length));
   }
 
   
   calculateCategoryRelevance(userSkills, jobCategory) {
-    if (!userSkills || userSkills.length === 0 || !jobCategory) return 0.3;
+    const uSkills = this.parseSkills(userSkills);
+    if (uSkills.length === 0 || !jobCategory) return 0.3;
 
     const categorySkillMap = {
       "Information Technology": [
@@ -312,7 +328,7 @@ class CollaborativeFiltering {
       ],
     };
 
-    const lowerUser = userSkills.map((s) => s.toLowerCase());
+    const lowerUser = uSkills.map((s) => s.toLowerCase());
     const keywords = categorySkillMap[jobCategory] || [];
     const matched = keywords.filter((k) => lowerUser.includes(k)).length;
     // Normalize: if at least one skill matches the category, score is decent
@@ -363,10 +379,15 @@ class CollaborativeFiltering {
       const interactions = await this.buildInteractionMatrix(userId);
 
       const user = await User.findByPk(userId);
-      const userSkills = user?.skills || [];
+      const userSkills = this.parseSkills(user?.skills);
+      const preferredLocation = user?.preferred_location || (user?.address ? user.address.split(',')[0].trim() : null);
 
       const userJobs = new Set(Object.keys(interactions[userIdStr] || {}));
       const similarUsers = await this.findSimilarUsers(userId, 20);
+
+      const isLocMatch = (jobLoc) => preferredLocation && jobLoc && 
+        (preferredLocation.toLowerCase().includes(jobLoc.toLowerCase()) || 
+         jobLoc.toLowerCase().includes(preferredLocation.toLowerCase()));
 
       if (similarUsers.length === 0) {
         const popularJobs = await Job.findAll({
@@ -374,12 +395,18 @@ class CollaborativeFiltering {
           order: [["createdAt", "DESC"]],
           limit: limit * 2,
         });
-        return popularJobs.map((job) => ({
+
+        const mappedPopular = popularJobs.map((job) => ({
           ...job.toJSON(),
           recommendationScore: 0,
           recommendationType: "popular",
           matchReasons: ["Trending job"],
         }));
+
+        const local = mappedPopular.filter(job => isLocMatch(job.location));
+        const others = mappedPopular.filter(job => !isLocMatch(job.location));
+
+        return [...local, ...others].slice(0, limit);
       }
 
       const jobScores = {};
@@ -401,9 +428,30 @@ class CollaborativeFiltering {
 
       // Fetch candidate jobs
       const candidateJobIds = Object.keys(jobScores).map((id) => parseInt(id));
-      const candidateJobs = await Job.findAll({
+      let candidateJobs = await Job.findAll({
         where: { id: candidateJobIds, status: "active" },
       });
+
+      if (candidateJobs.length === 0) {
+        // Fallback: popular active jobs
+        candidateJobs = await Job.findAll({
+          where: { status: "active" },
+          order: [["createdAt", "DESC"]],
+          limit: limit * 2,
+        });
+
+        const mappedFallback = candidateJobs.map((job) => ({
+          ...job.toJSON(),
+          recommendationScore: 0.5,
+          recommendationType: "popular",
+          matchReasons: ["Trending job"],
+        }));
+
+        const local = mappedFallback.filter(job => isLocMatch(job.location));
+        const others = mappedFallback.filter(job => !isLocMatch(job.location));
+
+        return [...local, ...others].slice(0, limit);
+      }
 
       // Score each job with skill overlap and category relevance
       const scoredJobs = candidateJobs.map((job) => {
@@ -418,9 +466,9 @@ class CollaborativeFiltering {
         );
 
         // Weighted combined score:
-        // 40% collaborative popularity, 40% skill overlap, 20% category relevance
+        // 30% collaborative popularity, 50% skill overlap, 20% category relevance
         const combinedScore =
-          rawScore * 0.4 + skillScore * 100 * 0.4 + categoryScore * 100 * 0.2;
+          rawScore * 0.3 + skillScore * 100 * 0.5 + categoryScore * 100 * 0.2;
 
         return {
           ...job.toJSON(),
@@ -454,8 +502,14 @@ class CollaborativeFiltering {
         job.matchReasons = reasons;
       });
 
-      // Enforce diversity across categories
-      const diverseJobs = this.enforceDiversity(scoredJobs, userSkills, limit);
+      // Partition and apply diversity independently to local and other jobs
+      const locationMatchingJobs = scoredJobs.filter(job => isLocMatch(job.location));
+      const otherJobs = scoredJobs.filter(job => !isLocMatch(job.location));
+
+      const diverseLocal = this.enforceDiversity(locationMatchingJobs, userSkills, limit);
+      const diverseOthers = this.enforceDiversity(otherJobs, userSkills, limit);
+
+      const diverseJobs = [...diverseLocal, ...diverseOthers];
 
       return diverseJobs.slice(0, limit);
     } catch (error) {

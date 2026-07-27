@@ -274,7 +274,7 @@ export default function JobDetails() {
                     value={selectedResumeId || ''}
                     onChange={(e) => setSelectedResumeId(e.target.value ? Number(e.target.value) : null)}
                     className="resume-select"
-                    required
+                    required={!resumePdfFile}
                   >
                     <option value="">Select a resume...</option>
                     {resumes.map(resume => (
@@ -333,17 +333,36 @@ export default function JobDetails() {
               <span>Experience</span>
               <span>{job.experience_level}</span>
             </div>
+
+            <div className="summary-item">
+              <span>Vacancies</span>
+              <span>{job.vacancy ?? 1}</span>
+            </div>
+
+            {job.deadline && (
+              <div className="summary-item">
+                <span>Deadline</span>
+                <span>
+                  {job.deadline ? new Date(job.deadline).toLocaleDateString() : ""}
+                </span>
+              </div>
+            )}
+
             {job.salary_min && (
               <div className="summary-item">
                 <span>Salary</span>
-                <span>NPR {parseInt(job.salary_min).toLocaleString()} - {parseInt(job.salary_max).toLocaleString()}</span>
+                <span>
+                  NPR {parseInt(job.salary_min).toLocaleString()} - {parseInt(job.salary_max).toLocaleString()}
+                </span>
               </div>
             )}
+
             <div className="summary-item">
               <span>Posted</span>
               <span>{new Date(job.created_at).toLocaleDateString()}</span>
             </div>
           </div>
+
 
           <div className="sidebar-section action-section">
             <h3>Skill Gap Analysis</h3>

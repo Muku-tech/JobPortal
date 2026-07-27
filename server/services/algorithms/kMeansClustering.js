@@ -21,6 +21,20 @@ class KMeansClustering {
     );
   }
 
+  parseSkills(skills) {
+    if (typeof skills === 'string') {
+      try {
+        skills = JSON.parse(skills);
+      } catch (e) {
+        skills = skills.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    if (!Array.isArray(skills)) return [];
+    return skills
+      .map((s) => (typeof s === 'string' ? s : s?.title || ''))
+      .filter(Boolean);
+  }
+
   encodeCategory(category, categories) {
     const index = categories.indexOf(category);
     return index >= 0 ? index / (categories.length - 1) : 0;
@@ -177,20 +191,22 @@ class KMeansClustering {
    * Calculate skill overlap ratio between user and job
    */
   calculateSkillOverlapScore(userSkills, jobSkills) {
-    if (!userSkills || userSkills.length === 0) return 0.3;
-    if (!jobSkills || jobSkills.length === 0) return 0.3;
-    const lowerUser = userSkills.map((s) => s.toLowerCase());
-    const matched = jobSkills.filter((s) =>
+    const uSkills = this.parseSkills(userSkills);
+    const jSkills = this.parseSkills(jobSkills);
+    if (uSkills.length === 0 || jSkills.length === 0) return 0.3;
+    const lowerUser = uSkills.map((s) => s.toLowerCase());
+    const matched = jSkills.filter((s) =>
       lowerUser.includes(s.toLowerCase()),
     ).length;
-    return Math.min(1, matched / Math.max(1, jobSkills.length));
+    return Math.min(1, matched / Math.max(1, jSkills.length));
   }
 
   /**
    * Calculate category relevance score based on user's skills
    */
   calculateCategoryRelevance(userSkills, jobCategory) {
-    if (!userSkills || userSkills.length === 0 || !jobCategory) return 0.3;
+    const uSkills = this.parseSkills(userSkills);
+    if (uSkills.length === 0 || !jobCategory) return 0.3;
 
     const categorySkillMap = {
       "Information Technology": [
@@ -391,7 +407,7 @@ class KMeansClustering {
       ],
     };
 
-    const lowerUser = userSkills.map((s) => s.toLowerCase());
+    const lowerUser = uSkills.map((s) => s.toLowerCase());
     const keywords = categorySkillMap[jobCategory] || [];
     const matched = keywords.filter((k) => lowerUser.includes(k)).length;
     return Math.min(1, 0.3 + (matched / Math.max(1, keywords.length)) * 0.7);
@@ -435,10 +451,18 @@ class KMeansClustering {
    */
   async getRecommendations(userId, limit = 10) {
     try {
-      const user = await User.findByPk(userId);
+      let user = await User.findByPk(userId);
       if (!user) return [];
-      const userSkills = user.skills || [];
-      const userClusterId = user.cluster_id ?? 0;
+
+      let userClusterId = user.cluster_id;
+      if (userClusterId === null) {
+        await this.assignUserClusters();
+        user = await User.findByPk(userId);
+        userClusterId = user?.cluster_id ?? 0;
+      }
+
+      const userSkills = this.parseSkills(user.skills);
+      const preferredLocation = user.preferred_location || (user.address ? user.address.split(',')[0].trim() : null);
 
       const clusterUsers = await User.findAll({
         where: { role: "jobseeker", cluster_id: userClusterId },
@@ -482,9 +506,53 @@ class KMeansClustering {
       });
 
       const candidateJobIds = Object.keys(jobScores).map((id) => parseInt(id));
-      const candidateJobs = await Job.findAll({
+      let candidateJobs = await Job.findAll({
         where: { id: candidateJobIds, status: "active" },
       });
+
+      const isLocMatch = (jobLoc) => preferredLocation && jobLoc && 
+        (preferredLocation.toLowerCase().includes(jobLoc.toLowerCase()) || 
+         jobLoc.toLowerCase().includes(preferredLocation.toLowerCase()));
+
+      if (candidateJobs.length === 0) {
+        // Fallback: Recommend jobs matching user profile
+        candidateJobs = await Job.findAll({
+          where: { status: "active" },
+          limit: limit * 2,
+          order: [["createdAt", "DESC"]],
+        });
+
+        const scoredFallback = candidateJobs.map((job) => {
+          const skillScore = this.calculateSkillOverlapScore(userSkills, job.required_skills);
+          const categoryScore = this.calculateCategoryRelevance(userSkills, job.category);
+          const typeScore = job.job_type === user.preferred_job_type ? 1 : 0;
+          const locScore = job.location && preferredLocation && isLocMatch(job.location) ? 1 : 0;
+
+          const combinedScore = skillScore * 50 + categoryScore * 20 + typeScore * 10 + locScore * 20;
+
+          return {
+            ...job.toJSON(),
+            recommendationScore: Math.round(combinedScore * 100) / 100,
+            cluster: userClusterId,
+            recommendationType: "kmeans-fallback",
+            _skillScore: skillScore,
+            _categoryScore: categoryScore,
+          };
+        });
+
+        scoredFallback.sort((a, b) => b.recommendationScore - a.recommendationScore);
+        scoredFallback.forEach((job) => {
+          job.matchReasons = ["Recommended for your cluster based on profile match"];
+        });
+
+        const localFallback = scoredFallback.filter(job => isLocMatch(job.location));
+        const otherFallback = scoredFallback.filter(job => !isLocMatch(job.location));
+
+        const diverseLocalFallback = this.enforceDiversity(localFallback, userSkills, limit);
+        const diverseOtherFallback = this.enforceDiversity(otherFallback, userSkills, limit);
+
+        return [...diverseLocalFallback, ...diverseOtherFallback].slice(0, limit);
+      }
 
       // Score each job with continuous skill and category relevance
       const scoredJobs = candidateJobs.map((job) => {
@@ -498,10 +566,10 @@ class KMeansClustering {
           job.category,
         );
 
-        // Combined: 40% cluster popularity, 40% skill overlap, 20% category fit
+        // Combined: 30% cluster popularity, 50% skill overlap, 20% category fit
         const combinedScore =
-          clusterScore * 0.4 +
-          skillScore * 100 * 0.4 +
+          clusterScore * 0.3 +
+          skillScore * 100 * 0.5 +
           categoryScore * 100 * 0.2;
 
         return {
@@ -534,8 +602,13 @@ class KMeansClustering {
         job.matchReasons = reasons;
       });
 
-      // Enforce diversity across categories
-      const diverseJobs = this.enforceDiversity(scoredJobs, userSkills, limit);
+      const locationMatchingJobs = scoredJobs.filter(job => isLocMatch(job.location));
+      const otherJobs = scoredJobs.filter(job => !isLocMatch(job.location));
+
+      const diverseLocal = this.enforceDiversity(locationMatchingJobs, userSkills, limit);
+      const diverseOthers = this.enforceDiversity(otherJobs, userSkills, limit);
+
+      const diverseJobs = [...diverseLocal, ...diverseOthers];
 
       return diverseJobs.slice(0, limit);
     } catch (error) {
@@ -551,9 +624,10 @@ class KMeansClustering {
       if (users.length === 0) return {};
 
       const allSkillsSet = new Set();
-      users.forEach((u) =>
-        (u.skills || []).forEach((s) => allSkillsSet.add(s.toLowerCase())),
-      );
+      users.forEach((u) => {
+        const uSkills = this.parseSkills(u.skills);
+        uSkills.forEach((s) => allSkillsSet.add(s.toLowerCase()));
+      });
       const allSkills = Array.from(allSkillsSet);
 
       const experienceMap = {
@@ -564,15 +638,29 @@ class KMeansClustering {
         executive: 1,
       };
 
+      const allLocationsSet = new Set();
+      users.forEach((u) => {
+        const loc = u.preferred_location || (u.address ? u.address.split(',')[0].trim() : null);
+        if (loc) allLocationsSet.add(loc.toLowerCase());
+      });
+      const allLocations = Array.from(allLocationsSet);
+
       const vectors = users.map((u) => {
+        const uSkills = this.parseSkills(u.skills);
         const skillVec = allSkills.map((s) =>
-          (u.skills || []).some((us) => us.toLowerCase() === s) ? 1 : 0,
+          uSkills.some((us) => us.toLowerCase() === s) ? 1 : 0,
         );
         const expVal = experienceMap[u.experience_level] || 0.5;
-        return [...skillVec, expVal];
+        
+        const uLoc = u.preferred_location || (u.address ? u.address.split(',')[0].trim() : null);
+        const locVec = allLocations.map((l) =>
+          uLoc && uLoc.toLowerCase() === l ? 1.5 : 0
+        );
+
+        return [...skillVec, expVal, ...locVec];
       });
 
-      const k = 3;
+      const k = Math.min(3, users.length);
       let centroids = [];
       for (let i = 0; i < k; i++) {
         centroids.push(vectors[Math.floor(Math.random() * vectors.length)]);

@@ -57,6 +57,19 @@ function calcSkillOverlap(userSkills, jobSkills) {
   return Math.min(1, matched / Math.max(1, jobSkills.length));
 }
 
+// Minimum skill overlap threshold — jobs below this are considered irrelevant
+const SKILL_OVERLAP_THRESHOLD = 0.1;
+
+// Filter jobs below the minimum skill overlap threshold.
+// Only keeps jobs where at least SKILL_OVERLAP_THRESHOLD fraction of required skills match the user.
+function filterBySkillOverlap(jobs, userSkills) {
+  if (!userSkills || userSkills.length === 0) return [];
+  return jobs.filter((job) => {
+    const overlap = calcSkillOverlap(userSkills, job.required_skills || []);
+    return overlap >= SKILL_OVERLAP_THRESHOLD;
+  });
+}
+
 // Enforce diversity: round-robin pick from different categories
 function enforceDiversity(jobs, limit) {
   const categoryGroups = new Map();
@@ -119,22 +132,34 @@ function blendRecommendations(sources, limit, userSkills = []) {
     (a, b) => b.score - a.score,
   );
 
-  // Normalize scores to a 0-1 scale so top results feel like "High Matches"
-  // We use 1.0 as a minimum baseline to prevent very low scores (like 0.1)
-  // from being scaled up to 100% when the profile is empty.
-  const rawMax = sorted.length > 0 ? sorted[0].score : 0;
-  const maxBlendedScore = Math.max(rawMax, 0.8);
+  // Filter out jobs that have insufficient skill overlap with the user.
+  // This prevents recommending jobs from unrelated categories.
+  const filtered = sorted.filter((entry) => {
+    const overlap = calcSkillOverlap(
+      userSkills,
+      entry.job.required_skills || [],
+    );
+    return overlap >= SKILL_OVERLAP_THRESHOLD;
+  });
+
+  // If filtering removed everything, return empty so fallback can handle it
+  if (filtered.length === 0) return [];
+
+  // Normalize scores to a 0-1 scale using only the real max (no artificial floor).
+  // Low-scoring jobs will naturally show a low match percentage.
+  const rawMax = filtered.length > 0 ? filtered[0].score : 0;
+  const maxBlendedScore = Math.max(rawMax, 0.01); // Only floor at 0.01 to avoid div-by-zero
 
   // Enforce diversity so jobs from multiple categories appear
   const diverse = enforceDiversity(
-    sorted.map((s) => s.job),
+    filtered.map((s) => s.job),
     limit,
   );
 
   // Re-attach scores
-  // We divide by maxBlendedScore and apply a slight boost for top rank
+  // We divide by maxBlendedScore — no artificial floor means weak matches stay weak
   const scoreLookup = new Map(
-    sorted.map((s) => [s.job.id, s.score / maxBlendedScore]),
+    filtered.map((s) => [s.job.id, s.score / maxBlendedScore]),
   );
 
   return diverse.slice(0, limit).map((job) => {
@@ -156,11 +181,14 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
   }
 
   // Data Sanitization: Ensure skills is an array even if DB returns a string
-  if (typeof user.skills === 'string') {
+  if (typeof user.skills === "string") {
     try {
       user.skills = JSON.parse(user.skills);
     } catch (e) {
-      user.skills = user.skills.split(',').map(s => s.trim()).filter(Boolean);
+      user.skills = user.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
   }
   if (!Array.isArray(user.skills)) user.skills = [];
@@ -222,18 +250,34 @@ const _getSmartRecommendationsInternal = async (userId, limit) => {
     );
   }
 
-  // FALLBACK: If no recommendations found, get popular jobs
+  // FALLBACK: If no recommendations found, search for jobs with ANY skill overlap
   if (recommendations.length === 0) {
-    const popularJobs = await Job.findAll({
-      limit: limit,
-      order: [["createdAt", "DESC"]], // Simple recent fallback
+    const allJobs = await Job.findAll({
+      where: { status: "active" },
+      limit: 50,
+      order: [["createdAt", "DESC"]],
     });
-    recommendations = popularJobs.map((j) => ({
-      ...j.toJSON(),
-      recommendationType: "popular",
-      recommendationScore: 0.5,
-    }));
-    algorithmUsed = algorithmUsed || "fallback-popular";
+    // Filter to only jobs that have at least some skill overlap with the user
+    const matchingJobs = filterBySkillOverlap(allJobs, user.skills || []);
+    if (matchingJobs.length > 0) {
+      recommendations = matchingJobs.slice(0, limit).map((j) => ({
+        ...(typeof j.toJSON === "function" ? j.toJSON() : j),
+        recommendationType: "skill-matched",
+        recommendationScore: calcSkillOverlap(
+          user.skills || [],
+          j.required_skills || [],
+        ),
+      }));
+      algorithmUsed = algorithmUsed || "fallback-skill-matched";
+    } else {
+      // Absolute last resort: recent jobs
+      recommendations = allJobs.slice(0, limit).map((j) => ({
+        ...(typeof j.toJSON === "function" ? j.toJSON() : j),
+        recommendationType: "popular",
+        recommendationScore: 0.1,
+      }));
+      algorithmUsed = algorithmUsed || "fallback-popular";
+    }
   }
 
   return { recommendations, user, stats, algorithmUsed, stage };
@@ -335,26 +379,46 @@ exports.trackJobView = async (req, res) => {
     const { jobId, duration, action } = req.body;
     const userId = req.user.id;
 
-    await JobView.create({
-      user_id: userId,
-      job_id: jobId,
-      view_duration: duration || 0,
-      action_type: action || "view",
+    // job_views has a unique constraint on (user_id, job_id)
+    // so we must avoid duplicate inserts for repeated views/clicks.
+    const existing = await JobView.findOne({
+      where: { user_id: userId, job_id: jobId },
     });
+
+    if (existing) {
+      await existing.update({
+        // Option A: accumulate view duration
+        view_duration: (existing.view_duration || 0) + (duration || 0),
+        action_type: action || existing.action_type || "view",
+      });
+    } else {
+      await JobView.create({
+        user_id: userId,
+        job_id: jobId,
+        view_duration: duration || 0,
+        action_type: action || "view",
+      });
+    }
 
     // Trigger automated recommendation message on significant interaction
     // Throttled to once every 15 minutes to avoid spamming the user
-    if (action === 'click' || action === 'save' || action === 'apply') {
+    if (action === "click" || action === "save" || action === "apply") {
       const lastMessage = await Message.findOne({
-        where: { recipient_id: userId, type: 'system' },
-        order: [['createdAt', 'DESC']]
+        where: { recipient_id: userId, type: "system" },
+        order: [["createdAt", "DESC"]],
       });
 
       const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
       if (!lastMessage || lastMessage.createdAt < fifteenMinsAgo) {
         // Fire and forget internal call to send message
-        exports.sendRecommendationAsMessage({ user: { id: userId }, query: { limit: 5 } }, { json: () => {} })
-          .catch(err => console.error("Auto-recommendation error:", err.message));
+        exports
+          .sendRecommendationAsMessage(
+            { user: { id: userId }, query: { limit: 5 } },
+            { json: () => {} },
+          )
+          .catch((err) =>
+            console.error("Auto-recommendation error:", err.message),
+          );
       }
     }
 
@@ -651,14 +715,18 @@ exports.getUniqueSkills = async (req, res) => {
     jobs.forEach((job) => {
       let skills = job.required_skills;
       // Handle potential string vs array storage in DB
-      if (typeof skills === 'string') {
-        try { skills = JSON.parse(skills); } catch { skills = skills.split(','); }
+      if (typeof skills === "string") {
+        try {
+          skills = JSON.parse(skills);
+        } catch {
+          skills = skills.split(",");
+        }
       }
-      
+
       if (Array.isArray(skills)) {
-        skills.forEach((s) => { 
-          const skillName = typeof s === 'string' ? s : s?.title;
-          if (skillName) skillsSet.add(skillName.trim()); 
+        skills.forEach((s) => {
+          const skillName = typeof s === "string" ? s : s?.title;
+          if (skillName) skillsSet.add(skillName.trim());
         });
       }
     });

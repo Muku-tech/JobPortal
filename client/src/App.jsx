@@ -22,6 +22,7 @@ import ResumeBuilder from "./pages/ResumeBuilder"
 import Messages from "./pages/Messages"
 import SavedJobs from "./pages/SavedJobs"
 import ApplicationMessages from "./pages/ApplicationMessages"
+import ForgotPassword from "./pages/ForgotPassword"
 
 // NEW IMPORT
 import { useParams } from "react-router-dom"
@@ -80,6 +81,7 @@ function App() {
               <Route path="/jobs/:id" element={<JobDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
 
               {/* JOB SEEKER PROTECTED */}
               <Route

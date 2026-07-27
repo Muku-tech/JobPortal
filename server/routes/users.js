@@ -129,6 +129,7 @@ router.put("/profile", auth, async (req, res) => {
     const enumToNull = (value) => (value === "" ? null : value);
 
     const updateData = {
+      cluster_id: null,
       name: req.body.name !== undefined ? req.body.name : user.name,
       phone: req.body.phone !== undefined ? req.body.phone : user.phone,
       address: req.body.address !== undefined ? req.body.address : user.address,

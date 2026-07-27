@@ -1,0 +1,300 @@
+.post-job-card .my-jobs-list {
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* My Jobs tab is inside PostJob component */
+.post-job-card .my-jobs-list h3 {
+  margin: 0 0 14px;
+  color: #0f172a;
+}
+
+/* Job items */
+.post-job-card .my-jobs-list .job-item {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.post-job-card .my-jobs-list .job-item:hover {
+  transform: translateY(-2px);
+  border-color: #2563eb;
+}
+
+.post-job-card .my-jobs-list .job-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.post-job-card .my-jobs-list .job-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-weight: 650;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.post-job-card .my-jobs-list .job-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Buttons inside My Jobs */
+.post-job-card .my-jobs-list .btn-small {
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.06);
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.post-job-card .my-jobs-list .btn-small:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+.post-job-card .my-jobs-list .btn-small:active {
+  transform: translateY(0px);
+}
+
+.post-job-card .my-jobs-list .btn-small.primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.post-job-card .my-jobs-list .btn-small.secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.post-job-card .my-jobs-list .btn-small.danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+/* Status badge colors (matches PostJob.jsx: status-badge status-${status}) */
+.post-job-card .my-jobs-list .status-badge {
+
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.post-job-card .my-jobs-list .status-active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.post-job-card .my-jobs-list .status-draft {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.post-job-card .my-jobs-list .status-completed {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.post-job-card .my-jobs-list .status-closed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.myjobs-root {
+
+
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 18px;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.myjobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.myjobs-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.myjobs-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+.myjobs-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.myjobs-tab-btn {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #475569;
+  transition: all 0.15s ease;
+}
+
+.myjobs-tab-btn.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.myjobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.myjob-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.myjob-card:hover {
+  transform: translateY(-2px);
+  border-color: #2563eb;
+}
+
+.myjob-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.myjob-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.myjob-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 6px;
+}
+
+.myjob-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+}
+
+.myjob-btn {
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.myjob-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.myjob-btn.secondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.myjob-btn.danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+/* Status badges */
+.myjob-status {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.myjob-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.myjob-status.draft {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.myjob-status.completed {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.myjob-status.closed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.myjobs-empty {
+  margin: 30px 0;
+  padding: 30px 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  text-align: center;
+  background: #fff;
+}
+
+.myjobs-empty h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.myjobs-empty p {
+  margin: 0;
+  color: #64748b;
+}
+

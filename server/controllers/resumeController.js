@@ -17,6 +17,7 @@ const syncResumeToProfile = async (userId, resume) => {
       : '';
 
     await user.update({
+      cluster_id: null,
       name: personalInfo.name || user.name,
       phone: personalInfo.phone || user.phone,
       address: personalInfo.address || user.address,

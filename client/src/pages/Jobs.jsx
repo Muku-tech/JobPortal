@@ -34,13 +34,44 @@ export default function Jobs() {
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
 
+  const initialSearch = searchParams.get("search") || "";
+
+  // Draft input (prevents URL updates while typing)
+  const [draftSearch, setDraftSearch] = useState(initialSearch);
+
   const [filters, setFilters] = useState({
-    search: searchParams.get("search") || "",
+    search: initialSearch,
     location: searchParams.get("location") || "",
     jobType: searchParams.get("jobType") || "",
     sort: searchParams.get("sort") || "createdAt",
     page: parseInt(searchParams.get("page")) || 1,
   });
+
+  // If URL has only defaults (sort=createdAt&page=1), clean it back to /jobs.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const sort = sp.get('sort');
+    const page = sp.get('page');
+
+    const hasOnlyDefaults =
+      sp.keys().next().done === false &&
+      [...sp.keys()].every((k) => ['sort', 'page', 'search', 'location', 'jobType'].includes(k)) &&
+      !sp.get('search') &&
+      !sp.get('location') &&
+      !sp.get('jobType') &&
+      sort === 'createdAt' && page === '1';
+
+
+    if (hasOnlyDefaults) {
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+
+
+
 
   // ─── Recommendation state ───
   const [recommendations, setRecommendations] = useState([]);
@@ -146,15 +177,37 @@ export default function Jobs() {
     loadJobs(filters.page);
   }, [filters.search, filters.location, filters.jobType, filters.sort, filters.page]);
 
-  const handleChange = (key, value) => {
-    const newFilters = { ...filters, [key]: value, page: 1 };
+  const applyFiltersAndSyncUrl = (newFilters) => {
     setFilters(newFilters);
     const sp = new URLSearchParams();
-    Object.entries(newFilters).forEach(([k, v]) => {
-      if (v) sp.set(k, String(v));
-    });
+
+    // Only include non-defaults to keep URL clean.
+    if (newFilters.search) sp.set('search', newFilters.search);
+    if (newFilters.location) sp.set('location', newFilters.location);
+    if (newFilters.jobType) sp.set('jobType', newFilters.jobType);
+    if (newFilters.sort && newFilters.sort !== 'createdAt') sp.set('sort', newFilters.sort);
+    if (newFilters.page && newFilters.page !== 1) sp.set('page', String(newFilters.page));
+
     setSearchParams(sp);
   };
+
+
+  const handleChange = (key, value) => {
+    // For search, update only the draft while typing.
+    if (key === "search") {
+      setDraftSearch(value);
+      return;
+    }
+
+    const newFilters = { ...filters, [key]: value, page: 1 };
+    applyFiltersAndSyncUrl(newFilters);
+  };
+
+  const handleSubmitSearch = () => {
+    const newFilters = { ...filters, search: draftSearch, page: 1 };
+    applyFiltersAndSyncUrl(newFilters);
+  };
+
 
   const goToPage = (page) => {
     if (page < 1 || page > totalPages) return;
@@ -252,14 +305,18 @@ export default function Jobs() {
   return (
     <div className="jobs-page">
       {/* Search Section */}
-      <div className="search-section">
+          <div className="search-section">
         <div className="search-row">
           <input
             className="search-input"
             placeholder="Job title, company, skills..."
-            value={filters.search}
+            value={draftSearch}
             onChange={(e) => handleChange("search", e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSubmitSearch();
+            }}
           />
+
           <div className="location-wrapper">
             <MapPin size={18} className="search-icon" />
             <input
@@ -269,9 +326,14 @@ export default function Jobs() {
               onChange={(e) => handleChange("location", e.target.value)}
             />
           </div>
-          <button className="search-btn">
+          <button
+            className="search-btn"
+            type="button"
+            onClick={handleSubmitSearch}
+          >
             <Search size={20} />
           </button>
+
         </div>
       </div>
 

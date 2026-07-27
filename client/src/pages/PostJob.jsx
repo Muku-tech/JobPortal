@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import '../styles/PostJob.css'
+import '../styles/MyJobs.css'
+
 
 function PostJob() {
   const navigate = useNavigate()
@@ -100,11 +102,14 @@ function PostJob() {
       }
 
       // If editing an existing job, update instead of creating
-      if (formData.id) {
-        await api.put(`/jobs/${formData.id}`, jobData)
+      // Ensure we send the correct id (backend expects numeric :id)
+      const jobId = formData.id ?? formData.job_id ?? formData.jobId;
+      if (jobId) {
+        await api.put(`/jobs/${jobId}`, jobData)
       } else {
         await api.post('/jobs', jobData)
       }
+
       setSuccess('Job vacancy posted successfully!')
       setTimeout(() => navigate('/employer'), 2000)
     } catch (err) {
