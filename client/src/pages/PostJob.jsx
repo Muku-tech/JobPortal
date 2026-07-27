@@ -11,6 +11,7 @@ import '../styles/MyJobs.css'
 
 function PostJob() {
   const navigate = useNavigate()
+  const { jobId } = useParams()
   const [activeTab, setActiveTab] = useState('new')
   const [formData, setFormData] = useState({
     title: '',
@@ -53,8 +54,34 @@ function PostJob() {
     }
   }
 
+  const fetchJobDetails = async (id) => {
+    try {
+      setLoading(true)
+      const response = await api.get(`/jobs/${id}`)
+      const job = response.data
+      setFormData({
+        ...job,
+        required_skills: Array.isArray(job.required_skills)
+          ? job.required_skills.join(', ')
+          : job.required_skills || '',
+        deadline: job.deadline ? job.deadline.substring(0, 10) : ''
+      })
+    } catch (err) {
+      console.error('Failed to fetch job details:', err)
+      setError('Failed to load job details')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleEdit = (job) => {
-    setFormData(job)
+    setFormData({
+      ...job,
+      required_skills: Array.isArray(job.required_skills)
+        ? job.required_skills.join(', ')
+        : job.required_skills || '',
+      deadline: job.deadline ? job.deadline.substring(0, 10) : ''
+    })
     setActiveTab('new')
   }
 
@@ -84,6 +111,12 @@ function PostJob() {
     loadEmployerJobs()
   }, [])
 
+  useEffect(() => {
+    if (jobId) {
+      fetchJobDetails(jobId)
+    }
+  }, [jobId])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -95,29 +128,32 @@ function PostJob() {
         salary_min: formData.salary_min ? parseFloat(formData.salary_min) : null,
         salary_max: formData.salary_max ? parseFloat(formData.salary_max) : null,
         vacancy: parseInt(formData.vacancy),
-        required_skills: formData.required_skills
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s)
+        required_skills: Array.isArray(formData.required_skills)
+          ? formData.required_skills
+          : typeof formData.required_skills === 'string'
+            ? formData.required_skills.split(',').map((s) => s.trim()).filter((s) => s)
+            : []
       }
 
       // If editing an existing job, update instead of creating
       // Ensure we send the correct id (backend expects numeric :id)
-      const jobId = formData.id ?? formData.job_id ?? formData.jobId;
-      if (jobId) {
-        await api.put(`/jobs/${jobId}`, jobData)
+      const targetJobId = jobId || formData.id || formData.job_id || formData.jobId;
+      if (targetJobId) {
+        await api.put(`/jobs/${targetJobId}`, jobData)
+        setSuccess('Job updated successfully!')
       } else {
         await api.post('/jobs', jobData)
+        setSuccess('Job vacancy posted successfully!')
       }
 
-      setSuccess('Job vacancy posted successfully!')
       setTimeout(() => navigate('/employer'), 2000)
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to post job')
+      setError(err.response?.data?.message || (jobId || formData.id ? 'Failed to update job' : 'Failed to post job'))
     } finally {
       setLoading(false)
     }
   }
+
 
   return (
     <div className="post-job-root">
