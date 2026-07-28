@@ -100,6 +100,84 @@ function JobSeekerProfile() {
     setShowSuggestions(false);
   }
 
+  const showToast = (message, isError = false) => {
+    const notification = document.createElement('div');
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${isError ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)'};
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      z-index: 9999;
+      font-weight: 600;
+      font-size: 1rem;
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.style.animation = 'slideOut 0.3s ease-out forwards';
+      setTimeout(() => notification.remove(), 300);
+    }, 4000);
+  };
+
+  const syncProfileToResume = async () => {
+    try {
+      const skillsArray = formData.skills ? formData.skills.split(',').map(s => s.trim()).filter(s => s) : [];
+      const languagesArray = formData.languages ? formData.languages.split(',').map(s => s.trim()).filter(s => s) : [];
+
+      // Check if a resume already exists for this user
+      const resumesResponse = await resumeApi.getResumes();
+      let existingResume = null;
+      if (resumesResponse.data && resumesResponse.data.length > 0) {
+        existingResume = resumesResponse.data.find(r => r.is_default) || resumesResponse.data[0];
+      }
+
+      const resumeSkills = skillsArray.map(s => ({ title: s, organization: '', dates: '', description: '' }));
+      const experienceEntries = formData.experience
+        ? formData.experience.split('\n').filter(Boolean).map(line => {
+            line = line.trim();
+            return { title: line, organization: '', dates: '', description: '' };
+          })
+        : [];
+      const educationEntries = formData.education
+        ? formData.education.split('\n').filter(Boolean).map(line => {
+            line = line.trim();
+            return { title: line, organization: '', dates: '', description: '' };
+          })
+        : [];
+
+      const resumeData = {
+        personal_info: {
+          name: formData.name,
+          email: user?.email || '',
+          phone: formData.phone,
+          address: formData.address,
+          linkedin: formData.linkedin,
+          portfolio: formData.portfolio || formData.github,
+        },
+        skills: resumeSkills,
+        experiences: experienceEntries,
+        educations: educationEntries,
+        languages: languagesArray.map(l => ({ title: l })),
+        is_default: true,
+        template: 'modern'
+      };
+
+      if (existingResume) {
+        await resumeApi.updateResume(existingResume.id, resumeData);
+      } else {
+        await resumeApi.createResume(resumeData);
+      }
+      return true;
+    } catch (err) {
+      console.error('Error syncing profile to resume:', err);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -112,28 +190,16 @@ function JobSeekerProfile() {
       }
       const response = await api.put('/users/profile', updatedData)
       updateUser(response.data.user)
+
+      // Also sync profile data to resume
+      const syncSuccess = await syncProfileToResume();
+      if (syncSuccess) {
+        showToast('Profile & Resume updated successfully! ✅');
+      } else {
+        showToast('Profile saved! Resume sync may need retry.');
+      }
+
       setEditing(false)
-      // Toast notification
-      const notification = document.createElement('div');
-      notification.textContent = 'Profile updated successfully! 🎉';
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        z-index: 9999;
-        font-weight: 600;
-        font-size: 1rem;
-      `;
-      document.body.appendChild(notification);
-      setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease-out forwards';
-        setTimeout(() => notification.remove(), 300);
-      }, 4000);
     } catch (error) {
       setErrorMsg('Failed to update profile. Please try again.')
     } finally {

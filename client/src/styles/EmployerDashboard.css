@@ -74,3 +74,13 @@
     display: inline-block; margin-top: 20px; background: var(--navy); color: white; 
     padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 700; 
 }
+
+.employer-job-row.row-draft { background: #fffef5; border-left: 3px solid #f59e0b; }
+.draft-notice { margin-top: 6px; font-size: 0.8rem; color: #d97706; display: flex; align-items: center; gap: 6px; }
+.draft-icon { font-size: 0.6rem; color: #f59e0b; }
+.btn-activate {
+  background: #059669; color: white; border: none; padding: 8px 16px;
+  border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: 0.2s;
+}
+.btn-activate:hover { background: #047857; }
+.btn-activate:disabled { opacity: 0.5; cursor: not-allowed; }

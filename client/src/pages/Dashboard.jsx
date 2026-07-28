@@ -315,6 +315,7 @@ export default function Dashboard() {
                       <div className="connector"></div>
                       <div className={`step ${app.interview_date || app.status === 'final' ? 'active' : ''}`}><span>Interview</span></div>
                     </div>
+                    <Link to={`/applications/${app.id}/messages`} className="dash-messages-link">Messages</Link>
                   </div>
                 ))}
               </div>

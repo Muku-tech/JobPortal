@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Brain, Heart, Briefcase, MapPin, Calendar, Download, ChevronRight, CheckCircle, FileText } from 'lucide-react'
+import { Brain, Heart, Briefcase, MapPin, Calendar, Download, ChevronRight, CheckCircle } from 'lucide-react'
 import api, { resumeApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -187,17 +187,7 @@ export default function JobDetails() {
               <span>•</span>
               <span className="type">{job.job_type?.replace('-', ' ')}</span>
             </div>
-            <motion.button 
-              className={`apply-top-btn ${applied ? 'applied' : ''}`}
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleApply}
-              disabled={applied || applying}
-            >
-              {applied ? '✓ Applied' : applying ? 'Applying...' : 'Apply Now'}
-            </motion.button>
+
           </div>
         </div>
       </header>
@@ -262,39 +252,15 @@ export default function JobDetails() {
               </div>
             ) : user ? (
               <form onSubmit={handleApply} className="apply-form">
-                <label>Attach Resume <FileText size={16} /></label>
-                {loadingResumes ? (
-                  <div>Loading resumes...</div>
-                ) : resumes.length === 0 ? (
-                  <div className="no-resume">
-                    <p>No resumes found. <Link to="/resume-builder">Create one</Link></p>
-                  </div>
-                ) : (
-                  <select 
-                    value={selectedResumeId || ''}
-                    onChange={(e) => setSelectedResumeId(e.target.value ? Number(e.target.value) : null)}
-                    className="resume-select"
-                    required={!resumePdfFile}
-                  >
-                    <option value="">Select a resume...</option>
-                    {resumes.map(resume => (
-                      <option key={resume.id} value={resume.id}>
-                        {resume.template} Resume {resume.is_default && '(Default)'}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <small className="resume-attach-hint">Your selected resume will be linked to this application.</small>
-
-                <label>Attach Resume PDF (Optional)</label>
+                <label>Attach Resume PDF</label>
                 <input
                   type="file"
                   accept=".pdf"
                   onChange={handleResumePdfChange}
                   className="resume-pdf-input"
+                  required
                 />
-                <small className="resume-attach-hint">Upload a PDF version of your resume.</small>
-                <label>Cover Letter (Optional)</label>
+                <label>Cover Letter</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
@@ -304,7 +270,7 @@ export default function JobDetails() {
                 <motion.button 
                   type="submit" 
                   className="btn btn-primary"
-                  disabled={applying || (!selectedResumeId && !resumePdfFile)} // Disable if no resume selected or PDF attached
+                  disabled={applying || !resumePdfFile}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

@@ -1,0 +1,2 @@
+try {
+  require('./utils/emailService');

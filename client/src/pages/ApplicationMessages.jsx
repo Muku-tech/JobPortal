@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import '../styles/EmployerApplications.css' // Reuse ATS styles
+import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import '../styles/EmployerApplications.css'
 
 const ApplicationMessages = () => {
   const { id } = useParams()
+  const { user } = useAuth()
+  const { toast } = useToast()
   const navigate = useNavigate()
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -49,6 +53,9 @@ const ApplicationMessages = () => {
       e.target.reset()
     } catch (error) {
       console.error('Send error:', error)
+      const msg = error?.response?.data?.message || error?.message || 'Failed to send message'
+      if (toast?.error) toast.error(msg)
+      else alert(msg)
     } finally {
       setSendingMessage(false)
     }
@@ -76,7 +83,7 @@ const ApplicationMessages = () => {
           messages.map(msg => (
             <div 
               key={msg.id} 
-              className={`message ${msg.type} ${msg.sender_id === 'current_user' ? 'own' : ''}`}
+              className={`message ${msg.type} ${Number(msg.sender_id) === Number(user?.id) ? 'own' : ''}`}
             >
               <div className="message-content">
                 <p>{msg.message}</p>

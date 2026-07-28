@@ -1,8 +1,6 @@
 const { Job, User, JobView, Application } = require("../../models");
+
 class CollaborativeFiltering {
-  /**
-   * Build user-item interaction matrix
-   */
   async buildInteractionMatrix(userId) {
     try {
       const views = await JobView.findAll({
@@ -64,6 +62,17 @@ class CollaborativeFiltering {
       .filter(Boolean);
   }
 
+  skillOverlapScore(userSkills, jobSkills) {
+    if (!userSkills.length || !jobSkills.length) return 0;
+    const lowerUser = userSkills.map((s) => s.toLowerCase());
+    const matched = jobSkills.filter((s) =>
+      lowerUser.includes(s.toLowerCase()),
+    ).length;
+    const userCov = matched / userSkills.length;
+    const jobCov = matched / jobSkills.length;
+    return (userCov + jobCov) / 2;
+  }
+
   calculateUserSimilarity(user1Interactions, user2Interactions) {
     const allJobs = new Set([
       ...Object.keys(user1Interactions),
@@ -88,9 +97,7 @@ class CollaborativeFiltering {
       const userIdStr = userId.toString();
       if (!interactions[userIdStr]) return [];
       const similarities = [];
-      for (const [otherUserId, otherInteractions] of Object.entries(
-        interactions,
-      )) {
+      for (const [otherUserId, otherInteractions] of Object.entries(interactions)) {
         if (otherUserId === userIdStr) continue;
         const similarity = this.calculateUserSimilarity(
           interactions[userIdStr],
@@ -108,240 +115,8 @@ class CollaborativeFiltering {
     }
   }
 
-  /**
-   * Calculate skill overlap ratio between user and job
-   * Returns 0-1 score based on how many job skills match user skills
-   */
-  calculateSkillOverlapScore(userSkills, jobSkills) {
-    const uSkills = this.parseSkills(userSkills);
-    const jSkills = this.parseSkills(jobSkills);
-    if (uSkills.length === 0 || jSkills.length === 0) return 0.3; 
-    const lowerUser = uSkills.map((s) => s.toLowerCase());
-    const matched = jSkills.filter((s) =>
-      lowerUser.includes(s.toLowerCase()),
-    ).length;
-  
-    return Math.min(1, matched / Math.max(1, jSkills.length));
-  }
-
-  
-  calculateCategoryRelevance(userSkills, jobCategory) {
-    const uSkills = this.parseSkills(userSkills);
-    if (uSkills.length === 0 || !jobCategory) return 0.3;
-
-    const categorySkillMap = {
-      "Information Technology": [
-        "react",
-        "node.js",
-        "python",
-        "javascript",
-        "html",
-        "css",
-        "mongodb",
-        "sql",
-        "aws",
-        "docker",
-        "kubernetes",
-        "git",
-        "devops",
-        "java",
-        "php",
-        "laravel",
-        "angular",
-        "vue.js",
-        "flutter",
-        "kotlin",
-        "swift",
-        "typescript",
-        "linux",
-        "ci/cd",
-        "postgresql",
-        "mysql",
-        "firebase",
-        "spring boot",
-        "express.js",
-        "next.js",
-        "rest api",
-        "graphql",
-        "cybersecurity",
-        "network administration",
-        "cloud computing",
-        "ui/ux design",
-        "figma",
-        "mern",
-        "frontend",
-        "backend",
-        "fullstack",
-      ],
-      "Banking & Finance": [
-        "accounting",
-        "financial analysis",
-        "excel",
-        "tally",
-        "banking operations",
-        "risk assessment",
-        "auditing",
-        "taxation",
-        "investment analysis",
-        "loan processing",
-        "risk management",
-        "compliance auditing",
-      ],
-      "Teaching & Education": [
-        "teaching",
-        "curriculum design",
-        "classroom management",
-        "subject matter expertise",
-        "educational psychology",
-        "e-learning",
-        "student counseling",
-        "child development",
-      ],
-      "Tourism & Hospitality": [
-        "hospitality management",
-        "tour guiding",
-        "event planning",
-        "customer service",
-        "reservation systems",
-        "travel operations",
-        "hotel management",
-        "culinary arts",
-        "food safety",
-      ],
-      "Healthcare & Medical": [
-        "nursing",
-        "patient care",
-        "medical coding",
-        "pharmacy",
-        "clinical research",
-        "medical lab technology",
-        "dental care",
-        "physiotherapy",
-        "radiology",
-        "surgery assistance",
-        "healthcare it",
-        "laboratory techniques",
-      ],
-      Engineering: [
-        "autocad",
-        "civil engineering",
-        "structural analysis",
-        "project management",
-        "electrical engineering",
-        "mechanical engineering",
-        "surveying",
-        "water resource engineering",
-        "geotechnical engineering",
-        "quantity surveying",
-        "construction planning",
-        "site management",
-        "hydro power engineering",
-        "environmental engineering",
-        "building codes",
-        "quality control",
-      ],
-      "Marketing & Sales": [
-        "digital marketing",
-        "seo",
-        "content writing",
-        "social media",
-        "sales",
-        "brand management",
-        "market research",
-        "advertising",
-        "public relations",
-        "google ads",
-        "analytics",
-      ],
-      "Administration & HR": [
-        "recruitment",
-        "hr management",
-        "payroll",
-        "office administration",
-        "labor law compliance",
-        "training & development",
-        "interviewing",
-      ],
-      "Construction & Real Estate": [
-        "safety management",
-        "risk assessment",
-        "blueprint reading",
-        "material management",
-      ],
-      "Agriculture & Forestry": [
-        "agronomy",
-        "livestock management",
-        "irrigation systems",
-        "food processing",
-        "agri-business",
-        "sustainable farming",
-        "soil science",
-        "crop management",
-        "agricultural extension",
-      ],
-      "Media & Communication": [
-        "video editing",
-        "photography",
-        "journalism",
-        "broadcasting",
-        "script writing",
-        "media production",
-        "adobe premiere",
-        "adobe photoshop",
-        "adobe illustrator",
-      ],
-      "Design & Creative": [
-        "graphic design",
-        "creativity",
-        "storytelling",
-        "motion graphics",
-      ],
-      "Legal & Compliance": [
-        "monitoring & evaluation",
-        "grant writing",
-        "community development",
-        "project proposal",
-        "livelihood analysis",
-        "wash programs",
-        "capacity building",
-        "baseline survey",
-        "field operations",
-        "donor relations",
-        "legal research",
-        "contract drafting",
-        "corporate law",
-        "intellectual property",
-        "labor law",
-        "policy development",
-        "negotiation",
-      ],
-      "Data Science & Analytics": [
-        "data analysis",
-        "data visualization",
-        "power bi",
-        "tableau",
-        "statistical analysis",
-        "machine learning",
-        "python for data science",
-        "business intelligence",
-        "research",
-      ],
-    };
-
-    const lowerUser = uSkills.map((s) => s.toLowerCase());
-    const keywords = categorySkillMap[jobCategory] || [];
-    const matched = keywords.filter((k) => lowerUser.includes(k)).length;
-    // Normalize: if at least one skill matches the category, score is decent
-    return Math.min(1, 0.3 + (matched / Math.max(1, keywords.length)) * 0.7);
-  }
-
-  /**
-   * Enforce diversity: ensure jobs from multiple categories are represented
-   */
-  enforceDiversity(jobs, userSkills, limit) {
-    if (!userSkills || userSkills.length <= 1) return jobs.slice(0, limit);
-
-    // Group jobs by inferred category
+  enforceDiversity(jobs, limit) {
+    if (!jobs.length) return [];
     const categoryGroups = new Map();
     jobs.forEach((job) => {
       const cat = job.category || "Uncategorized";
@@ -353,42 +128,51 @@ class CollaborativeFiltering {
     const cats = Array.from(categoryGroups.keys());
     let idx = 0;
 
-    // Round-robin pick from each category
-    while (result.length < limit && categoryGroups.size > 0) {
+    while (result.length < Math.min(limit, cats.length) && categoryGroups.size > 0) {
       const cat = cats[idx % cats.length];
       const group = categoryGroups.get(cat);
       if (group && group.length > 0) {
         result.push(group.shift());
       }
-      if (group.length === 0) {
+      if (!group || group.length === 0) {
         categoryGroups.delete(cat);
         cats.splice(cats.indexOf(cat), 1);
+        if (cats.length === 0) break;
+        if (idx >= cats.length) idx = 0;
+      } else {
+        idx++;
       }
-      idx++;
+    }
+
+    const remaining = jobs.filter(j => !result.includes(j));
+    while (result.length < limit && remaining.length > 0) {
+      result.push(remaining.shift());
     }
 
     return result;
   }
 
-  /**
-   * Get job recommendations based on similar users
-   */
+  isLocationMatch(preferredLocation, jobLocation) {
+    return preferredLocation && jobLocation &&
+      (preferredLocation.toLowerCase().includes(jobLocation.toLowerCase()) ||
+       jobLocation.toLowerCase().includes(preferredLocation.toLowerCase()));
+  }
+
   async getRecommendations(userId, limit = 10) {
     try {
-      const userIdStr = userId.toString();
       const interactions = await this.buildInteractionMatrix(userId);
-
       const user = await User.findByPk(userId);
-      const userSkills = this.parseSkills(user?.skills);
-      const preferredLocation = user?.preferred_location || (user?.address ? user.address.split(',')[0].trim() : null);
+      if (!user) return [];
 
+      const userSkills = this.parseSkills(user.skills);
+      const preferredLocation = user.preferred_location ||
+        (user.address ? user.address.split(',')[0].trim() : null);
+
+      const userIdStr = userId.toString();
       const userJobs = new Set(Object.keys(interactions[userIdStr] || {}));
       const similarUsers = await this.findSimilarUsers(userId, 20);
 
-      const isLocMatch = (jobLoc) => preferredLocation && jobLoc && 
-        (preferredLocation.toLowerCase().includes(jobLoc.toLowerCase()) || 
-         jobLoc.toLowerCase().includes(preferredLocation.toLowerCase()));
-
+      // No similar users → return popular jobs ranked by skill match
       if (similarUsers.length === 0) {
         const popularJobs = await Job.findAll({
           where: { status: "active" },
@@ -396,134 +180,106 @@ class CollaborativeFiltering {
           limit: limit * 2,
         });
 
-        const mappedPopular = popularJobs.map((job) => ({
-          ...job.toJSON(),
-          recommendationScore: 0,
-          recommendationType: "popular",
-          matchReasons: ["Trending job"],
-        }));
+        const scored = popularJobs.map((job) => {
+          const skillScore = this.skillOverlapScore(userSkills, this.parseSkills(job.required_skills));
+          const loc = this.isLocationMatch(preferredLocation, job.location) ? 1 : 0;
+          return {
+            ...job.toJSON(),
+            recommendationScore: Math.round((skillScore * 0.7 + loc * 0.3) * 100) / 100,
+            recommendationType: "popular",
+            matchReasons: ["Trending job"],
+          };
+        });
 
-        const local = mappedPopular.filter(job => isLocMatch(job.location));
-        const others = mappedPopular.filter(job => !isLocMatch(job.location));
-
-        return [...local, ...others].slice(0, limit);
+        scored.sort((a, b) => b.recommendationScore - a.recommendationScore);
+        return scored.slice(0, limit);
       }
 
+      // Score unseen jobs from similar users
       const jobScores = {};
-
       for (const { userId: similarUserId, similarity } of similarUsers) {
         const similarUserIdStr = similarUserId.toString();
         const similarUserJobs = interactions[similarUserIdStr] || {};
-        for (const [jobId, interactionScore] of Object.entries(
-          similarUserJobs,
-        )) {
+        for (const [jobId, interactionScore] of Object.entries(similarUserJobs)) {
           if (userJobs.has(jobId)) continue;
-          if (!jobScores[jobId]) {
-            jobScores[jobId] = { score: 0, count: 0 };
-          }
+          if (!jobScores[jobId]) jobScores[jobId] = { score: 0, count: 0 };
           jobScores[jobId].score += similarity * interactionScore;
           jobScores[jobId].count += 1;
         }
       }
 
-      // Fetch candidate jobs
       const candidateJobIds = Object.keys(jobScores).map((id) => parseInt(id));
       let candidateJobs = await Job.findAll({
         where: { id: candidateJobIds, status: "active" },
       });
 
       if (candidateJobs.length === 0) {
-        // Fallback: popular active jobs
         candidateJobs = await Job.findAll({
           where: { status: "active" },
           order: [["createdAt", "DESC"]],
           limit: limit * 2,
         });
 
-        const mappedFallback = candidateJobs.map((job) => ({
-          ...job.toJSON(),
-          recommendationScore: 0.5,
-          recommendationType: "popular",
-          matchReasons: ["Trending job"],
-        }));
+        const scored = candidateJobs.map((job) => {
+          const skillScore = this.skillOverlapScore(userSkills, this.parseSkills(job.required_skills));
+          const loc = this.isLocationMatch(preferredLocation, job.location) ? 1 : 0;
+          return {
+            ...job.toJSON(),
+            recommendationScore: Math.round((skillScore * 0.7 + loc * 0.3) * 100) / 100,
+            recommendationType: "popular",
+            matchReasons: ["Trending job"],
+          };
+        });
 
-        const local = mappedFallback.filter(job => isLocMatch(job.location));
-        const others = mappedFallback.filter(job => !isLocMatch(job.location));
-
-        return [...local, ...others].slice(0, limit);
+        scored.sort((a, b) => b.recommendationScore - a.recommendationScore);
+        return scored.slice(0, limit);
       }
 
-      // Score each job with skill overlap and category relevance
-      const scoredJobs = candidateJobs.map((job) => {
-        const rawScore = jobScores[job.id]?.score || 0;
-        const skillScore = this.calculateSkillOverlapScore(
-          userSkills,
-          job.required_skills || [],
-        );
-        const categoryScore = this.calculateCategoryRelevance(
-          userSkills,
-          job.category,
-        );
+      // Normalize rawScore to 0-1
+      const maxRaw = Math.max(0.01, ...candidateJobs.map(j => jobScores[j.id]?.score || 0));
 
-        // Weighted combined score:
-        // 30% collaborative popularity, 50% skill overlap, 20% category relevance
-        const combinedScore =
-          rawScore * 0.3 + skillScore * 100 * 0.5 + categoryScore * 100 * 0.2;
+      const scoredJobs = candidateJobs.map((job) => {
+        const rawScore = (jobScores[job.id]?.score || 0) / maxRaw;
+        const skillScore = this.skillOverlapScore(userSkills, this.parseSkills(job.required_skills));
+        const loc = this.isLocationMatch(preferredLocation, job.location) ? 1 : 0;
+
+        const combined = rawScore * 0.25 + skillScore * 0.45 + loc * 0.30;
+
+        const reasons = [];
+        if (skillScore > 0) {
+          reasons.push(`${Math.round(skillScore * 100)}% skills match`);
+        }
+        if (loc) {
+          reasons.push("Location matches your preference");
+        }
+        reasons.push("Popular among similar users");
 
         return {
           ...job.toJSON(),
-          recommendationScore: Math.round(combinedScore * 100) / 100,
+          recommendationScore: Math.round(combined * 100) / 100,
           recommendationType: "collaborative",
           _skillScore: skillScore,
-          _categoryScore: categoryScore,
+          _locationScore: loc,
+          matchReasons: reasons,
         };
       });
 
-      // Sort by combined score
       scoredJobs.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-      // Add match reasons for explainability
-      scoredJobs.forEach((job) => {
-        const reasons = [];
-        if (job._skillScore > 0.5) {
-          reasons.push(`${Math.round(job._skillScore * 100)}% skills match`);
-        } else if (job._skillScore > 0) {
-          reasons.push("Some skills match");
-        }
-        if (job._categoryScore > 0.6) {
-          reasons.push("Strong category fit");
-        }
-        if (similarUsers.length > 0) {
-          reasons.push("Popular among similar users");
-        }
-        if (reasons.length === 0) {
-          reasons.push("Recommended by collaborative filtering");
-        }
-        job.matchReasons = reasons;
-      });
+      const locationMatchingJobs = scoredJobs.filter(j => j._locationScore);
+      const otherJobs = scoredJobs.filter(j => !j._locationScore);
 
-      // Partition and apply diversity independently to local and other jobs
-      const locationMatchingJobs = scoredJobs.filter(job => isLocMatch(job.location));
-      const otherJobs = scoredJobs.filter(job => !isLocMatch(job.location));
+      const diverseLocal = this.enforceDiversity(locationMatchingJobs, limit);
+      const diverseOthers = this.enforceDiversity(otherJobs, limit);
 
-      const diverseLocal = this.enforceDiversity(locationMatchingJobs, userSkills, limit);
-      const diverseOthers = this.enforceDiversity(otherJobs, userSkills, limit);
-
-      const diverseJobs = [...diverseLocal, ...diverseOthers];
-
-      return diverseJobs.slice(0, limit);
+      return [...diverseLocal, ...diverseOthers].slice(0, limit);
     } catch (error) {
       console.error("Collaborative Filtering Error:", error);
       throw error;
     }
   }
 
-  async recordInteraction(
-    userId,
-    jobId,
-    actionType = "view",
-    viewDuration = 0,
-  ) {
+  async recordInteraction(userId, jobId, actionType = "view", viewDuration = 0) {
     try {
       const existingView = await JobView.findOne({
         where: { user_id: userId, job_id: jobId },

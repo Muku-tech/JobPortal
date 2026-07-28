@@ -6,7 +6,7 @@ import {
   ModernTemplate, ClassicTemplate, CreativeTemplate, ExecutiveTemplate 
 } from './ResumeTemplates'
 
-import { X, Printer } from 'lucide-react'
+import { X, Printer, Send } from 'lucide-react'
 import '../styles/EmployerApplications.css'
 
 const EmployerApplications = ({ jobId }) => {
@@ -19,6 +19,9 @@ const EmployerApplications = ({ jobId }) => {
   const [unreadCounts, setUnreadCounts] = useState({})
   const [interviewAppStatus, setInterviewAppStatus] = useState(null)
   const [resumePreview, setResumePreview] = useState({ open: false, data: null })
+  const [noteInputs, setNoteInputs] = useState({})
+  const [sendingNote, setSendingNote] = useState(null)
+  const [sentNote, setSentNote] = useState({})
 
 
   const newStages = ['applied', 'considering', 'final']
@@ -160,6 +163,28 @@ const EmployerApplications = ({ jobId }) => {
       window.open(url, '_blank');
     }
   };
+
+  const handleSendNote = async (appId) => {
+    const text = noteInputs[appId]?.trim()
+    if (!text) return
+
+    try {
+      setSendingNote(appId)
+      await api.post(`/applications/${appId}/messages`, { message: text })
+      setNoteInputs(prev => ({ ...prev, [appId]: '' }))
+      setSentNote(prev => ({ ...prev, [appId]: true }))
+      setTimeout(() => setSentNote(prev => ({ ...prev, [appId]: false })), 2000)
+      setUnreadCounts(prev => ({
+        ...prev,
+        [appId]: (prev[appId] || 0) + 1
+      }))
+    } catch (error) {
+      console.error('Failed to send note:', error)
+      alert('Failed to send message')
+    } finally {
+      setSendingNote(null)
+    }
+  }
 
   const openInterviewModal = (appId) => {
     const app = applications.find(a => a.id === appId)
@@ -332,13 +357,24 @@ const EmployerApplications = ({ jobId }) => {
 
               {/* NOTES */}
               <div className="notes-section">
-                <label>Notes</label>
-                <input
-                  type="text"
-                  defaultValue={app.employer_notes}
-                  placeholder="Optional notes..."
-                  className="notes-input"
-                />
+                <label>Send Message</label>
+                <div className="notes-row">
+                  <input
+                    type="text"
+                    value={noteInputs[app.id] || ''}
+                    onChange={(e) => setNoteInputs(prev => ({ ...prev, [app.id]: e.target.value }))}
+                    placeholder="Type a message to send to the applicant..."
+                    className="notes-input"
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendNote(app.id)}
+                  />
+                  <button
+                    onClick={() => handleSendNote(app.id)}
+                    className={`notes-send-btn ${sentNote[app.id] ? 'sent' : ''}`}
+                    disabled={sendingNote === app.id || !noteInputs[app.id]?.trim()}
+                  >
+                    {sentNote[app.id] ? 'Sent!' : sendingNote === app.id ? 'Sending...' : <Send size={16} />}
+                  </button>
+                </div>
               </div>
             </div>
           ))

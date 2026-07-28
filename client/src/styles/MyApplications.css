@@ -146,6 +146,21 @@
   text-decoration: none;
 }
 
+.btn-messages {
+  color: #7c3aed;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+  background: #f5f3ff;
+  transition: all 0.2s;
+}
+
+.btn-messages:hover {
+  background: #ede9fe;
+}
+
 .wait-msg { font-size: 0.8rem; color: #94a3b8; font-style: italic; }
 
 /* Empty State */

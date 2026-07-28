@@ -1,34 +1,20 @@
-# Fix: Irrelevant Job Recommendations
+# Skills Sync Fix - Implementation Plan
 
-## Root Cause Analysis
+## Root Cause
 
-Jobs with 0% skill overlap are still recommended because:
+When users update skills (or other data) in the "My Profile" section, changes are saved to the User model but not always synced to the Resume model, causing the resume to show outdated data.
 
-1. No minimum skill overlap threshold exists in `blendRecommendations`
-2. Score normalization `Math.max(rawMax, 0.8)` artificially inflates weak scores
-3. Diversity enforcement (`enforceDiversity`) round-robins across categories regardless of skill match
-4. Fallback returns random recent jobs sorted by `createdAt`
+## Implementation Steps
 
-## Fixes to Apply
+### Step 1: Server-side fix - `server/routes/users.js`
 
-### [x] Fix 1: Add skill overlap threshold
+- [x] Improve bi-directional sync: If no resume exists for the user, CREATE a new default resume with the updated profile data
+- [x] Properly merge skills from user profile into resume's structured format `[{title: "skillName"}]`
 
-- Add `SKILL_OVERLAP_THRESHOLD = 0.1` constant (10%)
-- Add `filterBySkillOverlap()` helper to remove jobs below threshold
+### Step 2: Client-side fix - `client/src/pages/ResumeBuilder.jsx`
 
-### [x] Fix 2: Fix score normalization
+- [x] Pre-fill skills, experience, education from user profile data when loading a new/empty resume form
 
-- Remove `Math.max(rawMax, 0.8)` floor so weak matches show low scores naturally
+### Step 3: Client-side fix - `client/src/pages/JobSeekerProfile.jsx`
 
-### [x] Fix 3: Fix diversity enforcement
-
-- Apply `filterBySkillOverlap` before `enforceDiversity` in `blendRecommendations`
-
-### [x] Fix 4: Fix fallback logic
-
-- Instead of `order: [["createdAt", "DESC"]]`, search for jobs with ANY skill overlap with user
-
-### [x] Fix 5: Message-level filtering
-
-- In `sendRecommendationAsMessage`, post-filter to only include jobs above threshold
-- Skip sending if no qualifying jobs remain
+- [x] Add a "Sync to Resume" button that after saving profile, also updates/creates a resume record with the same data

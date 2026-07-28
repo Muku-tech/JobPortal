@@ -565,6 +565,24 @@
   background: var(--dash-primary-blue); /* Active connector */
 }
 
+.dash-messages-link {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7c3aed;
+  text-decoration: none;
+  padding: 0.25rem 0.65rem;
+  border-radius: 5px;
+  background: #f5f3ff;
+  align-self: flex-start;
+  transition: all 0.2s;
+  margin-top: 0.25rem;
+}
+
+.dash-messages-link:hover {
+  background: #ede9fe;
+}
+
 /* Activity Timeline */
 .activity-timeline {
   background: var(--dash-card-bg);

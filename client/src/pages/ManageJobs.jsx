@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import api from "../services/api";
-import "../styles/EmployerDashboard.css";  // Reuse styles
+import "../styles/EmployerDashboard.css";
 
 function ManageJobs() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activatingId, setActivatingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const navigate = useNavigate();
 
@@ -25,15 +27,28 @@ function ManageJobs() {
     }
   };
 
+  const handleActivate = async (jobId) => {
+    setActivatingId(jobId);
+    try {
+      await api.put(`/jobs/${jobId}`, { status: "active" });
+      setJobs(jobs.map(job => job.id === jobId ? { ...job, status: "active" } : job));
+      toast.success("Job activated — it's now visible to job seekers");
+    } catch (err) {
+      toast.error("Failed to activate job");
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   const handleDelete = async (jobId) => {
     if (!confirm("Delete this job?")) return;
     setDeletingId(jobId);
     try {
       await api.delete(`/jobs/${jobId}`);
       setJobs(jobs.filter(job => job.id !== jobId));
+      toast.success("Job deleted");
     } catch (err) {
-      console.error("Delete error:", err);
-      alert("Delete failed");
+      toast.error("Delete failed");
     } finally {
       setDeletingId(null);
     }
@@ -74,19 +89,34 @@ function ManageJobs() {
               <span className="col-action">Actions</span>
             </div>
             {jobs.map((job) => (
-              <div key={job.id} className="employer-job-row">
+              <div key={job.id} className={`employer-job-row ${job.status === 'draft' ? 'row-draft' : ''}`}>
                 <div className="job-main-info">
                   <h3 className="job-row-title">{job.title}</h3>
                   <div className="job-row-meta">
                     <span className="meta-tag">{job.company_name}</span>
                     <span>{job.location}</span>
                   </div>
+                  {job.status === 'draft' && (
+                    <div className="draft-notice">
+                      <span className="draft-icon">●</span>
+                      Only visible to you — job seekers cannot see this posting
+                    </div>
+                  )}
                 </div>
                 <div className="job-row-stats">
                   <span className={`status-badge ${job.status}`}>{job.status.toUpperCase()}</span>
                 </div>
                 <div className="job-row-actions">
                   <button onClick={() => handleEdit(job.id)} className="btn-edit">Edit</button>
+                  {job.status === 'draft' && (
+                    <button
+                      onClick={() => handleActivate(job.id)}
+                      disabled={activatingId === job.id}
+                      className="btn-activate"
+                    >
+                      {activatingId === job.id ? 'Activating...' : 'Activate'}
+                    </button>
+                  )}
                   <Link to={`/employer/jobs/${job.id}/applicants`} className="btn-applicants">
                     Applicants ({job.applications?.length || 0})
                   </Link>
@@ -108,4 +138,3 @@ function ManageJobs() {
 }
 
 export default ManageJobs;
-

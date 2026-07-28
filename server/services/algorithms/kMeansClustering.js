@@ -1,24 +1,8 @@
-const { Job, User, Application, JobView } = require("../../models");
-
-/**
- * K-Means Clustering Algorithm
- * Clusters jobs and users to recommend jobs from matching clusters
- */
+const { Job, User, JobView, Application } = require("../../models");
 
 class KMeansClustering {
   constructor(k = 5) {
     this.k = k;
-    this.centroids = [];
-    this.jobClusters = [];
-    this.userClusters = [];
-  }
-
-  normalizeSalary(salary, minSalary = 0, maxSalary = 200000) {
-    if (!salary) return 0;
-    return Math.min(
-      1,
-      Math.max(0, (salary - minSalary) / (maxSalary - minSalary)),
-    );
   }
 
   parseSkills(skills) {
@@ -35,390 +19,25 @@ class KMeansClustering {
       .filter(Boolean);
   }
 
-  encodeCategory(category, categories) {
-    const index = categories.indexOf(category);
-    return index >= 0 ? index / (categories.length - 1) : 0;
-  }
-
-  encodeExperience(level) {
-    const levels = {
-      entry: 0,
-      mid: 0.25,
-      senior: 0.5,
-      lead: 0.75,
-      executive: 1,
-    };
-    return levels[level] || 0;
-  }
-
-  encodeJobType(type) {
-    const types = {
-      "full-time": 0,
-      "part-time": 0.33,
-      contract: 0.66,
-      internship: 1,
-    };
-    return types[type] || 0;
-  }
-
-  jobToVector(job, categories) {
-    const salaryAvg = ((job.salary_min || 0) + (job.salary_max || 0)) / 2;
-    return [
-      this.normalizeSalary(salaryAvg),
-      this.encodeCategory(job.category, categories),
-      this.encodeExperience(job.experience_level),
-      this.encodeJobType(job.job_type),
-      job.location ? 1 : 0,
-    ];
-  }
-
-  userToVector(user, categories) {
-    // User Vector based on: Skills, Experience, Job Type, Location
-    const skillsScore = (user.skills || []).length / 20; // Normalized
-    
-    return [
-      skillsScore,
-      this.encodeExperience(user.experience_level || "mid"),
-      this.encodeJobType(user.preferred_job_type),
-      user.preferred_location ? 1 : 0,
-    ];
-  }
-
-  euclideanDistance(vec1, vec2) {
-    return Math.sqrt(
-      vec1.reduce(
-        (sum, val, idx) => sum + Math.pow(val - (vec2[idx] || 0), 2),
-        0,
-      ),
-    );
-  }
-
-  assignToClusters(points, centroids) {
-    return points.map((point) => {
-      let minDistance = Infinity;
-      let clusterIndex = 0;
-      centroids.forEach((centroid, idx) => {
-        const distance = this.euclideanDistance(point.features, centroid);
-        if (distance < minDistance) {
-          minDistance = distance;
-          clusterIndex = idx;
-        }
-      });
-      return { ...point, cluster: clusterIndex, distance: minDistance };
-    });
-  }
-
-  updateCentroids(clusteredPoints, k) {
-    if (clusteredPoints.length === 0) return [];
-    const centroids = [];
-    const dimensions = clusteredPoints[0].features.length;
-    for (let i = 0; i < k; i++) {
-      const clusterPoints = clusteredPoints.filter((p) => p.cluster === i);
-      if (clusterPoints.length === 0) {
-        centroids.push(
-          clusteredPoints[Math.floor(Math.random() * clusteredPoints.length)]
-            .features,
-        );
-        continue;
-      }
-      const newCentroid = [];
-      for (let d = 0; d < dimensions; d++) {
-        const sum = clusterPoints.reduce((acc, p) => acc + p.features[d], 0);
-        newCentroid.push(sum / clusterPoints.length);
-      }
-      centroids.push(newCentroid);
-    }
-    return centroids;
-  }
-
-  async trainJobClusters() {
-    try {
-      const categories = [
-        "Information Technology",
-        "Banking & Finance",
-        "Teaching & Education",
-        "Tourism & Hospitality",
-        "Healthcare & Medical",
-        "Engineering",
-        "Marketing & Sales",
-        "Administration & HR",
-        "Construction & Real Estate",
-        "Agriculture & Forestry",
-        "Media & Communication",
-        "Retail & Customer Service",
-      ];
-      const jobs = await Job.findAll({
-        where: { status: "active" },
-      });
-      if (jobs.length === 0) return [];
-
-      const jobVectors = jobs.map((job) => ({
-        id: job.id,
-        features: this.jobToVector(job, categories),
-      }));
-
-      this.centroids = [];
-      for (let i = 0; i < Math.min(this.k, jobVectors.length); i++) {
-        this.centroids.push(
-          jobVectors[Math.floor(Math.random() * jobVectors.length)].features,
-        );
-      }
-
-      let clusteredJobs = jobVectors;
-      for (let iter = 0; iter < 20; iter++) {
-        clusteredJobs = this.assignToClusters(clusteredJobs, this.centroids);
-        const newCentroids = this.updateCentroids(
-          clusteredJobs,
-          this.centroids.length,
-        );
-        const centroidShift = this.centroids.reduce(
-          (sum, c, i) => sum + this.euclideanDistance(c, newCentroids[i]),
-          0,
-        );
-        this.centroids = newCentroids;
-        if (centroidShift < 0.001) break;
-      }
-
-      this.jobClusters = clusteredJobs;
-      return this.jobClusters;
-    } catch (error) {
-      console.error("Error training job clusters:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Calculate skill overlap ratio between user and job
-   */
-  calculateSkillOverlapScore(userSkills, jobSkills) {
-    const uSkills = this.parseSkills(userSkills);
-    const jSkills = this.parseSkills(jobSkills);
-    if (uSkills.length === 0 || jSkills.length === 0) return 0.3;
-    const lowerUser = uSkills.map((s) => s.toLowerCase());
-    const matched = jSkills.filter((s) =>
+  skillOverlapScore(userSkills, jobSkills) {
+    if (!userSkills.length || !jobSkills.length) return 0;
+    const lowerUser = userSkills.map((s) => s.toLowerCase());
+    const matched = jobSkills.filter((s) =>
       lowerUser.includes(s.toLowerCase()),
     ).length;
-    return Math.min(1, matched / Math.max(1, jSkills.length));
+    const userCov = matched / userSkills.length;
+    const jobCov = matched / jobSkills.length;
+    return (userCov + jobCov) / 2;
   }
 
-  /**
-   * Calculate category relevance score based on user's skills
-   */
-  calculateCategoryRelevance(userSkills, jobCategory) {
-    const uSkills = this.parseSkills(userSkills);
-    if (uSkills.length === 0 || !jobCategory) return 0.3;
-
-    const categorySkillMap = {
-      "Information Technology": [
-        "react",
-        "node.js",
-        "python",
-        "javascript",
-        "html",
-        "css",
-        "mongodb",
-        "sql",
-        "aws",
-        "docker",
-        "kubernetes",
-        "git",
-        "devops",
-        "java",
-        "php",
-        "laravel",
-        "angular",
-        "vue.js",
-        "flutter",
-        "kotlin",
-        "swift",
-        "typescript",
-        "linux",
-        "ci/cd",
-        "postgresql",
-        "mysql",
-        "firebase",
-        "spring boot",
-        "express.js",
-        "next.js",
-        "rest api",
-        "graphql",
-        "cybersecurity",
-        "network administration",
-        "cloud computing",
-        "ui/ux design",
-        "figma",
-        "mern",
-        "frontend",
-        "backend",
-        "fullstack",
-      ],
-      "Banking & Finance": [
-        "accounting",
-        "financial analysis",
-        "excel",
-        "tally",
-        "banking operations",
-        "risk assessment",
-        "auditing",
-        "taxation",
-        "investment analysis",
-        "loan processing",
-        "risk management",
-        "compliance auditing",
-      ],
-      "Teaching & Education": [
-        "teaching",
-        "curriculum design",
-        "classroom management",
-        "subject matter expertise",
-        "educational psychology",
-        "e-learning",
-        "student counseling",
-        "child development",
-      ],
-      "Tourism & Hospitality": [
-        "hospitality management",
-        "tour guiding",
-        "event planning",
-        "customer service",
-        "reservation systems",
-        "travel operations",
-        "hotel management",
-        "culinary arts",
-        "food safety",
-      ],
-      "Healthcare & Medical": [
-        "nursing",
-        "patient care",
-        "medical coding",
-        "pharmacy",
-        "clinical research",
-        "medical lab technology",
-        "dental care",
-        "physiotherapy",
-        "radiology",
-        "surgery assistance",
-        "healthcare it",
-        "laboratory techniques",
-      ],
-      Engineering: [
-        "autocad",
-        "civil engineering",
-        "structural analysis",
-        "project management",
-        "electrical engineering",
-        "mechanical engineering",
-        "surveying",
-        "water resource engineering",
-        "geotechnical engineering",
-        "quantity surveying",
-        "construction planning",
-        "site management",
-        "hydro power engineering",
-        "environmental engineering",
-        "building codes",
-        "quality control",
-      ],
-      "Marketing & Sales": [
-        "digital marketing",
-        "seo",
-        "content writing",
-        "social media",
-        "sales",
-        "brand management",
-        "market research",
-        "advertising",
-        "public relations",
-        "google ads",
-        "analytics",
-      ],
-      "Administration & HR": [
-        "recruitment",
-        "hr management",
-        "payroll",
-        "office administration",
-        "labor law compliance",
-        "training & development",
-        "interviewing",
-      ],
-      "Construction & Real Estate": [
-        "safety management",
-        "risk assessment",
-        "blueprint reading",
-        "material management",
-      ],
-      "Agriculture & Forestry": [
-        "agronomy",
-        "livestock management",
-        "irrigation systems",
-        "food processing",
-        "agri-business",
-        "sustainable farming",
-        "soil science",
-        "crop management",
-        "agricultural extension",
-      ],
-      "Media & Communication": [
-        "video editing",
-        "photography",
-        "journalism",
-        "broadcasting",
-        "script writing",
-        "media production",
-        "adobe premiere",
-        "adobe photoshop",
-        "adobe illustrator",
-      ],
-      "Design & Creative": [
-        "graphic design",
-        "creativity",
-        "storytelling",
-        "motion graphics",
-      ],
-      "Legal & Compliance": [
-        "monitoring & evaluation",
-        "grant writing",
-        "community development",
-        "project proposal",
-        "livelihood analysis",
-        "wash programs",
-        "capacity building",
-        "baseline survey",
-        "field operations",
-        "donor relations",
-        "legal research",
-        "contract drafting",
-        "corporate law",
-        "intellectual property",
-        "labor law",
-        "policy development",
-        "negotiation",
-      ],
-      "Data Science & Analytics": [
-        "data analysis",
-        "data visualization",
-        "power bi",
-        "tableau",
-        "statistical analysis",
-        "machine learning",
-        "python for data science",
-        "business intelligence",
-        "research",
-      ],
-    };
-
-    const lowerUser = uSkills.map((s) => s.toLowerCase());
-    const keywords = categorySkillMap[jobCategory] || [];
-    const matched = keywords.filter((k) => lowerUser.includes(k)).length;
-    return Math.min(1, 0.3 + (matched / Math.max(1, keywords.length)) * 0.7);
+  isLocationMatch(preferredLocation, jobLocation) {
+    return preferredLocation && jobLocation &&
+      (preferredLocation.toLowerCase().includes(jobLocation.toLowerCase()) ||
+       jobLocation.toLowerCase().includes(preferredLocation.toLowerCase()));
   }
 
-  /**
-   * Enforce diversity: round-robin pick from different categories
-   */
-  enforceDiversity(jobs, userSkills, limit) {
-    if (!userSkills || userSkills.length <= 1) return jobs.slice(0, limit);
-
+  enforceDiversity(jobs, limit) {
+    if (!jobs.length) return [];
     const categoryGroups = new Map();
     jobs.forEach((job) => {
       const cat = job.category || "Uncategorized";
@@ -430,25 +49,30 @@ class KMeansClustering {
     const cats = Array.from(categoryGroups.keys());
     let idx = 0;
 
-    while (result.length < limit && categoryGroups.size > 0) {
+    while (result.length < Math.min(limit, cats.length) && categoryGroups.size > 0) {
       const cat = cats[idx % cats.length];
       const group = categoryGroups.get(cat);
       if (group && group.length > 0) {
         result.push(group.shift());
       }
-      if (group.length === 0) {
+      if (!group || group.length === 0) {
         categoryGroups.delete(cat);
         cats.splice(cats.indexOf(cat), 1);
+        if (cats.length === 0) break;
+        if (idx >= cats.length) idx = 0;
+      } else {
+        idx++;
       }
-      idx++;
+    }
+
+    const remaining = jobs.filter(j => !result.includes(j));
+    while (result.length < limit && remaining.length > 0) {
+      result.push(remaining.shift());
     }
 
     return result;
   }
 
-  /**
-   * Get job recommendations using K-Means clustering with continuous scoring
-   */
   async getRecommendations(userId, limit = 10) {
     try {
       let user = await User.findByPk(userId);
@@ -462,7 +86,8 @@ class KMeansClustering {
       }
 
       const userSkills = this.parseSkills(user.skills);
-      const preferredLocation = user.preferred_location || (user.address ? user.address.split(',')[0].trim() : null);
+      const preferredLocation = user.preferred_location ||
+        (user.address ? user.address.split(',')[0].trim() : null);
 
       const clusterUsers = await User.findAll({
         where: { role: "jobseeker", cluster_id: userClusterId },
@@ -483,16 +108,15 @@ class KMeansClustering {
         ...userApps.map((a) => a.job_id),
       ]);
 
+      // Aggregate interactions from cluster peers
       const jobScores = {};
-
       const clusterViews = await JobView.findAll({
         where: { user_id: clusterUserIds },
         attributes: ["job_id", "action_type"],
       });
       clusterViews.forEach((v) => {
         if (seenJobIds.has(v.job_id)) return;
-        const weight =
-          v.action_type === "apply" ? 5 : v.action_type === "save" ? 2 : 1;
+        const weight = v.action_type === "apply" ? 5 : v.action_type === "save" ? 2 : 1;
         jobScores[v.job_id] = (jobScores[v.job_id] || 0) + weight;
       });
 
@@ -510,107 +134,81 @@ class KMeansClustering {
         where: { id: candidateJobIds, status: "active" },
       });
 
-      const isLocMatch = (jobLoc) => preferredLocation && jobLoc && 
-        (preferredLocation.toLowerCase().includes(jobLoc.toLowerCase()) || 
-         jobLoc.toLowerCase().includes(preferredLocation.toLowerCase()));
-
+      // Fallback: no cluster interactions → skill-matched recent jobs
       if (candidateJobs.length === 0) {
-        // Fallback: Recommend jobs matching user profile
-        candidateJobs = await Job.findAll({
+        const fallbackJobs = await Job.findAll({
           where: { status: "active" },
           limit: limit * 2,
           order: [["createdAt", "DESC"]],
         });
 
-        const scoredFallback = candidateJobs.map((job) => {
-          const skillScore = this.calculateSkillOverlapScore(userSkills, job.required_skills);
-          const categoryScore = this.calculateCategoryRelevance(userSkills, job.category);
-          const typeScore = job.job_type === user.preferred_job_type ? 1 : 0;
-          const locScore = job.location && preferredLocation && isLocMatch(job.location) ? 1 : 0;
-
-          const combinedScore = skillScore * 50 + categoryScore * 20 + typeScore * 10 + locScore * 20;
-
+        const scored = fallbackJobs.map((job) => {
+          const skillScore = this.skillOverlapScore(userSkills, this.parseSkills(job.required_skills));
+          const loc = this.isLocationMatch(preferredLocation, job.location) ? 1 : 0;
           return {
             ...job.toJSON(),
-            recommendationScore: Math.round(combinedScore * 100) / 100,
+            recommendationScore: Math.round((skillScore * 0.7 + loc * 0.3) * 100) / 100,
             cluster: userClusterId,
             recommendationType: "kmeans-fallback",
-            _skillScore: skillScore,
-            _categoryScore: categoryScore,
+            matchReasons: ["Recommended from your skill cluster"],
           };
         });
 
-        scoredFallback.sort((a, b) => b.recommendationScore - a.recommendationScore);
-        scoredFallback.forEach((job) => {
-          job.matchReasons = ["Recommended for your cluster based on profile match"];
-        });
+        scored.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-        const localFallback = scoredFallback.filter(job => isLocMatch(job.location));
-        const otherFallback = scoredFallback.filter(job => !isLocMatch(job.location));
+        const local = scored.filter(j => this.isLocationMatch(preferredLocation, j.location));
+        const others = scored.filter(j => !this.isLocationMatch(preferredLocation, j.location));
 
-        const diverseLocalFallback = this.enforceDiversity(localFallback, userSkills, limit);
-        const diverseOtherFallback = this.enforceDiversity(otherFallback, userSkills, limit);
+        const diverseLocal = this.enforceDiversity(local, limit);
+        const diverseOthers = this.enforceDiversity(others, limit);
 
-        return [...diverseLocalFallback, ...diverseOtherFallback].slice(0, limit);
+        return [...diverseLocal, ...diverseOthers].slice(0, limit);
       }
 
-      // Score each job with continuous skill and category relevance
-      const scoredJobs = candidateJobs.map((job) => {
-        const clusterScore = jobScores[job.id] || 0;
-        const skillScore = this.calculateSkillOverlapScore(
-          userSkills,
-          job.required_skills || [],
-        );
-        const categoryScore = this.calculateCategoryRelevance(
-          userSkills,
-          job.category,
-        );
+      // Normalize cluster score to 0-1
+      const maxScore = Math.max(0.01, ...candidateJobs.map(j => jobScores[j.id] || 0));
 
-        // Combined: 30% cluster popularity, 50% skill overlap, 20% category fit
-        const combinedScore =
-          clusterScore * 0.3 +
-          skillScore * 100 * 0.5 +
-          categoryScore * 100 * 0.2;
+      const scoredJobs = candidateJobs.map((job) => {
+        const clusterScore = (jobScores[job.id] || 0) / maxScore;
+        const skillScore = this.skillOverlapScore(userSkills, this.parseSkills(job.required_skills));
+        const loc = this.isLocationMatch(preferredLocation, job.location) ? 1 : 0;
+
+        const combined = clusterScore * 0.25 + skillScore * 0.45 + loc * 0.30;
+
+        const reasons = [];
+        if (skillScore > 0) {
+          reasons.push(`${Math.round(skillScore * 100)}% skills match`);
+        }
+        if (loc) {
+          reasons.push("Location matches your preference");
+        }
+        if (clusterScore > 0) {
+          reasons.push("Popular in your cluster");
+        }
+        if (!reasons.length) {
+          reasons.push("Recommended by K-Means clustering");
+        }
 
         return {
           ...job.toJSON(),
-          recommendationScore: Math.round(combinedScore * 100) / 100,
+          recommendationScore: Math.round(combined * 100) / 100,
           cluster: userClusterId,
           recommendationType: "kmeans",
           _skillScore: skillScore,
-          _categoryScore: categoryScore,
+          _locationScore: loc,
+          matchReasons: reasons,
         };
       });
 
       scoredJobs.sort((a, b) => b.recommendationScore - a.recommendationScore);
 
-      // Add match reasons for explainability
-      scoredJobs.forEach((job) => {
-        const reasons = [];
-        if (job._skillScore > 0.5) {
-          reasons.push(`${Math.round(job._skillScore * 100)}% skills match`);
-        } else if (job._skillScore > 0) {
-          reasons.push("Some skills match");
-        }
-        if (job._categoryScore > 0.6) {
-          reasons.push("Strong category fit");
-        }
-        reasons.push(`From cluster ${job.cluster}`);
-        if (reasons.length === 0) {
-          reasons.push("Recommended by K-Means clustering");
-        }
-        job.matchReasons = reasons;
-      });
+      const locationMatchingJobs = scoredJobs.filter(j => j._locationScore);
+      const otherJobs = scoredJobs.filter(j => !j._locationScore);
 
-      const locationMatchingJobs = scoredJobs.filter(job => isLocMatch(job.location));
-      const otherJobs = scoredJobs.filter(job => !isLocMatch(job.location));
+      const diverseLocal = this.enforceDiversity(locationMatchingJobs, limit);
+      const diverseOthers = this.enforceDiversity(otherJobs, limit);
 
-      const diverseLocal = this.enforceDiversity(locationMatchingJobs, userSkills, limit);
-      const diverseOthers = this.enforceDiversity(otherJobs, userSkills, limit);
-
-      const diverseJobs = [...diverseLocal, ...diverseOthers];
-
-      return diverseJobs.slice(0, limit);
+      return [...diverseLocal, ...diverseOthers].slice(0, limit);
     } catch (error) {
       console.error("K-Means Clustering Error:", error);
       throw error;
@@ -619,25 +217,21 @@ class KMeansClustering {
 
   async assignUserClusters() {
     try {
-      const { User } = require("../../models");
       const users = await User.findAll({ where: { role: "jobseeker" } });
       if (users.length === 0) return {};
 
+      // Build skill vectors
       const allSkillsSet = new Set();
       users.forEach((u) => {
-        const uSkills = this.parseSkills(u.skills);
-        uSkills.forEach((s) => allSkillsSet.add(s.toLowerCase()));
+        this.parseSkills(u.skills).forEach((s) => allSkillsSet.add(s.toLowerCase()));
       });
       const allSkills = Array.from(allSkillsSet);
 
       const experienceMap = {
-        entry: 0,
-        mid: 0.5,
-        senior: 1,
-        lead: 0.75,
-        executive: 1,
+        entry: 0, mid: 0.5, senior: 1, lead: 0.75, executive: 1,
       };
 
+      // Build location pool
       const allLocationsSet = new Set();
       users.forEach((u) => {
         const loc = u.preferred_location || (u.address ? u.address.split(',')[0].trim() : null);
@@ -645,18 +239,17 @@ class KMeansClustering {
       });
       const allLocations = Array.from(allLocationsSet);
 
+      // Build vectors: [skill_binary..., experience, location_binary...]
       const vectors = users.map((u) => {
         const uSkills = this.parseSkills(u.skills);
         const skillVec = allSkills.map((s) =>
           uSkills.some((us) => us.toLowerCase() === s) ? 1 : 0,
         );
         const expVal = experienceMap[u.experience_level] || 0.5;
-        
         const uLoc = u.preferred_location || (u.address ? u.address.split(',')[0].trim() : null);
         const locVec = allLocations.map((l) =>
-          uLoc && uLoc.toLowerCase() === l ? 1.5 : 0
+          uLoc && uLoc.toLowerCase() === l ? 1.5 : 0,
         );
-
         return [...skillVec, expVal, ...locVec];
       });
 
@@ -667,7 +260,6 @@ class KMeansClustering {
       }
 
       let assignments = new Array(vectors.length).fill(0);
-
       for (let iter = 0; iter < 30; iter++) {
         let changed = false;
         for (let i = 0; i < vectors.length; i++) {
@@ -691,11 +283,9 @@ class KMeansClustering {
         for (let c = 0; c < k; c++) {
           const clusterPoints = vectors.filter((_, i) => assignments[i] === c);
           if (clusterPoints.length === 0) continue;
-          const newCentroid = clusterPoints[0].map((_, dim) => {
-            const sum = clusterPoints.reduce((acc, p) => acc + p[dim], 0);
-            return sum / clusterPoints.length;
-          });
-          centroids[c] = newCentroid;
+          centroids[c] = clusterPoints[0].map((_, dim) =>
+            clusterPoints.reduce((acc, p) => acc + p[dim], 0) / clusterPoints.length,
+          );
         }
       }
 
@@ -704,31 +294,10 @@ class KMeansClustering {
       }
 
       const stats = {};
-      assignments.forEach((c) => {
-        stats[c] = (stats[c] || 0) + 1;
-      });
+      assignments.forEach((c) => { stats[c] = (stats[c] || 0) + 1; });
       return stats;
     } catch (error) {
       console.error("Error assigning user clusters:", error);
-      throw error;
-    }
-  }
-
-  async getClusterStats() {
-    try {
-      if (this.jobClusters.length === 0) {
-        await this.trainJobClusters();
-      }
-      const stats = {};
-      this.jobClusters.forEach((job) => {
-        if (!stats[job.cluster]) {
-          stats[job.cluster] = { count: 0, jobs: [] };
-        }
-        stats[job.cluster].count++;
-      });
-      return stats;
-    } catch (error) {
-      console.error("Error getting cluster stats:", error);
       throw error;
     }
   }

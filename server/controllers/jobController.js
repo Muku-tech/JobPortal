@@ -434,46 +434,33 @@ exports.getCategoryJobs = async (req, res) => {
 // 12. GET SKILL GAP ANALYSIS
 exports.getSkillGap = async (req, res) => {
   try {
-    console.log(
-      "🔍 SkillGap called - jobId:",
-      req.params.id,
-      "userId:",
-      req.user?.id,
-    );
     const { id } = req.params;
     const userId = req.user.id;
 
-    const job = await Job.findByPk(id, {
-      include: [{ model: User, as: "employer" }],
-    });
-
+    const job = await Job.findByPk(id);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
     const user = await User.findByPk(userId);
-    console.log("🔍 Found user:", user?.id, "skills:", user?.skills);
     if (!user) return res.status(401).json({ message: "User not found" });
 
     const userSkills = user.skills || [];
     const jobSkills = job.required_skills || [];
-    console.log("🔍 Parsed - userSkills:", userSkills, "jobSkills:", jobSkills);
 
-    // Simple set difference for missing skills
+    // Normalize and find missing skills via set difference
     const userSet = new Set(userSkills.map((s) => s.toLowerCase().trim()));
     const jobSet = new Set(jobSkills.map((s) => s.toLowerCase().trim()));
     const missing = Array.from(jobSet).filter((skill) => !userSet.has(skill));
 
-    // Gap score: percentage of job skills user has
+    // Skill overlap score (0-100)
     const gapScore =
       jobSkills.length > 0
-        ? Math.round(
-            ((jobSkills.length - missing.length) / jobSkills.length) * 100,
-          )
+        ? Math.round(((jobSkills.length - missing.length) / jobSkills.length) * 100)
         : 0;
 
     res.json({
       gapScore,
-      missingSkills: missing.slice(0, 5), // Top 5
       totalMissing: missing.length,
+      missingSkills: missing.slice(0, 5),
       yourSkills: userSkills.slice(0, 5),
       jobSkillsCount: jobSkills.length,
     });

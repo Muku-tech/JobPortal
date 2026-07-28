@@ -24,33 +24,39 @@ router.get("/profile", auth, async (req, res) => {
 const mergeExperiences = (existingExperiences, newText) => {
   if (newText === undefined) return existingExperiences || [];
   if (!newText || typeof newText !== "string") return [];
-  
-  const parsed = newText.split("\n").map(line => {
-    line = line.trim();
-    if (!line) return null;
-    const atIndex = line.toLowerCase().lastIndexOf(" at ");
-    if (atIndex !== -1) {
-      const title = line.substring(0, atIndex).trim();
-      const org = line.substring(atIndex + 4).trim();
-      return { title, organization: org, company: org };
-    }
-    return { title: line, organization: "", company: "" };
-  }).filter(Boolean);
 
-  const existingList = Array.isArray(existingExperiences) ? existingExperiences : [];
-  
-  return parsed.map(p => {
-    const match = existingList.find(e => 
-      e.title?.toLowerCase() === p.title.toLowerCase() && 
-      (e.organization?.toLowerCase() === p.organization.toLowerCase() || 
-       e.company?.toLowerCase() === p.company.toLowerCase())
+  const parsed = newText
+    .split("\n")
+    .map((line) => {
+      line = line.trim();
+      if (!line) return null;
+      const atIndex = line.toLowerCase().lastIndexOf(" at ");
+      if (atIndex !== -1) {
+        const title = line.substring(0, atIndex).trim();
+        const org = line.substring(atIndex + 4).trim();
+        return { title, organization: org, company: org };
+      }
+      return { title: line, organization: "", company: "" };
+    })
+    .filter(Boolean);
+
+  const existingList = Array.isArray(existingExperiences)
+    ? existingExperiences
+    : [];
+
+  return parsed.map((p) => {
+    const match = existingList.find(
+      (e) =>
+        e.title?.toLowerCase() === p.title.toLowerCase() &&
+        (e.organization?.toLowerCase() === p.organization.toLowerCase() ||
+          e.company?.toLowerCase() === p.company.toLowerCase()),
     );
     if (match) {
       return {
         ...match,
         title: p.title,
         organization: p.organization,
-        company: p.company
+        company: p.company,
       };
     }
     return {
@@ -58,7 +64,7 @@ const mergeExperiences = (existingExperiences, newText) => {
       organization: p.organization,
       company: p.company,
       dates: "",
-      description: ""
+      description: "",
     };
   });
 };
@@ -67,32 +73,38 @@ const mergeEducations = (existingEducations, newText) => {
   if (newText === undefined) return existingEducations || [];
   if (!newText || typeof newText !== "string") return [];
 
-  const parsed = newText.split("\n").map(line => {
-    line = line.trim();
-    if (!line) return null;
-    const fromIndex = line.toLowerCase().lastIndexOf(" from ");
-    if (fromIndex !== -1) {
-      const title = line.substring(0, fromIndex).trim();
-      const org = line.substring(fromIndex + 6).trim();
-      return { title, organization: org, company: org };
-    }
-    return { title: line, organization: "", company: "" };
-  }).filter(Boolean);
+  const parsed = newText
+    .split("\n")
+    .map((line) => {
+      line = line.trim();
+      if (!line) return null;
+      const fromIndex = line.toLowerCase().lastIndexOf(" from ");
+      if (fromIndex !== -1) {
+        const title = line.substring(0, fromIndex).trim();
+        const org = line.substring(fromIndex + 6).trim();
+        return { title, organization: org, company: org };
+      }
+      return { title: line, organization: "", company: "" };
+    })
+    .filter(Boolean);
 
-  const existingList = Array.isArray(existingEducations) ? existingEducations : [];
-  
-  return parsed.map(p => {
-    const match = existingList.find(e => 
-      e.title?.toLowerCase() === p.title.toLowerCase() && 
-      (e.organization?.toLowerCase() === p.organization.toLowerCase() || 
-       e.company?.toLowerCase() === p.company.toLowerCase())
+  const existingList = Array.isArray(existingEducations)
+    ? existingEducations
+    : [];
+
+  return parsed.map((p) => {
+    const match = existingList.find(
+      (e) =>
+        e.title?.toLowerCase() === p.title.toLowerCase() &&
+        (e.organization?.toLowerCase() === p.organization.toLowerCase() ||
+          e.company?.toLowerCase() === p.company.toLowerCase()),
     );
     if (match) {
       return {
         ...match,
         title: p.title,
         organization: p.organization,
-        company: p.company
+        company: p.company,
       };
     }
     return {
@@ -100,7 +112,7 @@ const mergeEducations = (existingEducations, newText) => {
       organization: p.organization,
       company: p.company,
       dates: "",
-      description: ""
+      description: "",
     };
   });
 };
@@ -210,6 +222,12 @@ router.put("/profile", auth, async (req, res) => {
             order: [["updatedAt", "DESC"]],
           });
         }
+
+        // Build structured skills array from user profile
+        const skillsFromProfile = (updateData.skills || []).map((s) => ({
+          title: s,
+        }));
+
         if (defaultResume) {
           await defaultResume.update({
             personal_info: {
@@ -220,24 +238,115 @@ router.put("/profile", auth, async (req, res) => {
               linkedin: updateData.linkedin,
               portfolio: updateData.portfolio || updateData.github,
             },
-            summary: req.body.summary !== undefined ? req.body.summary : defaultResume.summary,
+            summary:
+              req.body.summary !== undefined
+                ? req.body.summary
+                : defaultResume.summary,
             // Map skills back to the structured format used by the builder
-            skills: (updateData.skills || []).map((s) => ({ title: s })),
-            experiences: mergeExperiences(defaultResume.experiences, req.body.experience),
-            educations: mergeEducations(defaultResume.educations, req.body.education)
+            skills: skillsFromProfile,
+            experiences: mergeExperiences(
+              defaultResume.experiences,
+              req.body.experience,
+            ),
+            educations: mergeEducations(
+              defaultResume.educations,
+              req.body.education,
+            ),
+          });
+        } else {
+          // No resume exists at all - create a new default resume with profile data
+          const experienceEntries = req.body.experience
+            ? req.body.experience
+                .split("\n")
+                .filter(Boolean)
+                .map((line) => {
+                  line = line.trim();
+                  const atIndex = line.toLowerCase().lastIndexOf(" at ");
+                  if (atIndex !== -1) {
+                    return {
+                      title: line.substring(0, atIndex).trim(),
+                      organization: line.substring(atIndex + 4).trim(),
+                      company: line.substring(atIndex + 4).trim(),
+                      dates: "",
+                      description: "",
+                    };
+                  }
+                  return {
+                    title: line,
+                    organization: "",
+                    company: "",
+                    dates: "",
+                    description: "",
+                  };
+                })
+            : [];
+
+          const educationEntries = req.body.education
+            ? req.body.education
+                .split("\n")
+                .filter(Boolean)
+                .map((line) => {
+                  line = line.trim();
+                  const fromIndex = line.toLowerCase().lastIndexOf(" from ");
+                  if (fromIndex !== -1) {
+                    return {
+                      title: line.substring(0, fromIndex).trim(),
+                      organization: line.substring(fromIndex + 6).trim(),
+                      company: line.substring(fromIndex + 6).trim(),
+                      dates: "",
+                      description: "",
+                    };
+                  }
+                  return {
+                    title: line,
+                    organization: "",
+                    company: "",
+                    dates: "",
+                    description: "",
+                  };
+                })
+            : [];
+
+          await Resume.create({
+            user_id: user.id,
+            personal_info: {
+              name: updateData.name || "",
+              email: user.email || "",
+              phone: updateData.phone || "",
+              address: updateData.address || "",
+              linkedin: updateData.linkedin || "",
+              portfolio: updateData.portfolio || updateData.github || "",
+            },
+            summary: req.body.summary || "",
+            skills: skillsFromProfile,
+            experiences: experienceEntries,
+            educations: educationEntries,
+            languages: (updateData.languages || []).map((l) => ({ title: l })),
+            is_default: true,
+            template: "modern",
           });
         }
       }
-      
+
       // Trigger fresh recommendations based on the new profile data
       // Improved mock response to prevent background crashes
-      const mockRes = { 
-        status: function() { return this; }, 
-        json: function() { return this; } 
+      const mockRes = {
+        status: function () {
+          return this;
+        },
+        json: function () {
+          return this;
+        },
       };
-      
-      recommendationController.sendRecommendationAsMessage({ user: { id: req.user.id }, query: { limit: 5 } }, mockRes)
-        .catch(err => console.error("Profile-update rec error:", err.message));
+
+      recommendationController
+        .sendRecommendationAsMessage(
+          { user: { id: req.user.id }, query: { limit: 5 } },
+          mockRes,
+        )
+        .catch((err) =>
+          console.error("Profile-update rec error:", err.message),
+        );
 
       const updatedUser = await User.findByPk(req.user.id, {
         attributes: { exclude: ["password"] },

@@ -6,21 +6,33 @@ function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
   const navigate = useNavigate()
 
-  // Note: server-side password reset endpoint is not implemented in this repo.
-  // This page prevents the unwanted redirect to home when the user clicks
-  // “Forgot password?” from the login screen.
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setMessage('')
+    setIsError(false)
 
     try {
-      // Placeholder behavior: in a full implementation we would call a reset API.
-      // Keeping it client-only avoids breaking current auth flows.
-      setMessage('If an account exists for this email, we will send password reset instructions.')
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setIsError(true)
+        setMessage(data.message || 'Unable to process request. Please try again.')
+      } else {
+        setIsError(false)
+        setMessage(data.message)
+      }
     } catch (err) {
+      setIsError(true)
       setMessage('Unable to process request. Please try again.')
     } finally {
       setLoading(false)
@@ -36,7 +48,7 @@ function ForgotPassword() {
           <p className="auth-subtitle">Enter your email and we’ll send reset instructions.</p>
         </div>
 
-        {message && <div className="error-banner">{message}</div>}
+        {message && <div className={isError ? "error-banner" : "success-banner"}>{message}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">

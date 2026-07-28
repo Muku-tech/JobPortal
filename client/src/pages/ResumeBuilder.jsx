@@ -81,16 +81,57 @@ const ResumeBuilder = () => {
 
   useEffect(() => {
     if (user) {
-      setResumeData(prev => ({
-        ...prev,
-        personal_info: {
-          ...prev.personal_info,
-          name: user.name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-          address: user.address || ''
-        }
-      }));
+      setResumeData(prev => {
+        // Only populate skills/experiences/education from profile if resume is empty (no existing data fetched)
+        const hasExistingData = prev.skills?.length > 0 || prev.experiences?.length > 0 || prev.educations?.length > 0;
+        
+        // Convert user skills from strings to [{title: skill}] format
+        const profileSkills = !hasExistingData && Array.isArray(user.skills) 
+          ? user.skills.map(s => ({ title: typeof s === 'object' ? s.title : s, organization: '', dates: '', description: '' }))
+          : prev.skills;
+
+        // Convert user experience text to structured entries
+        const profileExperiences = !hasExistingData && user.experience
+          ? (typeof user.experience === 'string' 
+              ? user.experience.split('\n').filter(Boolean).map(line => ({
+                  title: line.trim(),
+                  organization: '',
+                  dates: '',
+                  description: ''
+                }))
+              : Array.isArray(user.experience) 
+                ? user.experience.map(e => ({ title: e.title || e, organization: e.organization || '', dates: e.dates || '', description: e.description || '' }))
+                : prev.experiences)
+          : prev.experiences;
+
+        // Convert user education text to structured entries
+        const profileEducations = !hasExistingData && user.education
+          ? (typeof user.education === 'string'
+              ? user.education.split('\n').filter(Boolean).map(line => ({
+                  title: line.trim(),
+                  organization: '',
+                  dates: '',
+                  description: ''
+                }))
+              : Array.isArray(user.education)
+                ? user.education.map(e => ({ title: e.title || e, organization: e.organization || '', dates: e.dates || '', description: e.description || '' }))
+                : prev.educations)
+          : prev.educations;
+
+        return {
+          ...prev,
+          personal_info: {
+            ...prev.personal_info,
+            name: user.name || '',
+            email: user.email || '',
+            phone: user.phone || '',
+            address: user.address || ''
+          },
+          skills: profileSkills,
+          experiences: profileExperiences,
+          educations: profileEducations
+        };
+      });
     }
   }, [user]);
 

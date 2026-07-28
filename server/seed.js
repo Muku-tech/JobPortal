@@ -3,79 +3,79 @@ const { User, Job, Application, JobView } = require("./models");
 const kMeansClustering = require("./services/algorithms/kMeansClustering");
 
 const PWD = "123456";
-const N_EMP = 24;
-const N_JOB = 150;
+const N_EMP = 38;  // All 38 companies
+const N_JOB = 350;  // More jobs for richer recommendation data
+const N_SEEKER_MULTIPLIER = 4; // 4x seekers per group for dense interaction data
 
 const FN = [
-  "Ram",
-  "Sita",
-  "Hari",
-  "Gita",
-  "Krishna",
-  "Radha",
-  "Shyam",
-  "Maya",
-  "Bikash",
-  "Anjali",
-  "Prakash",
-  "Sunita",
-  "Ramesh",
-  "Nisha",
-  "Dinesh",
-  "Pooja",
-  "Santosh",
-  "Kamala",
-  "Rajesh",
-  "Saraswati",
-  "Binod",
-  "Laxmi",
-  "Govinda",
-  "Parbati",
-  "Manoj",
-  "Rekha",
-  "Deepak",
-  "Sabina",
-  "Arjun",
-  "Ritu",
-  "Nabin",
-  "Sushma",
-  "Bijay",
-  "Anita",
-  "Suresh",
-  "Kalpana",
-  "Pradeep",
-  "Menuka",
-  "Sagar",
-  "Priya",
-  "Amit",
-  "Srijana",
-  "Rabin",
-  "Bandana",
-  "Umesh",
-  "Mina",
-  "Kiran",
-  "Goma",
-  "Sanjay",
-  "Kabita",
-  "Nirajan",
-  "Yamuna",
-  "Pramod",
-  "Chanda",
-  "Raju",
-  "Devi",
-  "Suman",
-  "Jyoti",
-  "Mahesh",
-  "Sangita",
-  "Dipesh",
-  "Nirmala",
-  "Bishal",
-  "Rashmi",
+  "Ram", "Sita", "Hari", "Gita", "Krishna", "Radha", "Shyam", "Maya",
+  "Bikash", "Anjali", "Prakash", "Sunita", "Ramesh", "Nisha", "Dinesh",
+  "Pooja", "Santosh", "Kamala", "Rajesh", "Saraswati", "Binod", "Laxmi",
+  "Govinda", "Parbati", "Manoj", "Rekha", "Deepak", "Sabina", "Arjun",
+  "Ritu", "Nabin", "Sushma", "Bijay", "Anita", "Suresh", "Kalpana",
+  "Pradeep", "Menuka", "Sagar", "Priya", "Amit", "Srijana", "Rabin",
+  "Bandana", "Umesh", "Mina", "Kiran", "Goma", "Sanjay", "Kabita",
+  "Nirajan", "Yamuna", "Pramod", "Chanda", "Raju", "Devi", "Suman",
+  "Jyoti", "Mahesh", "Sangita", "Dipesh", "Nirmala", "Bishal", "Rashmi",
+  "Asha", "Bharat", "Chitra", "Durga", "Ekraj", "Fulmaya",
+  "Ganesh", "Harish", "Indira", "Jivan", "Kalawati", "Lalit",
+  "Madan", "Nirmaya", "Om", "Pabitra", "Qasim", "Reshma",
+  "Shiva", "Tulasa", "Uday", "Bimala", "Chiran", "Devaki",
+  "Eak", "Firoj", "Goma", "Hareram", "Ishwar", "Januka",
 ];
 const LN = [
-  "Sharma",
-  "Poudel",
-  "Gurung",
+  "Sharma", "Poudel", "Gurung", "Tamang", "Thapa", "K.C.", "Adhikari",
+  "Bhattarai", "Rai", "Limbu", "Magar", "Shrestha", "Bhandari", "Karki",
+  "Basnet", "Pokharel", "Aryal", "Ghimire", "Subedi", "Khadka", "Dahal",
+  "Bista", "Pariyar", "Sunuwar", "BK", "Chaudhary", "Mahato", "Yadav",
+  "Mandal", "Jha", "Singh", "Gupta", "Mishra", "Lama", "Sherpa",
+  "Newar", "Pradhan", "Rana", "Shah", "Malla", "Joshi", "Regmi",
+  "Pandey", "Upreti", "Neupane", "Sapkota", "Gautam", "Acharya",
+  "Koirala", "Pathak", "Dhakal", "Niroula", "Tiwari", "Khanal",
+  "Dulal", "Pun", "Rokka", "Bohara", "Kunwar", "Maharjan",
+  "Dangol", "Manandhar", "Shakya", "Singh", "Sijapati", "Chapagain",
+];
+const CT = [
+  "Kathmandu", "Pokhara", "Birgunj", "Biratnagar", "Lalitpur",
+  "Bhaktapur", "Butwal", "Dharan", "Janakpur", "Narayangadh",
+  "Hetauda", "Itahari", "Dhangadhi", "Bhairahawa", "Nepalgunj",
+  "Mahendranagar", "Ilam", "Palpa", "Gorkha", "Kavrepalanchok",
+  "Tulsipur", "Damak", "Birendranagar", "Birtamod", "Panauti",
+  "Banepa", "Kirtipur", "Madhyapur Thimi", "Bharatpur", "Baglung",
+  "Tansen", "Putalibazar", "Lekhnath", "Gaindakot", "Ratnanagar",
+  "Chitwan", "Chautara", "Kodari", "Namche Bazaar", "Jiri",
+];
+
+const EMP = [
+  // Banking & Finance (10)
+  { n: "Nabil Bank Ltd.", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "NIC Asia Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "Himalayan Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "NMB Bank", s: "Banking & Finance", i: "Development Banking" },
+  { n: "Global IME Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "Laxmi Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "Prabhu Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "Siddhartha Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "Sanima Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  { n: "Citizens Bank", s: "Banking & Finance", i: "Commercial Banking" },
+  // IT & Telecom (7)
+  { n: "Nepal Telecom", s: "Information Technology", i: "Telecom" },
+  { n: "Ncell Axiata", s: "Information Technology", i: "Telecom" },
+  { n: "F1Soft International", s: "Information Technology", i: "Fintech" },
+  { n: "Deerwalk Inc.", s: "Information Technology", i: "Software Development" },
+  { n: "Leapfrog Technology", s: "Information Technology", i: "Software Development" },
+  { n: "WorldLink Communications", s: "Information Technology", i: "ISP" },
+  { n: "Cotiviti Nepal", s: "Information Technology", i: "Healthcare IT" },
+  // Tourism & Hospitality (5)
+  { n: "Yeti Airlines", s: "Tourism & Hospitality", i: "Aviation" },
+  { n: "Buddha Air", s: "Tourism & Hospitality", i: "Aviation" },
+  { n: "Dwarika's Hotel", s: "Tourism & Hospitality", i: "Luxury Hospitality" },
+  { n: "Hyatt Regency Kathmandu", s: "Tourism & Hospitality", i: "Luxury Hospitality" },
+  { n: "Marriott Kathmandu", s: "Tourism & Hospitality", i: "Luxury Hospitality" },
+  // Retail & FMCG (4)
+  { n: "Chaudhary Group (CG)", s: "Retail & Customer Service", i: "Conglomerate" },
+  { n: "Surya Nepal Pvt. Ltd.", s: "Retail & Customer Service", i: "FMCG" },
+  { n: "Unilever Nepal", s: "Retail & Customer Service", i: "FMCG" },
   "Tamang",
   "Thapa",
   "K.C.",
@@ -1453,8 +1453,6 @@ async function seed() {
   try {
     const stats = await kMeansClustering.assignUserClusters();
     console.log(`  User clusters:`, stats);
-    await kMeansClustering.trainJobClusters();
-    console.log(`  Job clusters trained\n`);
   } catch (e) {
     console.log(`  Clustering skipped: ${e.message}\n`);
   }

@@ -4,22 +4,24 @@ import {
   Briefcase, MapPin, DollarSign, List, 
   Calendar, Users, Info, ArrowLeft, Send 
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import '../styles/PostJob.css'
 import '../styles/MyJobs.css'
 
 
 function PostJob() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { jobId } = useParams()
   const [activeTab, setActiveTab] = useState('new')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    company_name: '',
+    company_name: user?.company_name || '',
     location: '',
     job_type: 'full-time',
-    status: 'draft',
+    status: 'active',
     category: '',
     salary_min: '',
     salary_max: '',
@@ -89,7 +91,7 @@ function PostJob() {
     if (!confirm('Mark this job as completed? It will be hidden from job seekers.')) return
     
     try {
-      await api.patch(`/jobs/${jobId}`, { status: 'completed' })
+      await api.put(`/jobs/${jobId}`, { status: 'completed' })
       loadEmployerJobs()
     } catch (error) {
       console.error('Failed to update job status:', error)
@@ -203,6 +205,11 @@ function PostJob() {
                 <div className="input-group">
                   <label>Job Title*</label>
                   <input type="text" name="title" placeholder="E.g. Senior React Developer" value={formData.title} onChange={handleChange} required />
+                </div>
+
+                <div className="input-group">
+                  <label>Company Name*</label>
+                  <input type="text" name="company_name" value={formData.company_name} onChange={handleChange} placeholder="Your company or organization name" required />
                 </div>
                 
                 <div className="input-grid">

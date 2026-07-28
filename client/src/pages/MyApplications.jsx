@@ -151,6 +151,7 @@ function MyApplications() {
                 
                 <div className="app-card-actions">
                   <Link to={`/jobs/${app.job_id}`} className="btn-view-job">View Vacancy</Link>
+                  <Link to={`/applications/${app.id}/messages`} className="btn-messages">Messages</Link>
                   {app.status === 'pending' && <span className="wait-msg">Awaiting Review</span>}
                 </div>
               </div>
